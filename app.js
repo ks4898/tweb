@@ -6,6 +6,7 @@ const session = require("express-session");
 require("dotenv").config(); // safe config
 const { verifyRole } = require("./assets/js/auth.js"); // user authorization
 const errorHandler = require('./assets/js/errorhandler'); // error handling
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY); // stripe payment processing
 
 /* DEPRECATED!
  require('express-async-errors');*/
