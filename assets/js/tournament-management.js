@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
       renderTournaments(tournaments);
     } catch (error) {
       console.error('Error fetching tournaments:', error);
+      alert('Failed to fetch tournaments. Please try again later.');
     }
   }
   
@@ -34,44 +35,58 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   
   async function signUpForTournament(tournamentId) {
-    const teamId = getCurrentTeamId(); // Implement this function to get the current user's team ID
-    if (!teamId) {
-      alert('You must be part of a team to sign up for a tournament.');
-      return;
-    }
-  
     try {
       const response = await fetch('/tournament-signup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ tournamentId, teamId }),
+        body: JSON.stringify({ tournamentId }),
       });
-  
-      if (!response.ok) {
-        throw new Error('Failed to sign up for tournament');
-      }
   
       const result = await response.json();
       if (result.success) {
-        alert('Successfully signed up for the tournament! Proceeding to payment.');
-        window.location.href = `/payment.html?tournamentId=${tournamentId}&teamId=${teamId}`;
+        alert(result.message);
+        processPayment(tournamentId);
       } else {
-        alert('Failed to sign up for the tournament: ' + result.message);
+        alert(result.message);
       }
     } catch (error) {
       console.error('Error signing up for tournament:', error);
-      alert('Failed to sign up for the tournament');
+      alert('Failed to sign up for the tournament. Please try again.');
+    }
+  }
+  
+  async function processPayment(tournamentId) {
+    const stripe = Stripe('YOUR_STRIPE_PUBLISHABLE_KEY'); // Replace with your actual publishable key
+    const { token, error } = await stripe.createToken(card);
+  
+    if (error) {
+      console.error(error);
+      alert('Payment failed: ' + error.message);
+    } else {
+      try {
+        const response = await fetch('/process-payment', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ token: token.id }),
+        });
+  
+        const result = await response.json();
+        if (result.success) {
+          alert(result.message);
+        } else {
+          alert('Payment failed: ' + result.message);
+        }
+      } catch (error) {
+        console.error('Error processing payment:', error);
+        alert('Failed to process payment. Please try again.');
+      }
     }
   }
   
   function setupEventListeners() {
     // Add any additional event listeners here
-  }
-  
-  function getCurrentTeamId() {
-    // Implement this function to return the current user's team ID
-    // You might get this from a session or local storage
-  }
-  
+  }  

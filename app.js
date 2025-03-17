@@ -874,6 +874,65 @@ app.delete("/delete-user/:userId", verifyRole(["SuperAdmin", "Admin"]), async (r
     }
 });
 
+// Payment processing route
+app.post('/process-payment', verifyRole(["Player"]), async (req, res) => {
+    const { token } = req.body;
+    const userId = req.session.userId;
+    const amount = 1000; // $10 in cents
+  
+    try {
+      const registrationResult = await db.promise().query('SELECT * FROM Registrations WHERE UserID = ? AND PaymentStatus = ?', [userId, 'Pending']);
+      if (registrationResult[0].length === 0) {
+        return res.status(400).json({ success: false, message: "No pending registration found." });
+      }
+  
+      const registration = registrationResult[0][0];
+  
+      const charge = await stripe.charges.create({
+        amount: amount,
+        currency: 'usd',
+        source: token,
+        description: `Tournament registration fee for user ${userId}`
+      });
+  
+      await db.promise().query('UPDATE Registrations SET PaymentStatus = ? WHERE RegistrationID = ?', ['Paid', registration.RegistrationID]);
+  
+      await db.promise().query('INSERT INTO Payments (UserID, Amount, PaymentDate, Status) VALUES (?, ?, NOW(), ?)', [userId, amount / 100, 'Completed']);
+  
+      res.json({ success: true, message: "Payment processed successfully. You are now registered for the tournament." });
+    } catch (error) {
+      console.error('Error processing payment:', error);
+      res.status(500).json({ success: false, message: "An error occurred while processing the payment. Please try again." });
+    }
+  });
+  
+  // Tournament signup route
+  app.post('/tournament-signup', verifyRole(["Player"]), async (req, res) => {
+    const { tournamentId } = req.body;
+    const userId = req.session.userId;
+  
+    try {
+      const userResult = await db.promise().query('SELECT TeamID FROM Players WHERE UserID = ?', [userId]);
+      if (userResult[0].length === 0 || !userResult[0][0].TeamID) {
+        return res.status(400).json({ success: false, message: "You must be part of a team to sign up for a tournament." });
+      }
+  
+      const teamId = userResult[0][0].TeamID;
+  
+      const registrationResult = await db.promise().query('SELECT * FROM Registrations WHERE UserID = ? AND TournamentID = ?', [userId, tournamentId]);
+      if (registrationResult[0].length > 0) {
+        return res.status(400).json({ success: false, message: "You have already signed up for this tournament." });
+      }
+  
+      await db.promise().query('INSERT INTO Registrations (UserID, TournamentID, TeamID, PaymentStatus) VALUES (?, ?, ?, ?)', [userId, tournamentId, teamId, 'Pending']);
+  
+      res.json({ success: true, message: "Registration successful. Please proceed to payment." });
+    } catch (error) {
+      console.error('Error during tournament signup:', error);
+      res.status(500).json({ success: false, message: "An error occurred during signup. Please try again." });
+    }
+  });
+
 
 // start the server
 app.listen(port);
