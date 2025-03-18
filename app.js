@@ -6,7 +6,7 @@ const session = require("express-session");
 require("dotenv").config(); // safe config
 const { verifyRole } = require("./assets/js/auth.js"); // user authorization
 const errorHandler = require('./assets/js/errorhandler'); // error handling
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY); // stripe payment processing
+//const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY); // stripe payment processing
 
 /* DEPRECATED!
  require('express-async-errors');*/
@@ -874,64 +874,77 @@ app.delete("/delete-user/:userId", verifyRole(["SuperAdmin", "Admin"]), async (r
     }
 });
 
-// Payment processing route
-app.post('/process-payment', verifyRole(["Player"]), async (req, res) => {
-    const { token } = req.body;
-    const userId = req.session.userId;
-    const amount = 1000; // $10 in cents
-  
+// payment processing route
+app.post('/create-payment-intent', verifyRole(["Player"]), async (req, res) => {
     try {
-      const registrationResult = await db.promise().query('SELECT * FROM Registrations WHERE UserID = ? AND PaymentStatus = ?', [userId, 'Pending']);
-      if (registrationResult[0].length === 0) {
-        return res.status(400).json({ success: false, message: "No pending registration found." });
-      }
-  
-      const registration = registrationResult[0][0];
-  
-      const charge = await stripe.charges.create({
-        amount: amount,
-        currency: 'usd',
-        source: token,
-        description: `Tournament registration fee for user ${userId}`
-      });
-  
-      await db.promise().query('UPDATE Registrations SET PaymentStatus = ? WHERE RegistrationID = ?', ['Paid', registration.RegistrationID]);
-  
-      await db.promise().query('INSERT INTO Payments (UserID, Amount, PaymentDate, Status) VALUES (?, ?, NOW(), ?)', [userId, amount / 100, 'Completed']);
-  
-      res.json({ success: true, message: "Payment processed successfully. You are now registered for the tournament." });
+        const paymentIntent = await stripe.paymentIntents.create({
+            amount: 1000, // $10 in cents
+            currency: 'usd',
+            metadata: { userId: req.session.userId }
+        });
+
+        res.json({ clientSecret: paymentIntent.client_secret });
     } catch (error) {
-      console.error('Error processing payment:', error);
-      res.status(500).json({ success: false, message: "An error occurred while processing the payment. Please try again." });
+        res.status(500).json({ error: error.message });
     }
-  });
-  
-  // Tournament signup route
-  app.post('/tournament-signup', verifyRole(["Player"]), async (req, res) => {
+});
+
+// confirm payment
+app.post('/confirm-payment', verifyRole(["Player"]), async (req, res) => {
+    const { paymentIntentId } = req.body;
+    const userId = req.session.userId;
+
+    try {
+        const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+        if (paymentIntent.metadata.userId !== userId.toString()) {
+            return res.status(403).json({ error: 'Unauthorized' });
+        }
+
+        if (paymentIntent.status === 'succeeded') {
+            // update the database to mark the player as paid
+            db.execute('UPDATE Players SET PayedFee = TRUE WHERE UserID = ?', [userId], (err, result) => {
+                if (err) {
+                    console.error('Database error:', err);
+                    return res.status(500).json({ error: 'Failed to update payment status' });
+                }
+                res.json({ success: true, message: 'Payment confirmed and recorded' });
+            });
+        } else {
+            res.status(400).json({ error: 'Payment not successful' });
+        }
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+
+// Tournament signup route
+app.post('/tournament-signup', verifyRole(["Player"]), async (req, res) => {
     const { tournamentId } = req.body;
     const userId = req.session.userId;
-  
+
     try {
-      const userResult = await db.promise().query('SELECT TeamID FROM Players WHERE UserID = ?', [userId]);
-      if (userResult[0].length === 0 || !userResult[0][0].TeamID) {
-        return res.status(400).json({ success: false, message: "You must be part of a team to sign up for a tournament." });
-      }
-  
-      const teamId = userResult[0][0].TeamID;
-  
-      const registrationResult = await db.promise().query('SELECT * FROM Registrations WHERE UserID = ? AND TournamentID = ?', [userId, tournamentId]);
-      if (registrationResult[0].length > 0) {
-        return res.status(400).json({ success: false, message: "You have already signed up for this tournament." });
-      }
-  
-      await db.promise().query('INSERT INTO Registrations (UserID, TournamentID, TeamID, PaymentStatus) VALUES (?, ?, ?, ?)', [userId, tournamentId, teamId, 'Pending']);
-  
-      res.json({ success: true, message: "Registration successful. Please proceed to payment." });
+        const userResult = await db.promise().query('SELECT TeamID FROM Players WHERE UserID = ?', [userId]);
+        if (userResult[0].length === 0 || !userResult[0][0].TeamID) {
+            return res.status(400).json({ success: false, message: "You must be part of a team to sign up for a tournament." });
+        }
+
+        const teamId = userResult[0][0].TeamID;
+
+        const registrationResult = await db.promise().query('SELECT * FROM Registrations WHERE UserID = ? AND TournamentID = ?', [userId, tournamentId]);
+        if (registrationResult[0].length > 0) {
+            return res.status(400).json({ success: false, message: "You have already signed up for this tournament." });
+        }
+
+        await db.promise().query('INSERT INTO Registrations (UserID, TournamentID, TeamID, PaymentStatus) VALUES (?, ?, ?, ?)', [userId, tournamentId, teamId, 'Pending']);
+
+        res.json({ success: true, message: "Registration successful. Please proceed to payment." });
     } catch (error) {
-      console.error('Error during tournament signup:', error);
-      res.status(500).json({ success: false, message: "An error occurred during signup. Please try again." });
+        console.error('Error during tournament signup:', error);
+        res.status(500).json({ success: false, message: "An error occurred during signup. Please try again." });
     }
-  });
+});
 
 
 // start the server
