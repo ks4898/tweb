@@ -1,0 +1,48 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Kanit', sans-serif;
+    background-color: rgb(241, 253, 255);
+}
+
+#box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+}
+
+h1 {
+    padding: 2rem;
+    font-size: 4rem;
+    /*margin-top: 5rem;*/
+}
+
+.explain {
+    display: flex;
+    flex-direction: row;
+    align-self: center;
+    font-size: 24px;
+    line-height: 3rem;
+    max-width: 50ch;
+}
+
+#payment-form {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 1rem;
+    width: 30vw;
+    gap: 2rem;
+}
+
+button {
+    width: 220px;
+    height: 40px;
+    align-self: center;
+}

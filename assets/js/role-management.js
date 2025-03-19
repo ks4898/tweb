@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', function () {
 
-    document.getElementById("admin-box").style = "margin-top: 50px !important;";
+    document.getElementById("admin-box").style = "margin-top: 2rem !important;";
 
     // get user information on page load
     fetch('/user-info')

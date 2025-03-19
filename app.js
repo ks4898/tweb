@@ -6,7 +6,7 @@ const session = require("express-session");
 require("dotenv").config(); // safe config
 const { verifyRole } = require("./assets/js/auth.js"); // user authorization
 const errorHandler = require('./assets/js/errorhandler'); // error handling
-//const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY); // stripe payment processing
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY); // stripe payment processing
 
 /* DEPRECATED!
  require('express-async-errors');*/
@@ -874,7 +874,7 @@ app.delete("/delete-user/:userId", verifyRole(["SuperAdmin", "Admin"]), async (r
     }
 });
 
-// payment processing route
+/*// payment processing route
 app.post('/create-payment-intent', verifyRole(["Player"]), async (req, res) => {
     try {
         const paymentIntent = await stripe.paymentIntents.create({
@@ -887,9 +887,14 @@ app.post('/create-payment-intent', verifyRole(["Player"]), async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
+});*/
+
+app.post('/create-payment-intent', /*verifyRole(["Player"]),*/ async (req, res) => {
+    // mock implementation
+    res.json({ clientSecret: 'mock_client_secret' });
 });
 
-// confirm payment
+/*// confirm payment
 app.post('/confirm-payment', verifyRole(["Player"]), async (req, res) => {
     const { paymentIntentId } = req.body;
     const userId = req.session.userId;
@@ -913,6 +918,23 @@ app.post('/confirm-payment', verifyRole(["Player"]), async (req, res) => {
         } else {
             res.status(400).json({ error: 'Payment not successful' });
         }
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});*/
+
+// mock payment confirm
+app.post('/confirm-payment', /*verifyRole(["Player"]),*/ async (req, res) => {
+    const userId = req.session.userId;
+
+    try {
+        db.execute('UPDATE Players SET PayedFee = TRUE WHERE UserID = ?', [userId], (err, result) => {
+            if (err) {
+                console.error('Database error:', err);
+                return res.status(500).json({ error: 'Failed to update payment status' });
+            }
+            res.json({ success: true, message: 'Payment confirmed and recorded' });
+        });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function () {
-    const stripe = Stripe('YOUR_STRIPE_PUBLISHABLE_KEY'); // replace with your actual publishable key !
+    const stripe = Stripe('pk_test_TYooMQauvdEDq54NiTphI7jx'); // replace with your actual publishable key !
     const elements = stripe.elements();
     const cardElement = elements.create('card');
     cardElement.mount('#card-element');
@@ -50,4 +50,4 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
     });
-});  
+});
