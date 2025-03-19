@@ -54,6 +54,8 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    document.getElementById('role').addEventListener('change', togglePlayerFields);
+
     // event listener for Add User button to show modal
     const addUserButton = document.getElementById('addUserBtn');
     if (addUserButton) {
@@ -289,3 +291,15 @@ async function deleteUser(userId) {
         }
     }
 }
+
+// show/hide additional player creation fields
+function togglePlayerFields() {
+    const roleSelect = document.getElementById('role');
+    const playerFields = document.getElementById('playerFields');
+    
+    if (roleSelect.value === 'Player') {
+      playerFields.style.display = 'block';
+    } else {
+      playerFields.style.display = 'none';
+    }
+  }  

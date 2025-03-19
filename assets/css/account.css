@@ -153,9 +153,9 @@ body {
 }
 
 /* Section */
-section#role-management {
+/*section#role-management {
     padding: 40px 0;
-}
+}*/
 
 h1 {
     color: #9EF01A;
@@ -195,19 +195,34 @@ h1 {
 }
 
 #admin-box {
-    position: absolute;
+    /*position: absolute;*/
     /*top: 25px;*/
-    right: 2vw;
-    top: 5.5vh;
+    /*right: 2vw;
+    top: 5.5vh;*/
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    padding-top: 1rem;
+    gap: 24rem;
 }
 
 /* Responsive Styles */
 @media (max-width: 768px) {
+
     .search-container input {
         width: 80%;
     }
 
     .user-table-container {
         max-height: 200px;
+    }
+}
+
+@media (max-width: 1100px) {
+    #admin-box {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 2rem !important;
     }
 }

@@ -765,12 +765,44 @@ app.post("/add-user", verifyRole(["SuperAdmin", "Admin"]), async (req, res) => {
     db.execute(
         "INSERT INTO Users (Name, Email, Password, Role) VALUES (?, ?, ?, ?)",
         [fullName, email, hashedPassword, role],
-        (err, result) => {
+        async (err, result) => {
             if (err) return res.status(500).json({ message: "Database error." });
+
+            const userId = result.insertId;
+            await addUserToRoleTable(userId, role, req.body || {});
+
             res.status(201).json({ message: "User added successfully!" });
         }
     );
 });
+
+// populate role-dependent tables upon user creation
+async function addUserToRoleTable(userId, role, additionalData) {
+    let query, params;
+    switch (role) {
+        case 'Player':
+            query = 'INSERT INTO Players (UserID, Role, ImageURL, ValidStudent, TeamID) VALUES (?, ?, ?, ?, ?)';
+            params = [
+                userId,
+                'Member',
+                additionalData.imageURL || null,
+                additionalData.validStudent || false,
+                additionalData.teamId || null
+            ];
+            break;
+        case 'Moderator':
+            query = 'INSERT INTO Moderators (UserID) VALUES (?)';
+            params = [userId];
+            break;
+        case 'CollegeRep':
+            query = 'INSERT INTO CollegeRep (UserID) VALUES (?)';
+            params = [userId];
+            break;
+    }
+    if (query) {
+        await db.promise().execute(query, params);
+    }
+}
 
 // edit user role
 app.put("/edit-user/:userId", verifyRole(["SuperAdmin", "Admin"]), async (req, res) => {
