@@ -804,62 +804,66 @@ async function addUserToRoleTable(userId, role, additionalData) {
     }
 }
 
-// edit user role
+// edit user route
 app.put("/edit-user/:userId", verifyRole(["SuperAdmin", "Admin"]), async (req, res) => {
-    const { role } = req.body;
-    const targetUserId = parseInt(req.params.userId);
+    const { name, email, role, imageURL, validStudent, teamId } = req.body;
+    const userId = req.params.userId;
     const currentUserRole = req.session.role;
     const currentUserId = req.session.userId;
 
     try {
-        const [targetUser] = await db.promise().query(
-            'SELECT Role FROM Users WHERE UserID = ?',
-            [targetUserId]
-        );
-
+        const [targetUser] = await db.promise().query('SELECT Role FROM Users WHERE UserID = ?', [userId]);
         if (targetUser.length === 0) {
             return res.status(404).json({ message: "User not found" });
         }
 
-        // prevent any modifications to SuperAdmin users
+        // Prevent any modifications to SuperAdmin users
         if (targetUser[0].Role === "SuperAdmin") {
             return res.status(403).json({ message: "Cannot modify SuperAdmin users" });
         }
 
-        // prevent Admins from modifying other Admins
+        // Prevent Admins from modifying other Admins
         if (currentUserRole === "Admin" && targetUser[0].Role === "Admin") {
-            if (currentUserId === targetUserId) {
+            if (currentUserId === parseInt(userId)) {
                 return res.status(403).json({ message: "Cannot change your own role" });
             } else {
                 return res.status(403).json({ message: "Admins cannot modify other Admins" });
             }
         }
 
-        // prevent assigning SuperAdmin role
+        // Prevent assigning SuperAdmin role
         if (role === "SuperAdmin") {
             return res.status(403).json({ message: "Cannot assign SuperAdmin role" });
         }
 
-        // authorization checks
+        // Authorization checks for Admin
         if (currentUserRole === "Admin") {
             if (["Admin", "SuperAdmin"].includes(role)) {
                 return res.status(403).json({ message: "Admin cannot assign admin roles" });
             }
+            if (currentUserId === parseInt(userId)) {
+                return res.status(403).json({ message: "Cannot change your own role" });
+            }
         }
 
-        // prevent changing your own role
-        if (currentUserId === targetUserId) {
-            return res.status(403).json({ message: "Cannot change your own role" });
-        }
-
-        // update role
         await db.promise().execute(
-            "UPDATE Users SET Role = ? WHERE UserID = ?",
-            [role, targetUserId]
+            "UPDATE Users SET Name = ?, Email = ?, Role = ? WHERE UserID = ?",
+            [name, email, role, userId]
         );
-        res.json({ message: "User role updated successfully" });
+
+        if (role === 'Player') {
+            await db.promise().execute(
+                "INSERT INTO Players (UserID, Role, ImageURL, ValidStudent, TeamID) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE Role = ?, ImageURL = ?, ValidStudent = ?, TeamID = ?",
+                [userId, 'Member', imageURL, validStudent, teamId, 'Member', imageURL, validStudent, teamId]
+            );
+        } else {
+            // Remove from Players table if role is changed from Player
+            await db.promise().execute("DELETE FROM Players WHERE UserID = ?", [userId]);
+        }
+
+        res.json({ message: "User updated successfully" });
     } catch (error) {
-        console.error("Role update error:", error);
+        console.error("User update error:", error);
         res.status(500).json({ message: "Internal server error" });
     }
 });
