@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A New World - News</title>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;700&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="stylesheet" href="assets/css/news.css">
+</head>
+
+<body>
+    <nav class="navbar">
+        <a href="javascript:void(0);" class="navbar-logo">Aardvark Games</a>
+        <div class="navbar-links">
+            <a href="/colleges" class="nav-link">Colleges</a>
+            <a href="/brackets" class="nav-link">Brackets</a>
+            <a href="/schedule" class="nav-link">Schedule</a>
+            <a href="/about" class="nav-link">About Us</a>
+            <a href="/signup" class="nav-link">Account</a>
+        </div>
+    </nav>
+
+    <!-- News Section -->
+    <div class="container container-news mb-5">
+        <div id="news-container" class="row">
+            <div class="col-12 my-auto" id="articles">
+                <!-- Articles -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="newsModal" tabindex="-1" aria-labelledby="newsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="newsModalLabel">News Article</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted" style="font-style: italic;">Author , Month DD, YYYY</p>
+                    <p>News Article Content</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS (Optional) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script src="assets/js/news.js"></script>
+</body>
+
+</html>
