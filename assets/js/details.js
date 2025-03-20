@@ -6,7 +6,7 @@ async function fetchCollegeData() {
 
     if (!collegeName) {
         console.error("No college name provided in URL.");
-        return;
+        window.location.href = "/";
     }
 
     try {
@@ -104,5 +104,6 @@ async function fetchCollegeData() {
 
     } catch (error) {
         console.error('Error:', error);
+        window.location.href = "/colleges";
     }
 }
