@@ -9,16 +9,6 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
     }
 
-    // session check
-    fetch("/check-session")
-        .then(response => response.json())
-        .then(data => {
-            if (data.loggedIn) {
-                document.getElementsByClassName("nav-link")[3].innerHTML = "Log Out";
-                document.getElementsByClassName("nav-link")[3].setAttribute("href", "/logout");
-            }
-        });
-
     // no colleges found message
     let noResultsMessage = document.createElement("p");
     noResultsMessage.textContent = `No colleges found matching your search.\nPlease check for any typing errors and try again.`;

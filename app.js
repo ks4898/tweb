@@ -88,6 +88,11 @@ app.get("/details", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "details.html"));
 });
 
+// serve payment page
+app.get("/payment", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "payment.html"));
+});
+
 // serve login page
 app.get("/login", (req, res) => {
     if (req.session.userId) { // logged in check
@@ -214,17 +219,17 @@ app.post("/signup", async (req, res) => {
 // logout route
 app.get("/logout", (req, res) => {
     if (!req.session.userId) {
-        // user is not logged in, redirect to home page
-        return res.redirect('/');
+      return res.redirect('/');
     }
-
     req.session.destroy((err) => {
-        if (err) return res.status(500).json({ success: false, message: "Logout failed" });
-
-        res.clearCookie("connect.sid", { path: "/" });
-        res.status(200).json({ success: true, message: "Logged out successfully!" });
+      if (err) {
+        console.error("Logout error:", err);
+        return res.status(500).json({ success: false, message: "Logout failed" });
+      }
+      res.clearCookie("connect.sid", { path: "/" });
+      res.redirect("/");
     });
-});
+  });
 
 
 // ======================== COLLEGE & TEAM MANAGEMENT ========================
@@ -236,7 +241,7 @@ app.get("/universities", (req, res) => {
             console.error("Database query error:", err);
             return res.status(500).json({ error: "Internal server error" });
         }
-        res.json(results); // Send all universities as JSON
+        res.json(results);
     });
 });
 
@@ -360,8 +365,8 @@ app.get("/teams-for-college", (req, res) => {
     });
 });
 
-// add team (SuperAdmins, Admins & CollegeReps)
-app.post("/add-team", verifyRole(["SuperAdmin", "Admin", "CollegeRep"]), (req, res) => {
+// add team (Admins & SuperAdmins)
+app.post("/add-team", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
     const { name, universityId } = req.body;
 
     db.execute("INSERT INTO Teams (Name, UniversityID) VALUES (?, ?)", [name, universityId], (err, result) => {
@@ -372,7 +377,7 @@ app.post("/add-team", verifyRole(["SuperAdmin", "Admin", "CollegeRep"]), (req, r
 });
 
 // edit team (Admins & SuperAdmins)
-app.put("/edit-team/:teamId", verifyRole(["SuperAdmin", "Admin", "CollegeRep"]), (req, res) => {
+app.put("/edit-team/:teamId", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
     const { name, universityId, newLeaderId, memberToDeleteId } = req.body;
     const teamId = req.params.teamId;
 
@@ -382,18 +387,18 @@ app.put("/edit-team/:teamId", verifyRole(["SuperAdmin", "Admin", "CollegeRep"]),
         }
 
         try {
-            // Update team name and university
+            // update team name and university
             await db.promise().execute("UPDATE Teams SET Name = ?, UniversityID = ? WHERE TeamID = ?", [name, universityId, teamId]);
 
             if (newLeaderId) {
-                // Set all team members' role to 'Member'
+                // set all team members' role to 'Member'
                 await db.promise().execute("UPDATE Players SET Role = 'Member' WHERE TeamID = ?", [teamId]);
-                // Set new leader
+                // set new leader
                 await db.promise().execute("UPDATE Players SET Role = 'Leader' WHERE UserID = ? AND TeamID = ?", [newLeaderId, teamId]);
             }
 
             if (memberToDeleteId) {
-                // Remove member from team (delete from Players table)
+                // remove member from team (delete from Players table)
                 await db.promise().execute("DELETE FROM Players WHERE UserID = ? AND TeamID = ?", [memberToDeleteId, teamId]);
                 // Update user role to 'User'
                 await db.promise().execute("UPDATE Users SET Role = 'User' WHERE UserID = ?", [memberToDeleteId]);
@@ -409,7 +414,6 @@ app.put("/edit-team/:teamId", verifyRole(["SuperAdmin", "Admin", "CollegeRep"]),
     });
 });
 
-
 // delete team (Admins & SuperAdmins)
 app.delete("/delete-team/:teamId", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
     const teamId = req.params.teamId;
@@ -418,7 +422,6 @@ app.delete("/delete-team/:teamId", verifyRole(["SuperAdmin", "Admin"]), (req, re
         res.json({ message: "Team deleted successfully!" });
     });
 });
-
 
 // fetch a team
 app.get("/team", (req, res) => {
@@ -668,9 +671,9 @@ app.get("/generate-report", verifyRole(["SuperAdmin", "Admin"]), async (req, res
 });
 
 
-// ======================== ADMIN ROLE MANAGEMENT ========================
+// ======================== ADMIN MANAGEMENT ========================
 
-// handle role management page
+// handle management page
 app.get("/account.html", (req, res) => {
     if (!req.session.userId) {
         return res.sendFile(path.join(__dirname, "public", "index.html"));
@@ -681,7 +684,7 @@ app.get("/account.html", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "account.html"));
 });
 
-// serve role management page
+// serve management page
 app.get("/account", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "account.html"));
 });
@@ -698,7 +701,7 @@ app.get("/roles", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
     res.json(roles);
 });
 
-// get user info
+// get user id, name, role
 app.get('/user-info', (req, res) => {
     if (req.session.userId) {
         res.json({
@@ -710,7 +713,6 @@ app.get('/user-info', (req, res) => {
         res.status(401).json({ message: 'Not authenticated' });
     }
 });
-
 
 // get all or search users
 app.get("/users", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
@@ -730,7 +732,7 @@ app.get("/users", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
     });
 });
 
-// route to display all necessary information when editing user
+// route to display all necessary information when editing user, including Player specific info
 app.get("/user/:userId", verifyRole(["SuperAdmin", "Admin"]), async (req, res) => {
     const userId = req.params.userId;
     try {
@@ -751,7 +753,7 @@ app.get("/user/:userId", verifyRole(["SuperAdmin", "Admin"]), async (req, res) =
     }
 });
 
-// add new user
+// add new user route
 app.post("/add-user", verifyRole(["SuperAdmin", "Admin"]), async (req, res) => {
     const { firstName, lastName, email, password, role, imageURL, validStudent, teamId } = req.body;
     const fullName = `${firstName} ${lastName}`;
@@ -796,7 +798,7 @@ app.post("/add-user", verifyRole(["SuperAdmin", "Admin"]), async (req, res) => {
 
             const userId = result.insertId;
 
-            // Add user to role-specific table
+            // add user to role-specific table
             switch (role) {
                 case 'Player':
                     await db.promise().execute(
@@ -867,8 +869,8 @@ app.put("/edit-user/:userId", verifyRole(["SuperAdmin", "Admin"]), async (req, r
             }
         }
         
-        // NOT WORKING NEEDS FIXING
-        /*if(teamId < 0 && !teamId === null) {
+        /*// NOT WORKING NEEDS FIXING
+        if(teamId < 0 && !teamId === null) {
             return res.status(400).json({ message: "Invalid TeamID it cannot be less than zero" });
         }
 
@@ -989,6 +991,25 @@ app.delete("/delete-user/:userId", verifyRole(["SuperAdmin", "Admin"]), async (r
     }
 });
 
+// route to check if player has paid the fee
+app.get("/player/:userId", async (req, res) => {
+    const userId = req.params.userId;
+    try {
+        const [player] = await db.promise().query(
+            `SELECT * FROM Players WHERE UserID = ?`,
+            [userId]
+        );
+        if (player.length === 0) {
+            return res.status(404).json({ message: "Player not found" });
+        }
+        res.json(player[0]);
+    } catch (error) {
+        console.error("Error fetching player:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
+
+
 /*// payment processing route
 app.post('/create-payment-intent', verifyRole(["Player"]), async (req, res) => {
     try {
@@ -1056,7 +1077,7 @@ app.post('/confirm-payment', /*verifyRole(["Player"]),*/ async (req, res) => {
 });
 
 
-// Tournament signup route
+// tournament signup route
 app.post('/tournament-signup', verifyRole(["Player"]), async (req, res) => {
     const { tournamentId } = req.body;
     const userId = req.session.userId;

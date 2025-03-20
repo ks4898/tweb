@@ -1,97 +1,96 @@
 document.addEventListener("DOMContentLoaded", function () {
-    var isAdmin = false;
 
-    fetch('/check-session') // check if user is logged in
+    function updateNavigation(loggedIn, role) {
+        const navbar = document.getElementsByClassName("navbar-links")[0];
+        const currentPage = window.location.pathname.split("/").pop().replace(".html", "");
+
+        // remove existing Management, Log Out, and Account links
+        const managementLink = navbar.querySelector('a[href="account.html"]') || navbar.querySelector('a[href="/account"]');
+        const logOutLink = navbar.querySelector('#logoutButton');
+        const accountLink = navbar.querySelector('a[href="/signup"]') || navbar.querySelector('a[href="signup.html"]');
+        if (managementLink) managementLink.remove();
+        if (logOutLink) logOutLink.remove();
+        if (accountLink) accountLink.remove();
+
+        if (loggedIn) {
+            if (role === "Admin" || role === "SuperAdmin") {
+                const managementLink = document.createElement("a");
+                managementLink.setAttribute("class", "nav-link");
+                managementLink.innerHTML = "Management";
+                managementLink.setAttribute("href", "account.html");
+                navbar.appendChild(managementLink);
+            }
+
+            // add Log Out link last for all logged-in users
+            const logOutLink = document.createElement("a");
+            logOutLink.setAttribute("class", "nav-link");
+            logOutLink.setAttribute("href", "/logout");
+            logOutLink.setAttribute("id", "logoutButton");
+            logOutLink.innerHTML = "Log Out";
+            navbar.appendChild(logOutLink);
+        } else {
+            const accountLink = document.createElement("a");
+            accountLink.setAttribute("class", "nav-link");
+            accountLink.setAttribute("href", "/signup");
+            accountLink.classList.add("account-style");
+            accountLink.innerHTML = "Account";
+            navbar.appendChild(accountLink);
+        }
+
+        removeDuplicateNavLinks();
+
+        const navLinks = navbar.getElementsByClassName("nav-link");
+        for (let link of navLinks) {
+            const href = link.getAttribute("href").replace(".html", "");
+            if (href === currentPage || href === `/${currentPage}`) {
+                link.classList.add("active");
+            }
+        }
+    }
+
+    fetch('/check-session')
         .then(response => response.json())
         .then(data => {
-            const navbar = document.getElementsByClassName("navbar-links")[0];
-            const navLink = document.getElementsByClassName('nav-link')[4];
-            const navLinks = document.getElementsByClassName('nav-link');
-
-            if (data.loggedIn) {
-                if (data.role === "Admin" || data.role === "SuperAdmin") { // include Management tab for admins
-                    isAdmin = true;
-                    navLink.innerHTML = "Management";
-                    navLink.setAttribute("href", "account.html");
-
-                    const logOutLink = document.createElement("a");
-                    logOutLink.setAttribute("class", "nav-link");
-                    logOutLink.setAttribute("href", "/logout");
-                    logOutLink.setAttribute("id", "logoutButton");
-                    logOutLink.innerHTML = "Log Out";
-
-                    navbar.appendChild(logOutLink);
-                } else {
-                    navLink.innerHTML = "Log Out";
-                    navLink.setAttribute("href", "/logout");
-                    navLink.setAttribute("id", "logoutButton");
-                }
-            } else {
-                navLink.innerHTML = "Account";
-                navLink.setAttribute("href", "/signup");
-                navLink.classList.add("account-style");
-            }
+            updateNavigation(data.loggedIn, data.role);
+        })
+        .catch(error => {
+            console.error("Error checking session:", error);
+            updateNavigation(false, null);
         });
 
-    // handle logout
-    document.addEventListener("click", async function logoutHandler(event) {
-        if (event.target && event.target.id === "logoutButton") {
-            event.preventDefault();
-
-            try {
-                const response = await fetch("/logout");
-                if (!response.ok) {
-                    throw new Error("Logout request failed");
-                }
-                const data = await response.json();
-
-                if (data.success) {
-                    console.log("Logout successful:", data.message);
-
-                    sessionStorage.clear();
-                    document.removeEventListener("click", logoutHandler);
-
-
-                    if (isAdmin) { // if user has admin privileges, we need to remove Role Management from navbar as well
-                        const roleManagementLink = document.getElementsByClassName("nav-link")[4];
-                        const logOutLink = document.getElementsByClassName("nav-link")[5];
-
-                        roleManagementLink.innerHTML = "Account";
-                        roleManagementLink.setAttribute("href", "signup.html");
-
-                        logOutLink.remove();
-                    } else {
-                        const navLink = document.getElementsByClassName("nav-link")[4];
-                        navLink.innerHTML = "Account";
-                        navLink.setAttribute("href", "signup.html");
-                    }
-
-                    if (!isAdmin) {
-                        window.location.reload();
-                    } else {
-                        window.location.href = "/";
-                    }
-                }
-                //window.location.href = "/";
-            } catch (error) {
-                console.error("Error logging out:", error);
-            }
-        }
-    });
+    // remove existing listener and add the new one
+    document.removeEventListener("click", logoutHandler);
+    document.addEventListener("click", logoutHandler);
 });
-    /*document.getElementById('passwordToggle').addEventListener('click', function () {
-        const passwordInput = document.getElementById('password');
-        const eyeIcon = document.getElementById('eyeIcon');
 
-        if (passwordInput.type === "password") {
-            passwordInput.type = "text";
-            eyeIcon.classList.remove('fa-eye');
-            eyeIcon.classList.add('fa-eye-slash');
-        } else {
-            passwordInput.type = "password";
-            eyeIcon.classList.remove('fa-eye-slash');
-            eyeIcon.classList.add('fa-eye');
+async function logoutHandler(event) {
+    if (event.target && event.target.id === "logoutButton") {
+      event.preventDefault();
+      try {
+        const response = await fetch("/logout");
+        if (response.redirected) {
+          window.location.href = response.url;
+        } else if (!response.ok) {
+          throw new Error("Logout request failed");
         }
-    });*/
+      } catch (error) {
+        console.error("Error logging out:", error);
+      }
+    }
+  }
+  
 
-
+async function removeDuplicateNavLinks() {
+    const navLinks = document.getElementsByClassName('nav-link');
+    const linkTexts = {};
+    for (let i = 0; i < navLinks.length; i++) {
+        const link = navLinks[i];
+        const text = link.textContent.trim();
+        if (linkTexts[text]) {
+            link.parentNode.removeChild(link);
+            i--; // adjust index after removal
+        } else {
+            linkTexts[text] = true;
+        }
+    }
+}

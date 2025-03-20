@@ -254,6 +254,11 @@ SELECT s.ScheduleID, m.MatchID, m.Team1ID, m.Team2ID, s.ScheduledDate
 FROM Schedule s
 JOIN Matches m ON s.MatchID = m.MatchID;
 
+ALTER TABLE Players MODIFY COLUMN TeamID INT NULL;
+
+SELECT * FROM Admins;
+
+
 
 
 
