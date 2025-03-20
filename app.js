@@ -730,9 +730,30 @@ app.get("/users", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
     });
 });
 
+// route to display all necessary information when editing user
+app.get("/user/:userId", verifyRole(["SuperAdmin", "Admin"]), async (req, res) => {
+    const userId = req.params.userId;
+    try {
+        const [user] = await db.promise().query(
+            `SELECT u.*, p.ImageURL, p.ValidStudent, p.TeamID 
+             FROM Users u 
+             LEFT JOIN Players p ON u.UserID = p.UserID 
+             WHERE u.UserID = ?`,
+            [userId]
+        );
+        if (user.length === 0) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        res.json(user[0]);
+    } catch (error) {
+        console.error("Error fetching user:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
+
 // add new user
 app.post("/add-user", verifyRole(["SuperAdmin", "Admin"]), async (req, res) => {
-    const { firstName, lastName, email, password, role } = req.body;
+    const { firstName, lastName, email, password, role, imageURL, validStudent, teamId } = req.body;
     const fullName = `${firstName} ${lastName}`;
     const currentRole = req.session.role;
 
@@ -762,47 +783,47 @@ app.post("/add-user", verifyRole(["SuperAdmin", "Admin"]), async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10); // hash password
 
-    db.execute(
-        "INSERT INTO Users (Name, Email, Password, Role) VALUES (?, ?, ?, ?)",
-        [fullName, email, hashedPassword, role],
-        async (err, result) => {
-            if (err) return res.status(500).json({ message: "Database error." });
+    db.beginTransaction(async (err) => {
+        if (err) {
+            return res.status(500).json({ message: "Database error. Please try again later." });
+        }
+
+        try {
+            const [result] = await db.promise().execute(
+                "INSERT INTO Users (Name, Email, Password, Role) VALUES (?, ?, ?, ?)",
+                [fullName, email, hashedPassword, role]
+            );
 
             const userId = result.insertId;
-            await addUserToRoleTable(userId, role, req.body || {});
 
+            // Add user to role-specific table
+            switch (role) {
+                case 'Player':
+                    await db.promise().execute(
+                        "INSERT INTO Players (UserID, Role, ImageURL, ValidStudent, TeamID) VALUES (?, ?, ?, ?, ?)",
+                        [userId, 'Member', imageURL, validStudent, teamId]
+                    );
+                    break;
+                case 'CollegeRep':
+                    await db.promise().execute("INSERT INTO CollegeRep (UserID) VALUES (?)", [userId]);
+                    break;
+                case 'Moderator':
+                    await db.promise().execute("INSERT INTO Moderators (UserID) VALUES (?)", [userId]);
+                    break;
+                case 'Admin':
+                    await db.promise().execute("INSERT INTO Admins (UserID) VALUES (?)", [userId]);
+                    break;
+            }
+
+            await db.promise().commit();
             res.status(201).json({ message: "User added successfully!" });
+        } catch (error) {
+            await db.promise().rollback();
+            console.error("User creation error:", error);
+            res.status(500).json({ message: "Internal server error" });
         }
-    );
+    });
 });
-
-// populate role-dependent tables upon user creation
-async function addUserToRoleTable(userId, role, additionalData) {
-    let query, params;
-    switch (role) {
-        case 'Player':
-            query = 'INSERT INTO Players (UserID, Role, ImageURL, ValidStudent, TeamID) VALUES (?, ?, ?, ?, ?)';
-            params = [
-                userId,
-                'Member',
-                additionalData.imageURL || null,
-                additionalData.validStudent || false,
-                additionalData.teamId || null
-            ];
-            break;
-        case 'Moderator':
-            query = 'INSERT INTO Moderators (UserID) VALUES (?)';
-            params = [userId];
-            break;
-        case 'CollegeRep':
-            query = 'INSERT INTO CollegeRep (UserID) VALUES (?)';
-            params = [userId];
-            break;
-    }
-    if (query) {
-        await db.promise().execute(query, params);
-    }
-}
 
 // edit user route
 app.put("/edit-user/:userId", verifyRole(["SuperAdmin", "Admin"]), async (req, res) => {
@@ -817,12 +838,12 @@ app.put("/edit-user/:userId", verifyRole(["SuperAdmin", "Admin"]), async (req, r
             return res.status(404).json({ message: "User not found" });
         }
 
-        // Prevent any modifications to SuperAdmin users
+        // prevent any modifications to SuperAdmin users
         if (targetUser[0].Role === "SuperAdmin") {
             return res.status(403).json({ message: "Cannot modify SuperAdmin users" });
         }
 
-        // Prevent Admins from modifying other Admins
+        // prevent Admins from modifying other Admins
         if (currentUserRole === "Admin" && targetUser[0].Role === "Admin") {
             if (currentUserId === parseInt(userId)) {
                 return res.status(403).json({ message: "Cannot change your own role" });
@@ -831,12 +852,12 @@ app.put("/edit-user/:userId", verifyRole(["SuperAdmin", "Admin"]), async (req, r
             }
         }
 
-        // Prevent assigning SuperAdmin role
+        // prevent assigning SuperAdmin role
         if (role === "SuperAdmin") {
             return res.status(403).json({ message: "Cannot assign SuperAdmin role" });
         }
 
-        // Authorization checks for Admin
+        // authorization checks for Admin
         if (currentUserRole === "Admin") {
             if (["Admin", "SuperAdmin"].includes(role)) {
                 return res.status(403).json({ message: "Admin cannot assign admin roles" });
@@ -845,26 +866,65 @@ app.put("/edit-user/:userId", verifyRole(["SuperAdmin", "Admin"]), async (req, r
                 return res.status(403).json({ message: "Cannot change your own role" });
             }
         }
+        
+        // NOT WORKING NEEDS FIXING
+        /*if(teamId < 0 && !teamId === null) {
+            return res.status(400).json({ message: "Invalid TeamID it cannot be less than zero" });
+        }
 
+        if(validStudent !== (0 || 1)) {
+            return res.status(400).json({ message: "Invalid ValidStudent must be 0 if not and 1 if yes" });
+        }*/
+
+        await db.promise().beginTransaction();
+
+        // update user information
         await db.promise().execute(
             "UPDATE Users SET Name = ?, Email = ?, Role = ? WHERE UserID = ?",
             [name, email, role, userId]
         );
 
-        if (role === 'Player') {
-            await db.promise().execute(
-                "INSERT INTO Players (UserID, Role, ImageURL, ValidStudent, TeamID) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE Role = ?, ImageURL = ?, ValidStudent = ?, TeamID = ?",
-                [userId, 'Member', imageURL, validStudent, teamId, 'Member', imageURL, validStudent, teamId]
-            );
-        } else {
-            // Remove from Players table if role is changed from Player
-            await db.promise().execute("DELETE FROM Players WHERE UserID = ?", [userId]);
+        // delete from role specific table
+        switch (targetUser[0].Role) {
+            case "Player":
+                await db.promise().execute("DELETE FROM Players WHERE UserID = ?", [userId]);
+                break;
+            case "CollegeRep":
+                await db.promise().execute("DELETE FROM CollegeRep WHERE UserID = ?", [userId]);
+                break;
+            case "Moderator":
+                await db.promise().execute("DELETE FROM Moderators WHERE UserID = ?", [userId]);
+                break;
+            case "Admin":
+                await db.promise().execute("DELETE FROM Admins WHERE UserID = ?", [userId]);
+                break;
         }
 
+        // add to the appropriate role-specific table
+        switch (role) {
+            case 'Player':
+                await db.promise().execute(
+                    "INSERT INTO Players (UserID, Role, ImageURL, ValidStudent, TeamID) VALUES (?, ?, ?, ?, ?)",
+                    [userId, 'Member', imageURL, validStudent || 0, teamId || null]
+                );
+                break;
+            case 'CollegeRep':
+                await db.promise().execute("INSERT INTO CollegeRep (UserID) VALUES (?)", [userId]);
+                break;
+            case 'Moderator':
+                await db.promise().execute("INSERT INTO Moderators (UserID) VALUES (?)", [userId]);
+                break;
+            case 'Admin':
+                await db.promise().execute("INSERT INTO Admins (UserID) VALUES (?)", [userId]);
+                break;
+        }
+
+        await db.promise().commit();
         res.json({ message: "User updated successfully" });
     } catch (error) {
+        await db.promise().rollback();
         console.error("User update error:", error);
-        res.status(500).json({ message: "Internal server error" });
+        res.status(500).json({ message: "Internal server error", error: error.message });
     }
 });
 
@@ -874,10 +934,7 @@ app.delete("/delete-user/:userId", verifyRole(["SuperAdmin", "Admin"]), async (r
     const currentUserId = req.session.userId;
 
     try {
-        const [targetUser] = await db.promise().query(
-            'SELECT Role FROM Users WHERE UserID = ?',
-            [userId]
-        );
+        const [targetUser] = await db.promise().query('SELECT Role FROM Users WHERE UserID = ?', [userId]);
 
         if (targetUser.length === 0) {
             return res.status(404).json({ message: "User not found" });
@@ -902,9 +959,31 @@ app.delete("/delete-user/:userId", verifyRole(["SuperAdmin", "Admin"]), async (r
             return res.status(403).json({ message: "Cannot delete yourself" });
         }
 
+        await db.promise().beginTransaction();
+
+        // delete from role specific table
+        switch (targetUser[0].Role) {
+            case "Player":
+                await db.promise().execute("DELETE FROM Players WHERE UserID = ?", [userId]);
+                break;
+            case "CollegeRep":
+                await db.promise().execute("DELETE FROM CollegeRep WHERE UserID = ?", [userId]);
+                break;
+            case "Moderator":
+                await db.promise().execute("DELETE FROM Moderators WHERE UserID = ?", [userId]);
+                break;
+            case "Admin":
+                await db.promise().execute("DELETE FROM Admins WHERE UserID = ?", [userId]);
+                break;
+        }
+
+        // delete from Users table
         await db.promise().execute("DELETE FROM Users WHERE UserID = ?", [userId]);
+
+        await db.promise().commit();
         res.json({ message: "User deleted successfully!" });
     } catch (error) {
+        await db.promise().rollback();
         console.error("User deletion error:", error);
         res.status(500).json({ message: "Internal server error" });
     }

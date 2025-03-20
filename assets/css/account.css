@@ -161,22 +161,23 @@ h1 {
     color: #9EF01A;
 }
 
-#role-management {
-    padding-bottom: 50px !important;
+#user-management {
+    padding-top: 2rem !important;
+    padding-bottom: 4rem !important;
     border-bottom-style: ridge;
     border-bottom-width: 15px;
     border-color: #003f4f;
 }
 #college-management {
-    padding-top: 50px !important;
-    padding-bottom: 50px !important;
+    padding-top: 4rem !important;
+    padding-bottom: 4rem !important;
     border-bottom-style: ridge;
     border-bottom-width: 15px;
     border-color: #003f4f;
 }
 #team-management {
-    padding-top: 50px !important;
-    padding-bottom: 50px !important;
+    padding-top: 4rem !important;
+    padding-bottom: 4rem !important;
     border-bottom-style: ridge;
     border-bottom-width: 15px;
     border-color: #003f4f;

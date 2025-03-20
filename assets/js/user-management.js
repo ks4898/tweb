@@ -55,6 +55,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     document.getElementById('role').addEventListener('change', togglePlayerFields);
+    document.getElementById('editRole').addEventListener('change', function() {
+        toggleEditPlayerFields(this.value);
+    });
 
     // event listener for Add User button to show modal
     const addUserButton = document.getElementById('addUserBtn');
@@ -87,9 +90,22 @@ document.addEventListener('DOMContentLoaded', function () {
                 password: password,
                 role: role
             };
+
+            if (role === 'Player') {
+                userData.imageURL = document.getElementById('imageURL').value;
+                userData.validStudent = document.getElementById('validStudent').value;
+                userData.teamId = document.getElementById('teamId').value;
+            }
+
             addUser(userData);
         });
     }
+
+    document.getElementById('saveEditUserBtn').addEventListener('click', function(e) {
+        e.preventDefault();
+        const userId = document.getElementById('editUserId').value;
+        updateUser(userId);
+    });
 });
 
 // get available roles based on admin privileges for current user
@@ -126,8 +142,8 @@ function populateRoleSelect(roles) {
     const roleSelects = document.querySelectorAll('.form-select');
 
     roleSelects.forEach(select => {
-        if (select.id == "role" || select.id == "editRoleSelect") {
-            select.innerHTML = ''; // Clear existing options
+        if (select.id == "role" || select.id == "editRole") {
+            select.innerHTML = ''; // clear existing options
 
             roles.forEach(role => {
                 const option = document.createElement('option');
@@ -233,39 +249,71 @@ async function addUser(userData) {
     }
 }
 
-// edit user role func
+// edit user func
 async function editUser(userId) {
-    const editUserModal = new bootstrap.Modal(document.getElementById('editUserModal'));
-    //await fetchRoles();
-    editUserModal.show();
-    document.getElementById('editUserId').innerHTML = userId;
-    document.getElementById('editUserModal').dataset.userId = userId;
-
-    const saveEditRoleBtn = document.getElementById('saveEditRoleBtn');
-
-    saveEditRoleBtn.onclick = async function () {
-        const newRole = document.getElementById('editRoleSelect').value;
-        try {
-            const response = await fetch(`/edit-user/${userId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ role: newRole })
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || 'Failed to edit user role');
-            }
-
-            fetchUsers();
-            alert(data.message);
-            editUserModal.hide();
-        } catch (error) {
-            console.error('Error editing user role:', error);
-            alert(error.message || 'Failed to edit user role');
+    try {
+        const response = await fetch(`/user/${userId}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch user details');
         }
-    };
+        const user = await response.json();
+        
+        document.getElementById('editUserId').value = user.UserID;
+        document.getElementById('editName').value = user.Name;
+        document.getElementById('editEmail').value = user.Email;
+        document.getElementById('editRole').value = user.Role;
+
+        document.getElementById("editUserModalLabel").innerHTML = "Edit User with ID: " + userId;
+        toggleEditPlayerFields(user.Role);
+        if (user.Role === 'Player') {
+            document.getElementById('editImageURL').value = user.ImageURL || '';
+            document.getElementById('editValidStudent').value = user.ValidStudent ? '1' : '0';
+            document.getElementById('editTeamId').value = user.TeamID || '';
+        }
+        
+        const editUserModal = new bootstrap.Modal(document.getElementById('editUserModal'));
+        editUserModal.show();
+    } catch (error) {
+        console.error('Error fetching user details:', error);
+        alert('Failed to fetch user details');
+    }
+}
+
+// save edited user func
+async function updateUser(userId) {
+    const name = document.getElementById('editName').value;
+    const email = document.getElementById('editEmail').value;
+    const role = document.getElementById('editRole').value;
+    
+    const userData = { name, email, role };
+
+    if (role === 'Player') {
+        userData.imageURL = document.getElementById('editImageURL').value;
+        userData.validStudent = document.getElementById('editValidStudent').value;
+        userData.teamId = document.getElementById('editTeamId').value;
+    }
+
+    try {
+        const response = await fetch(`/edit-user/${userId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(userData),
+        });
+        if (!response.ok) {
+            throw new Error('Failed to update user' + response);
+        }
+        const data = await response.json();
+        alert("User updated successfully!");
+        fetchUsers();
+        const editUserModal = document.getElementById('editUserModal');
+        const modalInstance = bootstrap.Modal.getInstance(editUserModal);
+        modalInstance.hide();
+    } catch (error) {
+        console.error('Error updating user:', error);
+        alert('Failed to update user');
+    }
 }
 
 // delete user func
@@ -296,10 +344,14 @@ async function deleteUser(userId) {
 function togglePlayerFields() {
     const roleSelect = document.getElementById('role');
     const playerFields = document.getElementById('playerFields');
-    
     if (roleSelect.value === 'Player') {
-      playerFields.style.display = 'block';
+        playerFields.style.display = 'block';
     } else {
-      playerFields.style.display = 'none';
+        playerFields.style.display = 'none';
     }
-  }  
+}
+
+function toggleEditPlayerFields(role) {
+    const playerFields = document.getElementById('editPlayerFields');
+    playerFields.style.display = role === 'Player' ? 'block' : 'none';
+}

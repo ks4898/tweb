@@ -106,7 +106,7 @@ CREATE TABLE Players (
     Role VARCHAR(50) NOT NULL,
     ImageURL VARCHAR(255),
     ValidStudent BOOLEAN DEFAULT FALSE,
-    TeamID INT,
+    TeamID INT NULL,
     PayedFee BOOLEAN DEFAULT FALSE,
     FOREIGN KEY (UserID) REFERENCES Users(UserID),
     FOREIGN KEY (TeamID) REFERENCES Teams(TeamID)
@@ -127,6 +127,18 @@ CREATE TABLE Posts (
     TextPosted TEXT NOT NULL,
     FOREIGN KEY (UserID) REFERENCES Users(UserID)
 );
+
+CREATE TABLE IF NOT EXISTS Payments (
+  PaymentID INT PRIMARY KEY AUTO_INCREMENT,
+  TeamID INT,
+  TournamentID INT,
+  Amount DECIMAL(10, 2),
+  Status VARCHAR(50),
+  PaymentDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (TeamID) REFERENCES Teams(TeamID),
+  FOREIGN KEY (TournamentID) REFERENCES Tournaments(TournamentID)
+);
+
 
 
 SELECT * FROM Users;

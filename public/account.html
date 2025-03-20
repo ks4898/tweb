@@ -24,7 +24,7 @@
 
 <body>
     <script src="/js/handleacc.js"></script>
-    <script src="/js/role-management.js"></script> <!-- Role Management -->
+    <script src="/js/user-management.js"></script> <!-- User Management -->
     <script src="/js/college-management.js"></script> <!-- College Management -->
     <script src="/js/team-management.js"></script> <!-- Team Management -->
 
@@ -43,10 +43,10 @@
         <h2 id="currentAdmin">Current Admin</h2>
         <h2 id="currentRole">Current Role</h2>
     </div>
-    <!-- Role Management Section -->
-    <section class="py-5" id="role-management">
+    <!-- User Management Section -->
+    <section class="py-5" id="user-management">
         <div class="container text-center">
-            <h1 class="mb-4">Role Management</h1>
+            <h1 class="mb-4">User Management</h1>
             <!-- Search Bar -->
             <div class="row justify-content-center">
                 <div class="search-container"
@@ -154,7 +154,7 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="editUserModalLabel">Edit User Role</h5>
+                    <h5 class="modal-title" id="editUserModalLabel">Edit User</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -188,18 +188,17 @@
                             </div>
                             <div class="mb-3">
                                 <label for="editTeamId" class="form-label">Team ID:</label>
-                                <input type="number" class="form-control" id="editTeamId">
+                                <input type="number" class="form-control" id="editTeamId" min="0" placeholder="Find TeamID under Team Management section..." style="::placeholder { color: rgba(255, 255, 255, 0.7); }">
                             </div>
                         </div>
                     </form>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" id="saveEditRoleBtn">Save changes</button>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="saveEditUserBtn">Update User</button>
+                </div>
             </div>
         </div>
-    </div>
     </div>
 
     <!-- Delete User Modal -->
@@ -481,16 +480,20 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const togglePassword = document.querySelector('#togglePassword');
-            const password = document.querySelector('#password');
-
-            if (togglePassword && password) {
-                togglePassword.addEventListener('click', function () {
-                    const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
-                    password.setAttribute('type', type);
-                    this.classList.toggle('bi-eye');
-                });
-            }
+            document.getElementById('passwordToggle').addEventListener('click', function () {
+                const passwordInput = document.getElementById('password');
+                const toggle = document.getElementById('passwordToggle');
+                const eyeIcon = document.getElementById('eyeIcon');
+                if (passwordInput.type === "password") {
+                    passwordInput.type = "text";
+                    eyeIcon.classList.remove('fa-eye');
+                    eyeIcon.classList.add('fa-eye-slash');
+                } else {
+                    passwordInput.type = "password";
+                    eyeIcon.classList.remove('fa-eye-slash');
+                    eyeIcon.classList.add('fa-eye');
+                }
+            });
         });
     </script>
 
