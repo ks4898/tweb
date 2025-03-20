@@ -93,6 +93,11 @@ app.get("/payment", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "payment.html"));
 });
 
+// serve news page
+app.get("/news", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "news.html"));
+});
+
 // serve login page
 app.get("/login", (req, res) => {
     if (req.session.userId) { // logged in check

@@ -5,21 +5,21 @@ const articles = [
         author: "Author 1",
         date: "March 18, 2025",
         content: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus lacinia, lorem vel fringilla faucibus.",
-        image: "assets/media/img/college1.jpg"
+        image: "/media/img/college1.jpg"
     },
     {
         title: "Sample News Article 2",
         author: "Author 2",
         date: "March 19, 2025",
         content: "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
-        image: "assets/media/img/college2.jpg"
+        image: "/media/img/college2.jpg"
     },
     {
         title: "Sample News Article 3",
         author: "Author 3",
         date: "March 20, 2025",
         content: "Curabitur pretium tincidunt lacus. Nulla gravida orci a odio. Nullam varius, turpis et commodo pharetra, est eros bibendum elit.",
-        image: "assets/media/img/college3.jpg"
+        image: "/media/img/college3.jpg"
     },
     {
         title: "Sample News Article 4",

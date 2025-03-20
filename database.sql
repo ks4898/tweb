@@ -178,6 +178,9 @@ INSERT INTO Players (UserID, Role, ImageURL, ValidStudent, TeamID) VALUES
 DELETE FROM Players WHERE UserID >=0;
 SELECT * FROM Players;
 
+UPDATE Players SET PayedFee = 0 WHERE UserID = 11;
+DELETE FROM Users WHERE UserID = 8;
+
 INSERT INTO Users (Name, Email, Password, Role) VALUES
 ('Tim', 'tim@example.com', 'password123', 'Player'),
 ('Bob', 'bob@example.com', 'password123', 'Player'),
@@ -257,8 +260,3 @@ JOIN Matches m ON s.MatchID = m.MatchID;
 ALTER TABLE Players MODIFY COLUMN TeamID INT NULL;
 
 SELECT * FROM Admins;
-
-
-
-
-
