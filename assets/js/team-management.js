@@ -211,9 +211,9 @@ function renderTeams(teams) {
         row.dataset.teamId = team.TeamID;
         row.innerHTML = `
             <td>${team.TeamID}</td>
-            <td>${team.Name}</td>
+            <td>${team.Name.length > 16 ? college.Name.substring(0, 16) + '...' : team.Name}</td>
             <td>${team.UniversityID}</td>
-            <td>${team.UniversityName}</td>
+            <td>${team.UniversityName.length > 42 ? team.UniversityName.substring(0, 42) + '...' : team.UniversityName}</td>
             <td>${new Date(team.CreatedDate).toLocaleDateString()}</td>
         `;
         row.addEventListener('click', function () {

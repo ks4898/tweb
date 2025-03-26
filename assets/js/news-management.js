@@ -31,9 +31,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 <td>${article.PostID}</td>
                 <td>${article.Author}</td>
                 <td>${article.UserID || 'N/A'}</td>
-                <td>${article.Title}</td>
-                <td>${article.ImageURL || 'N/A'}</td>
-                <td>${article.Content.length > 50 ? article.Content.substring(0, 50) + '...' : article.Content}</td>
+                <td>${article.Title.length > 24 ? article.Title.substring(0, 24) + '...' : article.Title}</td>
+                <td>${(article.ImageURL.length > 16 ? article.ImageURL.substring(0, 16) + '...' : article.ImageURL) || 'N/A'}</td>
+                <td>${article.Content.length > 36 ? article.Content.substring(0, 36) + '...' : article.Content}</td>
                 <td>${new Date(article.CreatedAt).toLocaleDateString()}</td>
             `;
             row.addEventListener('click', (e) => selectArticle(article, e));

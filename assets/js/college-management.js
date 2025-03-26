@@ -264,12 +264,12 @@ function renderColleges(colleges) {
         row.dataset.collegeId = college.UniversityID;
         row.innerHTML = `
             <td>${college.UniversityID}</td>
-            <td>${college.Name}</td>
+            <td>${college.Name.length > 24 ? college.Name.substring(0, 24) + '...' : college.Name}</td>
             <td>${college.Location}</td>
             <td>${new Date(college.Founded).toLocaleDateString()}</td>
-            <td>${college.Description.length > 50 ? college.Description.substring(0, 50) + '...' : college.Description}</td>
-            <td>${college.Emblem}</td>
-            <td>${college.ImageURL}</td>
+            <td>${college.Description.length > 36 ? college.Description.substring(0, 36) + '...' : college.Description}</td>
+            <td>${college.Emblem.length > 16 ? college.Emblem.substring(0, 16) + '...' : college.Emblem}</td>
+            <td>${college.ImageURL.length > 16 ? college.ImageURL.substring(0, 16) + '...' : college.ImageURL}</td>
         `;
         row.addEventListener('click', function () {
             const allTables = document.querySelectorAll('.user-table tbody tr');

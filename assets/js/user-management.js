@@ -195,12 +195,14 @@ function displayUsers(users) {
         .then(currentUser => {
             users.forEach(user => {
                 let row = userTableBody.insertRow();
+                let displayName = `${user.Name.length > 16 ? user.Name.substring(0, 16) + '...' : user.Name}`;
+                let displayEmail = `${user.Email.length > 24 ? user.Email.substring(0, 24) + '...' : user.Email}`;
                 row.insertCell().textContent = user.UserID;
-                row.insertCell().textContent = user.Name;
+                row.insertCell().textContent = displayName; 
                 if (user.Role === "SuperAdmin" && currentUser.role !== "SuperAdmin") {
                     row.insertCell().textContent = "[REDACTED]"
                 } else {
-                    row.insertCell().textContent = user.Email;
+                    row.insertCell().textContent = displayEmail;
                 }
                 //row.insertCell().textContent = user.Email;
                 row.insertCell().textContent = user.Role;
