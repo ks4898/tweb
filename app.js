@@ -224,17 +224,17 @@ app.post("/signup", async (req, res) => {
 // logout route
 app.get("/logout", (req, res) => {
     if (!req.session.userId) {
-      return res.redirect('/');
+        return res.redirect('/');
     }
     req.session.destroy((err) => {
-      if (err) {
-        console.error("Logout error:", err);
-        return res.status(500).json({ success: false, message: "Logout failed" });
-      }
-      res.clearCookie("connect.sid", { path: "/" });
-      res.redirect("/");
+        if (err) {
+            console.error("Logout error:", err);
+            return res.status(500).json({ success: false, message: "Logout failed" });
+        }
+        res.clearCookie("connect.sid", { path: "/" });
+        res.redirect("/");
     });
-  });
+});
 
 
 // ======================== COLLEGE & TEAM MANAGEMENT ========================
@@ -873,7 +873,7 @@ app.put("/edit-user/:userId", verifyRole(["SuperAdmin", "Admin"]), async (req, r
                 return res.status(403).json({ message: "Cannot change your own role" });
             }
         }
-        
+
         /*// NOT WORKING NEEDS FIXING
         if(teamId < 0 && !teamId === null) {
             return res.status(400).json({ message: "Invalid TeamID it cannot be less than zero" });
@@ -1106,6 +1106,60 @@ app.post('/tournament-signup', verifyRole(["Player"]), async (req, res) => {
     } catch (error) {
         console.error('Error during tournament signup:', error);
         res.status(500).json({ success: false, message: "An error occurred during signup. Please try again." });
+    }
+});
+
+// Fetch all news articles
+app.get('/news-articles', async (req, res) => {
+    try {
+        const [posts] = await db.promise().query('SELECT * FROM Posts ORDER BY CreatedAt DESC');
+        res.json(posts);
+    } catch (error) {
+        console.error('Error fetching news:', error);
+        res.status(500).json({ message: 'Error fetching news' });
+    }
+});
+
+// Create a new news article
+app.post('/create-news', verifyRole(['Admin', 'SuperAdmin']), async (req, res) => {
+    const { Author, Title, ImageURL, Content} = req.body;
+    try {
+        const [result] = await db.promise().execute(
+            'INSERT INTO Posts (Author, Title, ImageURL, Content) VALUES (?, ?, ?, ?)',
+            [Author, Title, ImageURL || '', Content]
+        );
+        res.json({ PostID: result.insertId, message: 'News article created successfully' });
+    } catch (error) {
+        console.error('Error creating news article:', error);
+        res.status(500).json({ message: 'Error creating news article' });
+    }
+});
+
+// Update a news article
+app.put('/update-news/:PostID', verifyRole(['Admin', 'SuperAdmin']), async (req, res) => {
+    const { PostID } = req.params;
+    const { Title, ImageURL, Content } = req.body;
+    try {
+        await db.promise().execute(
+            'UPDATE Posts SET Title = ?, ImageURL = ?, Content = ? WHERE PostID = ?',
+            [Title, ImageURL || '', Content, PostID]
+        );
+        res.json({ message: 'News article updated successfully' });
+    } catch (error) {
+        console.error('Error updating news article:', error);
+        res.status(500).json({ message: 'Error updating news article' });
+    }
+});
+
+// Delete a news article
+app.delete('/delete-news/:PostID', verifyRole(['Admin', 'SuperAdmin']), async (req, res) => {
+    const { PostID } = req.params;
+    try {
+        await db.promise().execute('DELETE FROM Posts WHERE PostID = ?', [PostID]);
+        res.json({ message: 'News article deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting news article:', error);
+        res.status(500).json({ message: 'Error deleting news article' });
     }
 });
 

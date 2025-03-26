@@ -183,6 +183,14 @@ h1 {
     border-color: #003f4f;
 }
 
+#news-management {
+    padding-top: 4rem !important;
+    padding-bottom: 4rem !important;
+    border-bottom-style: ridge;
+    border-bottom-width: 15px;
+    border-color: #003f4f;
+}
+
 #collegeAction {
     padding: 0;
 }

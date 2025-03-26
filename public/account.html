@@ -27,6 +27,7 @@
     <script src="/js/user-management.js"></script> <!-- User Management -->
     <script src="/js/college-management.js"></script> <!-- College Management -->
     <script src="/js/team-management.js"></script> <!-- Team Management -->
+    <script src="/js/news-management.js"></script> <!-- News Management -->
 
     <!-- Navbar -->
     <nav class="navbar">
@@ -302,11 +303,11 @@
                             <textarea class="form-control" id="description" required></textarea>
                         </div>
                         <div class="mb-3">
-                            <label for="logo" class="form-label">Logo URL</label>
+                            <label for="logoURL" class="form-label">Logo URL</label>
                             <input type="text" class="form-control" id="logoURL" required>
                         </div>
                         <div class="mb-3">
-                            <label for="picture" class="form-label">Picture URL</label>
+                            <label for="pictureURL" class="form-label">Picture URL</label>
                             <input type="text" class="form-control" id="pictureURL" required>
                         </div>
                     </form>
@@ -471,6 +472,147 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>
                     <button type="button" class="btn btn-danger" id="confirmDeleteTeamBtn">Yes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- News Management Section -->
+    <section class="py-5" id="news-management">
+        <div class="container text-center">
+            <h1 class="mb-4">News Management</h1>
+            <div class="row justify-content-center" id="newsAction">
+                <!-- Search Bar -->
+                <div class="search-container"
+                    style="display: flex; flex-direction: row; justify-content: center; width: 100vw; gap: 20px;">
+                    <input type="text" id="searchArticle"
+                        style="margin-right: 1px !important; margin-top: 5px !important; height: 50px;"
+                        placeholder="Search articles (input matching article/author name)..." class="form-control">
+                    <div class="row justify-content-center">
+                        <div class="col-12 col-md-auto mb-2" style="margin: 0 !important; padding: 5px !important;">
+                            <a href="javascript:void(0);" id="searchArticlesBtn" class="btn-link w-100">Search</a>
+                        </div>
+                        <div class="col-12 col-md-auto mb-2" style="margin: 0 !important; padding: 5px !important;">
+                            <a href="javascript:void(0);" id="addArticleBtn" class="btn-link w-100">Add Article</a>
+                        </div>
+                        <div class="col-12 col-md-auto mb-2" style="margin: 0 !important; padding: 5px !important;">
+                            <a href="javascript:void(0);" id="editArticleBtn" class="btn-link w-100">Edit Article</a>
+                        </div>
+                        <div class="col-12 col-md-auto mb-2"
+                            style="margin: 0 !important; margin-top: 2px !important; padding: 5px !important;">
+                            <a href="javascript:void(0);" id="deleteArticleBtn" class="btn-delete w-100">Delete
+                                Article</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- News Table List Box -->
+                <div class="user-table-container">
+                    <table class="user-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Author Name</th>
+                                <th>Author ID</th>
+                                <th>Article Title</th>
+                                <th>ImageURL</th>
+                                <th>Content</th>
+                                <th>Create Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="newsTableBody">
+                            <!-- JavaScript will populate this -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Add Article Modal -->
+    <div class="modal fade" id="addArticleModal" tabindex="-1" aria-labelledby="addArticleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addArticleModalLabel">Add New Article</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addArticleForm">
+                        <div class="mb-3">
+                            <label for="addArticleAuthorName" class="form-label">Author Full Name</label>
+                            <input type="text" class="form-control" id="addArticleAuthorName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="addArticleName" class="form-label">Article Name</label>
+                            <input type="text" class="form-control" id="addArticleName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="addArticleImageURL" class="form-label">Article ImageURL</label>
+                            <input type="text" class="form-control" id="addArticleImageURL">
+                        </div>
+                        <div class="mb-3">
+                            <label for="addArticleContent" class="form-label">Article Content</label>
+                            <textarea class="form-control" id="addArticleContent" required></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="createArticleBtn">Create Article</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Article Modal -->
+    <div class="modal fade" id="editArticleModal" tabindex="-1" aria-labelledby="editArticleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editArticleModalLabel">Edit Article</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editArticleForm">
+                        <div class="mb-3">
+                            <label for="editArticleName" class="form-label">Article Name</label>
+                            <input type="text" class="form-control" id="editArticleName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editArticleImageURL" class="form-label">Article ImageURL</label>
+                            <input type="text" class="form-control" id="editArticleImageURL" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editArticleContent" class="form-label">Article Content</label>
+                            <textarea class="form-control" id="editArticleContent" required></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="saveArticleBtn">Save Article</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Article Modal -->
+    <div class="modal fade" id="deleteArticleModal" tabindex="-1" aria-labelledby="deleteArticleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteArticleModalLabel">Are you sure you want to delete this article?
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="articleDetails"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteArticleBtn">Yes</button>
                 </div>
             </div>
         </div>

@@ -1,19 +1,19 @@
 document.addEventListener("DOMContentLoaded", function () {
     var isEdit = false;
-    
+
     fetchColleges();
 
-        const searchButton = document.getElementById('searchCollegesButton');
-        if (searchButton) {
-            searchButton.addEventListener('click', function () {
-                const searchTerm = document.getElementById('searchCollege').value.trim();
-                if (searchTerm) {
-                    searchColleges(searchTerm);
-                } else {
-                    fetchColleges();
-                }
-            });
-        }
+    const searchButton = document.getElementById('searchCollegesButton');
+    if (searchButton) {
+        searchButton.addEventListener('click', function () {
+            const searchTerm = document.getElementById('searchCollege').value.trim();
+            if (searchTerm) {
+                searchColleges(searchTerm);
+            } else {
+                fetchColleges();
+            }
+        });
+    }
 
     document.getElementById('addCollegeBtn').addEventListener('click', function () {
         isEdit = false;
@@ -266,14 +266,14 @@ function renderColleges(colleges) {
             <td>${college.UniversityID}</td>
             <td>${college.Name}</td>
             <td>${college.Location}</td>
-            <td>${college.Founded}</td>
-            <td>${college.Description}</td>
+            <td>${new Date(college.Founded).toLocaleDateString()}</td>
+            <td>${college.Description.length > 50 ? college.Description.substring(0, 50) + '...' : college.Description}</td>
             <td>${college.Emblem}</td>
             <td>${college.ImageURL}</td>
         `;
-        row.addEventListener('click', function() {
-            document.querySelectorAll('#collegeTableBody tr').forEach(row => row.classList.remove('selected'));
-            document.querySelectorAll('#teamTableBody tr').forEach(row => row.classList.remove('selected'));
+        row.addEventListener('click', function () {
+            const allTables = document.querySelectorAll('.user-table tbody tr');
+            allTables.forEach(row => row.classList.remove('selected'));
             this.classList.add('selected');
         });
         tbody.appendChild(row);

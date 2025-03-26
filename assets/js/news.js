@@ -1,41 +1,18 @@
-// Array of articles (simulating database) REPLACE !!!
-const articles = [
-    {
-        title: "Sample News Article 1",
-        author: "Author 1",
-        date: "March 18, 2025",
-        content: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus lacinia, lorem vel fringilla faucibus.",
-        image: "/media/img/college1.jpg"
-    },
-    {
-        title: "Sample News Article 2",
-        author: "Author 2",
-        date: "March 19, 2025",
-        content: "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
-        image: "/media/img/college2.jpg"
-    },
-    {
-        title: "Sample News Article 3",
-        author: "Author 3",
-        date: "March 20, 2025",
-        content: "Curabitur pretium tincidunt lacus. Nulla gravida orci a odio. Nullam varius, turpis et commodo pharetra, est eros bibendum elit.",
-        image: "/media/img/college3.jpg"
-    },
-    {
-        title: "Sample News Article 4",
-        author: "Author 4",
-        date: "March 21, 2025",
-        content: "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium.",
-        image: null
-    }
-];
-
 // Add event listener for DOM content loaded
 document.addEventListener("DOMContentLoaded", function() {
     const articlesContainer = document.getElementById("articles");
     const modal = new bootstrap.Modal(document.getElementById("newsModal"));
     const modalTitle = document.querySelector("#newsModal .modal-title");
     const modalBody = document.querySelector("#newsModal .modal-body");
+
+    // Fetch articles from the database
+    fetch('/news-articles')
+        .then(response => response.json())
+        .then(articles => {
+            // Loop through the fetched articles and create each article
+            articles.forEach(createArticle);
+        })
+        .catch(error => console.error('Error fetching articles:', error));
 
     // Function to create and append articles
     function createArticle(article) {
@@ -46,10 +23,10 @@ document.addEventListener("DOMContentLoaded", function() {
         const imgContainer = document.createElement("div");
         imgContainer.classList.add("news-img-container");
 
-        if (article.image) {
+        if (article.ImageURL) {
             const img = document.createElement("img");
-            img.src = article.image;
-            img.alt = article.title;
+            img.src = article.ImageURL;
+            img.alt = article.Title;
             img.classList.add("news-img");
             imgContainer.appendChild(img);
         } else {
@@ -67,11 +44,12 @@ document.addEventListener("DOMContentLoaded", function() {
 
         const title = document.createElement("h3");
         title.classList.add("news-title");
-        title.textContent = article.title;
+        title.textContent = article.Title;
 
         const date = document.createElement("span");
         date.classList.add("news-date", "text-muted");
-        date.textContent = `${article.author}, ${article.date}`;
+        date.textContent = `${article.Author}, ${new Date(article.CreatedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`;
+
 
         details.appendChild(title);
         details.appendChild(date);
@@ -91,11 +69,11 @@ document.addEventListener("DOMContentLoaded", function() {
 
         // Add click event to show the modal
         articleElement.addEventListener("click", function() {
-            modalTitle.innerHTML = `<strong>${article.title}</strong>`; // Title wrapped in <strong> tag
+            modalTitle.innerHTML = `<strong>${article.Title}</strong>`;
             modalBody.innerHTML = `
-                <p class="text-muted" style="font-style: italic;">${article.author}, ${article.date}</p>
-                <p>${article.content}</p>
-                ${article.image ? `<img src="${article.image}" alt="${article.title}" class="modal-img">` : ''}
+                <p class="text-muted" style="font-style: italic;">${article.Author}, ${new Date(article.CreatedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                <p>${article.Content}</p>
+                ${article.ImageURL ? `<img src="${article.ImageURL}" alt="${article.Title}" class="modal-img">` : ''}
             `;
             modal.show();
         });
@@ -103,7 +81,4 @@ document.addEventListener("DOMContentLoaded", function() {
         // Append the article to the articles container
         articlesContainer.appendChild(articleElement);
     }
-
-    // Loop through the array and create each article
-    articles.forEach(createArticle);
 });

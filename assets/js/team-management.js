@@ -36,7 +36,7 @@ document.addEventListener("DOMContentLoaded", function () {
             alert("Couldn't perform edit");
             return;
         }
-        
+
         try {
             const response = await fetch(`/team?id=${teamId}`);
             if (!response.ok) {
@@ -216,9 +216,9 @@ function renderTeams(teams) {
             <td>${team.UniversityName}</td>
             <td>${new Date(team.CreatedDate).toLocaleDateString()}</td>
         `;
-        row.addEventListener('click', function() {
-            document.querySelectorAll('#teamTableBody tr').forEach(row => row.classList.remove('selected'));
-            document.querySelectorAll('#collegeTableBody tr').forEach(row => row.classList.remove('selected'));
+        row.addEventListener('click', function () {
+            const allTables = document.querySelectorAll('.user-table tbody tr');
+            allTables.forEach(row => row.classList.remove('selected'));
             this.classList.add('selected');
         });
         tbody.appendChild(row);
