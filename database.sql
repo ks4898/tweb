@@ -271,3 +271,16 @@ JOIN Matches m ON s.MatchID = m.MatchID;
 ALTER TABLE Players MODIFY COLUMN TeamID INT NULL;
 
 SELECT * FROM Admins;
+
+INSERT INTO Posts (Title, ImageURL, Content, Author, CreatedAt, UserID) VALUES
+('Sample News Article 1', '/media/img/college1.jpg', 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus lacinia, lorem vel fringilla faucibus.', 'Author 1', STR_TO_DATE('March 18, 2025', '%M %d, %Y'), NULL);
+
+INSERT INTO Posts (Title, ImageURL, Content, Author, CreatedAt, UserID) VALUES
+('Sample News Article 2', '/media/img/college2.jpg', 'Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.', 'Author 2', STR_TO_DATE('March 19, 2025', '%M %d, %Y'), NULL);
+
+INSERT INTO Posts (Title, ImageURL, Content, Author, CreatedAt, UserID) VALUES
+('Sample News Article 3', '/media/img/college3.jpg', 'Curabitur pretium tincidunt lacus. Nulla gravida orci a odio. Nullam varius, turpis et commodo pharetra, est eros bibendum elit.', 'Author 3', STR_TO_DATE('March 20, 2025', '%M %d, %Y'), NULL);
+
+INSERT INTO Posts (Title, ImageURL, Content, Author, CreatedAt, UserID) VALUES
+('Sample News Article 4', NULL, 'Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium.', 'Author 4', STR_TO_DATE('March 21, 2025', '%M %d, %Y'), NULL);
+SELECT * FROM Posts;
