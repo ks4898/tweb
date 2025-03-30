@@ -5,8 +5,10 @@ const bcrypt = require("bcryptjs"); // safe password encryption
 const session = require("express-session");
 require("dotenv").config(); // safe config
 const { verifyRole } = require("./assets/js/auth.js"); // user authorization
+const { verifyPayment } = require("./assets/js/verifypay.js");
 const errorHandler = require('./assets/js/errorhandler'); // error handling
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY); // stripe payment processing
+const Stripe = require('stripe');
+const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
 /* DEPRECATED!
  require('express-async-errors');*/
@@ -1014,6 +1016,60 @@ app.get("/player/:userId", async (req, res) => {
     }
 });
 
+// Create payment intent
+app.post('/create-payment-intent', verifyRole(["Player"]), async (req, res) => {
+    try {
+        const userId = req.session.userId;
+        const paymentIntent = await stripe.paymentIntents.create({
+            amount: 1000, // Amount in cents (e.g., $10.00)
+            currency: 'usd',
+            payment_method_types: ['card'],
+            metadata: { userId }
+        });
+
+        res.json({ clientSecret: paymentIntent.client_secret });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Payment confirmation
+// Handle payment confirmation and database update
+app.post('/confirm-payment', verifyRole(["Player"]), async (req, res) => {
+    try {
+      const { paymentMethodId } = req.body;
+      const userId = req.session.userId;
+  
+      // 1. Create PaymentIntent
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: 1000, // $10.00
+        currency: 'usd',
+        payment_method: paymentMethodId,
+        confirm: true,
+        metadata: { userId }
+      });
+  
+      // 2. Update payedFee if confirmed
+      if (paymentIntent.status === 'succeeded') {
+        await db.execute(
+          'UPDATE Players SET payedFee = 1 WHERE UserID = ?',
+          [userId]
+        );
+        res.json({ success: true });
+      } else {
+        res.status(400).json({ error: 'Payment failed' });
+      }
+  
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+
+app.get('/payment-success', verifyRole(["Player"]), verifyPayment, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'payment-success.html'));
+  });
+
 
 /*// payment processing route
 app.post('/create-payment-intent', verifyRole(["Player"]), async (req, res) => {
@@ -1122,7 +1178,7 @@ app.get('/news-articles', async (req, res) => {
 
 // Create a new news article
 app.post('/create-news', verifyRole(['Admin', 'SuperAdmin']), async (req, res) => {
-    const { Author, Title, ImageURL, Content} = req.body;
+    const { Author, Title, ImageURL, Content } = req.body;
     try {
         const [result] = await db.promise().execute(
             'INSERT INTO Posts (Author, Title, ImageURL, Content) VALUES (?, ?, ?, ?)',

@@ -1,53 +1,21 @@
-document.addEventListener('DOMContentLoaded', function () {
-    const stripe = Stripe('pk_test_TYooMQauvdEDq54NiTphI7jx'); // replace with your actual publishable key !
-    const elements = stripe.elements();
-    const cardElement = elements.create('card');
-    cardElement.mount('#card-element');
+document.getElementById('submit-payment').addEventListener('click', async () => {
+    const { paymentMethod, error } = await stripe.createPaymentMethod({
+        type: 'card',
+        card: elements.getElement(CardElement),
+    });
 
-    const form = document.getElementById('payment-form');
-    form.addEventListener('submit', async (event) => {
-        event.preventDefault();
-
-        const { error, paymentMethod } = await stripe.createPaymentMethod({
-            type: 'card',
-            card: cardElement,
-        });
-
-        if (error) {
-            console.error(error);
-            document.getElementById('card-errors').textContent = error.message;
-            return;
-        }
-
-        // Create PaymentIntent on the server
-        const response = await fetch('/create-payment-intent', {
+    if (error) {
+        displayError(error.message);
+    } else {
+        const response = await fetch('/confirm-payment', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-        });
-        const { clientSecret } = await response.json();
-
-        // Confirm the payment on the client
-        const result = await stripe.confirmCardPayment(clientSecret, {
-            payment_method: paymentMethod.id
+            body: JSON.stringify({ paymentMethodId: paymentMethod.id })
         });
 
-        if (result.error) {
-            console.error(result.error);
-            document.getElementById('card-errors').textContent = result.error.message;
-        } else {
-            // Payment succeeded, confirm on the server
-            const confirmResponse = await fetch('/confirm-payment', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ paymentIntentId: result.paymentIntent.id })
-            });
-            const confirmResult = await confirmResponse.json();
-            if (confirmResult.success) {
-                alert('Payment successful!');
-                // Redirect or update UI as needed
-            } else {
-                alert('Payment failed: ' + confirmResult.error);
-            }
+        const result = await response.json();
+        if (result.success) {
+            window.location.href = '/payment-success'; // Redirect immediately
         }
-    });
-});
+    }
+});  
