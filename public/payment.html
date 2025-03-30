@@ -5,8 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tournament Registration Payment</title>
-
-    <script src="https://js.stripe.com/v3/"></script>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;700&display=swap" rel="stylesheet">
 
@@ -20,7 +18,8 @@
     <link rel="stylesheet" href="/css/payment.css">
     <link rel="stylesheet" href="/css/navbar.css">
 
-    <script src="/js/payment.js"></script>
+    <script src="https://js.stripe.com/v3/"></script>
+    <script src="/js/testpayment.js"></script>
 </head>
 
 <body>
@@ -39,16 +38,15 @@
         <h1>Tournament Registration Payment</h1>
         <p class="explain">Hello, Welcome to the Aardvark Games tournament payment page! The payment amount for
             participation is $10 USD per player.
-        <p class="explain">Kindly input your card information in the provided form below, and then press the Pay My Fee
-            button to finalize
-            your individual registration in the tournament.</p>
+        <p class="explain">Kindly input your card information in the provided form below, and then press the Pay My Fee button to finalize
+            your individual registration in the tournament.</p> 
         <p class="explain">We're looking forward to having you! :-)</p>
         </p>
-    </div>
-    <div class="container">
-        <div id="express-checkout-element"></div>
-        <button id="submit-payment" class="btn btn-primary">Pay Now</button>
-        <div id="payment-message" class="mt-3"></div>
+        <form id="payment-form">
+            <div id="card-element"></div>
+            <div id="card-errors" role="alert"></div>
+            <button type="submit">Pay My Fee</button>
+        </form>
     </div>
 </body>
 

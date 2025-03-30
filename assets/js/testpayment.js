@@ -79,10 +79,10 @@ function initStripePayment() {
             });
             const confirmResult = await confirmResponse.json();
             if (confirmResult.success) {
-                alert('Payment successful!');
-                // redirect or update UI as needed
+                window.location.href = "/payment-success";
             } else {
                 alert('Payment failed: ' + confirmResult.error);
+                window.location.href = "/";
             }
         }
     });

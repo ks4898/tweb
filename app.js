@@ -1067,24 +1067,26 @@ app.post('/confirm-payment', verifyRole(["Player"]), async (req, res) => {
     }
 });
 
-app.get('/payment-success',
-    verifyRole(["Player"]),
-    async (req, res, next) => {
-        try {
-            const [user] = await db.execute(
-                'SELECT payedFee FROM Players WHERE UserID = ?',
-                [req.session.userId]
-            );
-            if (user[0].payedFee !== 1) throw new Error('Payment not verified');
-            next();
-        } catch (error) {
-            res.status(403).send('Access denied');
+app.get('/payment-success', verifyRole(["Player"]), async (req, res) => {
+    try {
+        const userId = req.session.userId;
+        
+        // Check Players table directly
+        const [player] = await db.execute(
+            'SELECT payedFee FROM Players WHERE UserID = ?',
+            [userId]
+        );
+
+        if (!player.length || player[0].payedFee !== 1) {
+            return res.status(403).send('Access denied. Payment not completed.');
         }
-    },
-    (req, res) => {
+        
         res.sendFile(path.join(__dirname, 'public', 'payment-success.html'));
+    } catch (error) {
+        console.error('Payment verification error:', error);
+        res.status(500).send('Server error');
     }
-);
+});
 
 
 /*// payment processing route

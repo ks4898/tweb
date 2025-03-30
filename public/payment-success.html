@@ -1,11 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Payment Success - Aardvark Games Tournament</title>
     <link rel="stylesheet" href="/css/styles.css">
+    <script>
+        let user_role;
+
+        fetch('/user-info')
+            .then(response => response.json())
+            .then(data => {
+                user_role = data.role;
+
+                if (user_role !== "Player") {
+                    window.location.href = "/";
+                    //throw new Error("User is not a player");
+                }
+
+                return fetch(`/player/${user_id}`);
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.PayedFee === 1) {
+                    window.location.href = "/";
+                }
+            })
+            .catch(error => {
+                if (error.message !== "User is not a player") {
+                    console.error('Error:', error);
+                    throw new Error("Unable to initialize page, please try again.");
+                }
+            });
+    </script>
 </head>
+
 <body>
     <!-- Navigation Bar -->
     <nav class="navbar">
@@ -26,7 +56,8 @@
     <main class="container text-center py-5">
         <h1 class="mb-4">Payment Successful!</h1>
         <p class="lead mb-4">Thank you for your payment. Your registration has been completed successfully.</p>
-        <img src="/media/img/payment-success.png" alt="Payment Success" class="img-fluid mb-4" style="max-width: 300px;">
+        <img src="/media/img/payment-success.png" alt="Payment Success" class="img-fluid mb-4"
+            style="max-width: 300px;">
         <p>We look forward to seeing you participate in the tournament!</p>
 
         <!-- Button to redirect to home -->
@@ -43,4 +74,5 @@
     <!-- External Scripts -->
     <script src="/js/handleacc.js"></script>
 </body>
+
 </html>
