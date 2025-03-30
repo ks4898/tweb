@@ -35,20 +35,31 @@ document.addEventListener('DOMContentLoaded', async function () {
 });
 
 function initStripePayment() {
-    const stripe = Stripe(process.env.STRIPE_PUBLISHABLE_KEY);
+    const stripe = Stripe('pk_test_51R8PKGQ563EKpadRONF5n8pWipbZcJH8OoH3HC0pF1I9GRFoUUhybDBZOGDLS6nnS2zBiRBYMvbOVotS9jR6mq9v00kZgS46TL');
+
+    // 2. Create elements instance
     const elements = stripe.elements();
-    const cardElement = elements.create('card');
+
+    // 3. Create and mount card element
+    const cardElement = elements.create('card', {
+        style: {
+            base: {
+                fontSize: '16px',
+                color: '#32325d',
+            }
+        }
+    });
 
     cardElement.mount('#card-element');
 
-    document.getElementById('submit-payment').addEventListener('click', async () => {
+    document.getElementById('submit').addEventListener('click', async () => {
         const { clientSecret } = await fetch('/create-payment-intent', {
             method: 'POST'
         }).then(res => res.json());
 
         const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
             payment_method: {
-                card: elements.getElement(CardElement)
+                card: elements.getElement(cardElement)
             }
         });
 
