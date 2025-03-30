@@ -17,9 +17,6 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="/css/payment.css">
     <link rel="stylesheet" href="/css/navbar.css">
-
-    <script src="https://js.stripe.com/v3/"></script>
-    <script src="/js/testpayment.js"></script>
 </head>
 
 <body>
@@ -42,11 +39,15 @@
             your individual registration in the tournament.</p> 
         <p class="explain">We're looking forward to having you! :-)</p>
         </p>
-        <form id="payment-form">
-            <div id="card-element" class="mb-3"></div>
-            <div id="card-errors" role="alert"></div>
-            <button type="submit">Pay My Fee</button>
-        </form>
+        <div class="container">
+            <div id="card-element"></div>
+            <button id="submit-payment" class="btn btn-primary">Pay Now</button>
+            <div id="payment-message"></div>
+        </div>
+        <!-- Load Stripe.js FIRST -->
+        <script src="https://js.stripe.com/v3/"></script>
+        <!-- Then your payment script -->
+        <script src="/js/testpayment.js"></script>
     </div>
 </body>
 

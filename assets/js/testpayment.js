@@ -34,45 +34,44 @@ document.addEventListener('DOMContentLoaded', async function () {
         });
 });
 
-function initStripePayment() {
-    const stripe = Stripe('pk_test_51R8PKGQ563EKpadRONF5n8pWipbZcJH8OoH3HC0pF1I9GRFoUUhybDBZOGDLS6nnS2zBiRBYMvbOVotS9jR6mq9v00kZgS46TL');
+async function initStripePayment() {
+    try {
+        // 1. Initialize Stripe
+        const stripe = Stripe('pk_test_51R8PKGQ563EKpadRONF5n8pWipbZcJH8OoH3HC0pF1I9GRFoUUhybDBZOGDLS6nnS2zBiRBYMvbOVotS9jR6mq9v00kZgS46TL'); // Replace with actual key
+        const elements = stripe.elements();
 
-    // 2. Create elements instance
-    const elements = stripe.elements();
+        // 2. Mount card element
+        const card = elements.create('card');
+        card.mount('#card-element');
 
-    // 3. Create and mount card element
-    const cardElement = elements.create('card', {
-        style: {
-            base: {
-                fontSize: '16px',
-                color: '#32325d',
-            }
-        }
-    });
+        // 3. Payment handler
+        document.getElementById('submit-payment').addEventListener('click', async () => {
+            // Create payment intent
+            const { clientSecret } = await fetch('/create-payment-intent', {
+                method: 'POST'
+            }).then(res => res.json());
 
-    cardElement.mount('#card-element');
-
-    document.getElementById('submit').addEventListener('click', async () => {
-        const { clientSecret } = await fetch('/create-payment-intent', {
-            method: 'POST'
-        }).then(res => res.json());
-
-        const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
-            payment_method: {
-                card: elements.getElement(cardElement)
-            }
-        });
-
-        if (error) {
-            document.getElementById('payment-message').textContent = error.message;
-        } else {
-            const result = await fetch('/confirm-payment', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ paymentIntentId: paymentIntent.id })
+            // Confirm payment
+            const { error } = await stripe.confirmCardPayment(clientSecret, {
+                payment_method: {
+                    card: elements.getElement(CardElement)
+                }
             });
 
-            if (result.ok) window.location.href = '/payment-success';
-        }
-    });
+            if (error) {
+                document.getElementById('payment-message').textContent = error.message;
+            } else {
+                // Update payment status
+                await fetch('/confirm-payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ paymentIntentId })
+                });
+                window.location.href = '/payment-success';
+            }
+        });
+    } catch (error) {
+        console.error('Payment initialization failed:', error);
+        document.getElementById('payment-message').textContent = 'Payment system error';
+    }
 }
