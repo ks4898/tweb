@@ -1020,34 +1020,33 @@ app.post('/create-payment-intent', verifyRole(["Player"]), async (req, res) => {
     try {
         const userId = req.session.userId;
         
-        // Add error handling for database query
-        const [players] = await db.execute(
+        // Fixed database query destructuring
+        const [playerRows] = await db.execute(
             'SELECT payedFee FROM Players WHERE UserID = ?',
             [userId]
         );
 
-        if (!players.length) {
-            return res.status(404).json({ error: "Player not found" });
+        if (!playerRows || playerRows.length === 0) {
+            return res.status(404).json({ error: "Player account not found" });
         }
 
-        if (players[0].payedFee === 1) {
+        if (playerRows[0].payedFee === 1) {
             return res.status(400).json({ error: "Payment already completed" });
         }
 
+        // Create payment intent
         const paymentIntent = await stripe.paymentIntents.create({
             amount: 1000,
             currency: 'usd',
+            payment_method_types: ['card'],
             metadata: { userId }
         });
 
-        // Ensure proper response format
-        res.json({ 
-            clientSecret: paymentIntent.client_secret 
-        });
+        res.json({ clientSecret: paymentIntent.client_secret });
 
     } catch (error) {
         console.error('Payment Intent Error:', error);
-        res.status(500).json({ error: "Payment system error" });
+        res.status(500).json({ error: "Payment system error - contact support" });
     }
 });
 
@@ -1056,17 +1055,17 @@ app.post('/confirm-payment', verifyRole(["Player"]), async (req, res) => {
     try {
         const { paymentIntentId } = req.body;
         const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-
+        
         if (paymentIntent.status === 'succeeded') {
             await db.execute(
-                'UPDATE Players SET payedFee = 1 WHERE UserID = ?',
+                `UPDATE Players SET payedFee = 1 WHERE UserID = ?`,
                 [paymentIntent.metadata.userId]
             );
             return res.json({ success: true });
         }
-
+        
         res.status(400).json({ error: 'Payment not completed' });
-
+        
     } catch (error) {
         console.error('Payment confirmation error:', error);
         res.status(500).json({ error: error.message });

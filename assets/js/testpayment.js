@@ -34,67 +34,69 @@ document.addEventListener('DOMContentLoaded', async function () {
         });
 });
 
-// Initialize Stripe FIRST
-const stripe = Stripe('pk_test_51R8PKGQ563EKpadRONF5n8pWipbZcJH8OoH3HC0pF1I9GRFoUUhybDBZOGDLS6nnS2zBiRBYMvbOVotS9jR6mq9v00kZgS46TL');
-const elements = stripe.elements();
-
-// Create card element with constrained styling
-const card = elements.create('card', {
-    style: {
-        base: {
-            fontSize: '16px',
-            color: '#32325d',
-            '::placeholder': { color: '#aab7c4' }
-        }
-    },
-    classes: { base: 'md-3' } // Match your existing column width
-});
-
-// Mount to container
-card.mount('#card-element');
-
 function clearError() {
     document.getElementById('payment-message').textContent = '';
 }
 
-async function initStripePayment() {
+function initStripePayment() {
+    clearError();
     try {
+        // Initialize Stripe
+        const stripe = Stripe('pk_test_51R8PKGQ563EKpadRONF5n8pWipbZcJH8OoH3HC0pF1I9GRFoUUhybDBZOGDLS6nnS2zBiRBYMvbOVotS9jR6mq9v00kZgS46TL');
+        const elements = stripe.elements();
+        
+        // Card element with constrained styling
+        const cardElement = elements.create('card', {
+            style: {
+                base: {
+                    fontSize: '16px',
+                    color: '#32325d',
+                    '::placeholder': { color: '#aab7c4' }
+                }
+            },
+            classes: { base: 'md-3' } // Match your existing column width
+        });
+        cardElement.mount('#card-element');
+
+        // Payment handler
         document.getElementById('submit-payment').addEventListener('click', async () => {
             try {
-                // Get client secret PROPERLY
-                const response = await fetch('/create-payment-intent', {
-                    method: 'POST'
-                });
-
+                const response = await fetch('/create-payment-intent', { method: 'POST' });
+                
                 if (!response.ok) {
-                    throw new Error('Failed to create payment intent');
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Payment failed');
                 }
 
                 const { clientSecret } = await response.json();
-
-                // Verify clientSecret exists
+                
                 if (!clientSecret) {
-                    throw new Error('Invalid payment intent');
+                    throw new Error('Invalid payment configuration');
                 }
 
                 const { error } = await stripe.confirmCardPayment(clientSecret, {
-                    payment_method: {
-                        card: elements.getElement(CardElement)
-                    }
+                    payment_method: { card: cardElement }
                 });
 
                 if (error) throw error;
-
-                window.location.href = '/payment-success';
+                
+                const confirmResponse = await fetch('/confirm-payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ paymentIntentId: paymentIntent.id })
+                });
+                
+                if (confirmResponse.ok) {
+                    window.location.href = '/payment-success';
+                }
 
             } catch (error) {
-                console.error('Payment Error:', error);
                 document.getElementById('payment-message').textContent = error.message;
             }
         });
 
     } catch (error) {
-        document.getElementById('payment-message').textContent = error.message;
+        document.getElementById('payment-message').textContent = 'Payment system initialization failed';
     }
 }
 
