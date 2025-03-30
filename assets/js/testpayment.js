@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             user_name = data.name;
             user_role = data.role;
 
-            document.getElementsByClassName("explain")[0].innerHTML = `Hello, ${user_name}. Welcome to the Aardvark Games tournament payment page! The payment amount for participation is $10 USD per player.`;
+            document.getElementsByClassName("explain")[0].innerHTML = `Hello, <strong>${user_name}</strong>.`;
 
             if (user_role !== "Player") {
                 window.location.href = "/";
@@ -62,9 +62,13 @@ function initStripePayment() {
         // Payment handler
         document.getElementById('submit-payment').addEventListener('click', async () => {
             try {
+                document.getElementById('payment-message').textContent = "Processing payment...";
                 // Fetch payment intent
                 const response = await fetch('/create-payment-intent', { method: 'POST' });
-                if (!response.ok) throw new Error('Failed to create payment intent');
+                if (!response.ok) {
+                    document.getElementById('payment-message').textContent = 'Payment failed';
+                    throw new Error('Failed to create payment intent');
+                } 
                 const { clientSecret } = await response.json();
         
                 // Confirm payment
@@ -72,16 +76,24 @@ function initStripePayment() {
                     payment_method: { card: cardElement }
                 });
         
-                if (error) throw error;
+                if (error) {
+                    document.getElementById('payment-message').textContent = 'Payment failed';
+                    throw error;
+                }
         
                 // Verify payment succeeded
                 if (paymentIntent.status === 'succeeded') {
-                    await fetch('/confirm-payment', {
+                    const responseConfirm = await fetch('/confirm-payment', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ paymentIntentId: paymentIntent.id })
                     });
-                    window.location.href = '/payment-success';
+                    const responseData = await responseConfirm.json();
+                    if (responseData.success) {
+                        window.location.href = '/payment-success';
+                    } else {
+                        document.getElementById('payment-message').textContent = 'Payment verification failed';
+                    }
                 }
             } catch (error) {
                 document.getElementById('payment-message').textContent = error.message;

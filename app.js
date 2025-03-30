@@ -1022,7 +1022,7 @@ app.post('/create-payment-intent', verifyRole(["Player"]), async (req, res) => {
         
         // Fixed database query destructuring
         const player = await db.execute(
-            'SELECT payedFee FROM Players WHERE UserID = ?',
+            'SELECT PayedFee FROM Players WHERE UserID = ?',
             [userId]
         );
 
@@ -1059,8 +1059,9 @@ app.post('/confirm-payment', verifyRole(["Player"]), async (req, res) => {
             return res.status(400).json({ error: 'Payment not completed' });
         }
 
+        // Use TRUE for boolean column
         await db.execute(
-            'UPDATE Players SET PayedFee = 1 WHERE UserID = ?',
+            'UPDATE Players SET PayedFee = TRUE WHERE UserID = ?',
             [paymentIntent.metadata.userId]
         );
         
@@ -1073,26 +1074,21 @@ app.post('/confirm-payment', verifyRole(["Player"]), async (req, res) => {
 
 app.get('/payment-success', verifyRole(["Player"]), async (req, res) => {
     try {
-        const userId = req.session.userId;
-
-        console.log(userId);
-        
-        // Check Players table directly
-        const paid = await db.execute(
+        const [player] = await db.promise().query(
             'SELECT PayedFee FROM Players WHERE UserID = ?',
-            [userId]
+            [req.session.userId]
         );
+        console.log(player[0].PayedFee);
 
-        console.log(paid);
-
-        if (paid !== 1) {
-            return res.status(403).send('Access denied. Payment not completed.');
-        } else {
-            res.sendFile(path.join(__dirname, 'public', 'payment-success.html'));
+        // Check for boolean TRUE (1 in MySQL)
+        if (player[0].PayedFee !== 1) {
+            return res.redirect('/payment');
         }
+        
+        res.sendFile(path.join(__dirname, 'public', 'payment-success.html'));
     } catch (error) {
         console.error('Payment verification error:', error);
-        res.status(500).send('Server error');
+        res.redirect('/');
     }
 });
 

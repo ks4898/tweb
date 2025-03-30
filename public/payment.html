@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,15 +7,23 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;700&display=swap" rel="stylesheet">
 
-    <!-- Bootstrap JS (Optional) -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="/css/payment.css">
-    <link rel="stylesheet" href="/css/navbar.css">
+    <!--<link rel="stylesheet" href="/css/payment.css">-->
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        body {
+            height: 100vh;
+        }
+        #box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
 </head>
 
 <body>
@@ -31,26 +38,36 @@
             <a href="/signup" class="nav-link">Account</a>
         </div>
     </nav>
-    <div id="box">
-        <h1>Tournament Registration Payment</h1>
-        <p class="explain">Hello, Welcome to the Aardvark Games tournament payment page! The payment amount for
-            participation is $10 USD per player.
-        <p class="explain">Kindly input your card information in the provided form below, and then press the Pay My Fee button to finalize
-            your individual registration in the tournament.</p> 
-        <p class="explain">We're looking forward to having you! :-)</p>
-        </p>
-        <div class="container" style="max-width: 500px;">
-            <div class="card p-3 mt-4">
-                <div id="card-element" class="mb-3"></div>
-                <button id="submit-payment" class="btn btn-primary w-100">Pay My Fee</button>
+    
+    <div id="box" class="container mt-5">
+        <h1 class="text-center mb-4" style="padding: 2rem !important;">Tournament Registration Payment</h1>
+        
+        <!-- Dynamic greeting with ID -->
+        <p id="explain" class="explain text-center fs-5 mb-4"></p>
+        <p class="explain text-center fs-5 mb-4">Welcome to the Aardvark Games tournament payment page!</p>
+        <p class="explain text-center fs-5 mb-4">The payment amount for participation is $10 USD per player.</p>
+        <div class="card shadow-lg p-4 mb-5 bg-body rounded" style="max-width: 600px; margin: 0 auto; text-align: center;">
+            <div class="card-body">
+                <p class="explain text-muted mb-4">Kindly input your card information in the provided form below, and then press Pay My Fee button to finalize your individual registration in the tournament.</p>
+                
+                <div id="card-element" class="mb-4 p-3 border rounded"></div>
+                
+                <button id="submit-payment" class="btn btn-primary w-100 py-2" style="max-width: 250px;">
+                    Pay My Fee
+                </button>
+                
                 <div id="payment-message" class="mt-2 text-danger small"></div>
+                
+                <p class="explain text-center mt-4">We're looking forward to having you! <span class="text-primary">:-)</span></p>
             </div>
         </div>
-        <!-- Load Stripe.js FIRST -->
+
+        <!-- Stripe.js and payment script -->
         <script src="https://js.stripe.com/v3/"></script>
-        <!-- Then your payment script -->
         <script src="/js/testpayment.js"></script>
     </div>
-</body>
 
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
 </html>

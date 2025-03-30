@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tournament Registration Payment</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;700&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap JS (Optional) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/payment.css">
+    <link rel="stylesheet" href="/css/navbar.css">
+</head>
+
+<body>
+    <nav class="navbar">
+        <a href="/" class="navbar-logo">Aardvark Games</a>
+        <div class="navbar-links">
+            <a href="/colleges" class="nav-link">Colleges</a>
+            <a href="/brackets" class="nav-link">Brackets</a>
+            <a href="/schedule" class="nav-link">Schedule</a>
+            <a href="/news" class="nav-link">News</a>
+            <a href="/about" class="nav-link">About Us</a>
+            <a href="/signup" class="nav-link">Account</a>
+        </div>
+    </nav>
+    <div id="box">
+        <h1>Tournament Registration Payment</h1>
+        <p class="explain">Hello, Welcome to the Aardvark Games tournament payment page! The payment amount for
+            participation is $10 USD per player.
+        <p class="explain">Kindly input your card information in the provided form below, and then press the Pay My Fee button to finalize
+            your individual registration in the tournament.</p> 
+        <p class="explain">We're looking forward to having you! :-)</p>
+        </p>
+        <div class="container" style="max-width: 500px;">
+            <div class="card p-3 mt-4">
+                <div id="card-element" class="mb-3"></div>
+                <button id="submit-payment" class="btn btn-primary w-100">Pay My Fee</button>
+                <div id="payment-message" class="mt-2 text-danger small"></div>
+            </div>
+        </div>
+        <!-- Load Stripe.js FIRST -->
+        <script src="https://js.stripe.com/v3/"></script>
+        <!-- Then your payment script -->
+        <script src="/js/testpayment.js"></script>
+    </div>
+</body>
+
+</html>
