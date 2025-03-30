@@ -35,55 +35,33 @@ document.addEventListener('DOMContentLoaded', async function () {
 });
 
 function initStripePayment() {
-    const stripe = Stripe('pk_test_TYooMQauvdEDq54NiTphI7jx'); // replace with your actual publishable key !
+    const stripe = Stripe(process.env.STRIPE_PUBLISHABLE_KEY);
     const elements = stripe.elements();
     const cardElement = elements.create('card');
+
     cardElement.mount('#card-element');
 
-    const form = document.getElementById('payment-form');
-    form.addEventListener('submit', async (event) => {
-        event.preventDefault();
+    document.getElementById('submit-payment').addEventListener('click', async () => {
+        const { clientSecret } = await fetch('/create-payment-intent', {
+            method: 'POST'
+        }).then(res => res.json());
 
-        const { error, paymentMethod } = await stripe.createPaymentMethod({
-            type: 'card',
-            card: cardElement,
+        const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+            payment_method: {
+                card: elements.getElement(CardElement)
+            }
         });
 
         if (error) {
-            console.error(error);
-            document.getElementById('card-errors').textContent = error.message;
-            return;
-        }
-
-        // create PaymentIntent on the server
-        const response = await fetch('/create-payment-intent', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-        });
-        const { clientSecret } = await response.json();
-
-        // confirm the payment on the client
-        const result = await stripe.confirmCardPayment(clientSecret, {
-            payment_method: paymentMethod.id
-        });
-
-        if (result.error) {
-            console.error(result.error);
-            document.getElementById('card-errors').textContent = result.error.message;
+            document.getElementById('payment-message').textContent = error.message;
         } else {
-            // payment succeeded, confirm on the server
-            const confirmResponse = await fetch('/confirm-payment', {
+            const result = await fetch('/confirm-payment', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ paymentIntentId: result.paymentIntent.id })
+                body: JSON.stringify({ paymentIntentId: paymentIntent.id })
             });
-            const confirmResult = await confirmResponse.json();
-            if (confirmResult.success) {
-                window.location.href = "/payment-success";
-            } else {
-                alert('Payment failed: ' + confirmResult.error);
-                window.location.href = "/";
-            }
+
+            if (result.ok) window.location.href = '/payment-success';
         }
     });
 }
