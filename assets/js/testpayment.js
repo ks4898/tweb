@@ -51,49 +51,43 @@ function initStripePayment() {
                 base: {
                     fontSize: '16px',
                     color: '#32325d',
-                    '::placeholder': { color: '#aab7c4' }
+                    '::placeholder': {
+                        color: '#aab7c4'
+                    }
                 }
-            },
-            classes: { base: 'md-3' } // Match your existing column width
+            }
         });
         cardElement.mount('#card-element');
 
         // Payment handler
         document.getElementById('submit-payment').addEventListener('click', async () => {
             try {
+                // Fetch payment intent
                 const response = await fetch('/create-payment-intent', { method: 'POST' });
-                
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Payment failed');
-                }
-
+                if (!response.ok) throw new Error('Failed to create payment intent');
                 const { clientSecret } = await response.json();
-                
-                if (!clientSecret) {
-                    throw new Error('Invalid payment configuration');
-                }
-
-                const { error } = await stripe.confirmCardPayment(clientSecret, {
+        
+                // Confirm payment
+                const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
                     payment_method: { card: cardElement }
                 });
-
+        
                 if (error) throw error;
-                
-                const confirmResponse = await fetch('/confirm-payment', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ paymentIntentId: paymentIntent.id })
-                });
-                
-                if (confirmResponse.ok) {
+        
+                // Verify payment succeeded
+                if (paymentIntent.status === 'succeeded') {
+                    await fetch('/confirm-payment', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ paymentIntentId: paymentIntent.id })
+                    });
                     window.location.href = '/payment-success';
                 }
-
             } catch (error) {
                 document.getElementById('payment-message').textContent = error.message;
             }
         });
+        
 
     } catch (error) {
         document.getElementById('payment-message').textContent = 'Payment system initialization failed';

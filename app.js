@@ -1053,23 +1053,18 @@ app.post('/create-payment-intent', verifyRole(["Player"]), async (req, res) => {
 app.post('/confirm-payment', verifyRole(["Player"]), async (req, res) => {
     try {
         const { paymentIntentId } = req.body;
-        
-        // Retrieve payment intent from Stripe
         const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
         
-        // Verify payment succeeded
         if (paymentIntent.status !== 'succeeded') {
             return res.status(400).json({ error: 'Payment not completed' });
         }
 
-        // Update database
         await db.execute(
-            `UPDATE Players SET payedFee = 1 WHERE UserID = ?`,
+            'UPDATE Players SET PayedFee = 1 WHERE UserID = ?',
             [paymentIntent.metadata.userId]
         );
         
         res.json({ success: true });
-        
     } catch (error) {
         console.error('Payment confirmation error:', error);
         res.status(500).json({ error: 'Payment verification failed' });
@@ -1079,18 +1074,22 @@ app.post('/confirm-payment', verifyRole(["Player"]), async (req, res) => {
 app.get('/payment-success', verifyRole(["Player"]), async (req, res) => {
     try {
         const userId = req.session.userId;
+
+        console.log(userId);
         
         // Check Players table directly
-        const [player] = await db.execute(
-            'SELECT payedFee FROM Players WHERE UserID = ?',
+        const paid = await db.execute(
+            'SELECT PayedFee FROM Players WHERE UserID = ?',
             [userId]
         );
 
-        if (!player.length || player[0].payedFee !== 1) {
+        console.log(paid);
+
+        if (paid !== 1) {
             return res.status(403).send('Access denied. Payment not completed.');
+        } else {
+            res.sendFile(path.join(__dirname, 'public', 'payment-success.html'));
         }
-        
-        res.sendFile(path.join(__dirname, 'public', 'payment-success.html'));
     } catch (error) {
         console.error('Payment verification error:', error);
         res.status(500).send('Server error');
