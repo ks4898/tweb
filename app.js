@@ -5,7 +5,6 @@ const bcrypt = require("bcryptjs"); // safe password encryption
 const session = require("express-session");
 require("dotenv").config(); // safe config
 const { verifyRole } = require("./assets/js/auth.js"); // user authorization
-const { verifyPayment } = require("./assets/js/verifypay.js");
 const errorHandler = require('./assets/js/errorhandler'); // error handling
 const Stripe = require('stripe');
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
@@ -1067,7 +1066,6 @@ app.post('/confirm-payment', verifyRole(["Player"]), async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
-
 
 app.get('/payment-success',
     verifyRole(["Player"]),
