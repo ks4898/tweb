@@ -1053,21 +1053,26 @@ app.post('/create-payment-intent', verifyRole(["Player"]), async (req, res) => {
 app.post('/confirm-payment', verifyRole(["Player"]), async (req, res) => {
     try {
         const { paymentIntentId } = req.body;
+        
+        // Retrieve payment intent from Stripe
         const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
         
-        if (paymentIntent.status === 'succeeded') {
-            await db.execute(
-                `UPDATE Players SET payedFee = 1 WHERE UserID = ?`,
-                [paymentIntent.metadata.userId]
-            );
-            return res.json({ success: true });
+        // Verify payment succeeded
+        if (paymentIntent.status !== 'succeeded') {
+            return res.status(400).json({ error: 'Payment not completed' });
         }
+
+        // Update database
+        await db.execute(
+            `UPDATE Players SET payedFee = 1 WHERE UserID = ?`,
+            [paymentIntent.metadata.userId]
+        );
         
-        res.status(400).json({ error: 'Payment not completed' });
+        res.json({ success: true });
         
     } catch (error) {
         console.error('Payment confirmation error:', error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: 'Payment verification failed' });
     }
 });
 
