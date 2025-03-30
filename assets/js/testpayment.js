@@ -34,44 +34,42 @@ document.addEventListener('DOMContentLoaded', async function () {
         });
 });
 
+let stripe, elements;
+
 async function initStripePayment() {
-    try {
-        // 1. Initialize Stripe
-        const stripe = Stripe('pk_test_51R8PKGQ563EKpadRONF5n8pWipbZcJH8OoH3HC0pF1I9GRFoUUhybDBZOGDLS6nnS2zBiRBYMvbOVotS9jR6mq9v00kZgS46TL'); // Replace with actual key
-        const elements = stripe.elements();
+  try {
+    stripe = Stripe('pk_test_51R8PKGQ563EKpadRONF5n8pWipbZcJH8OoH3HC0pF1I9GRFoUUhybDBZOGDLS6nnS2zBiRBYMvbOVotS9jR6mq9v00kZgS46TL');
+    elements = stripe.elements();
+    
+    const card = elements.create('card', {
+      style: {
+        base: {
+          fontSize: '16px',
+          color: '#32325d',
+          '::placeholder': { color: '#aab7c4' }
+        }
+      }
+    });
+    card.mount('#card-element');
 
-        // 2. Mount card element
-        const card = elements.create('card');
-        card.mount('#card-element');
+    document.getElementById('submit-payment').addEventListener('click', async () => {
+      const { clientSecret } = await fetch('/create-payment-intent', {
+        method: 'POST'
+      }).then(res => res.json());
 
-        // 3. Payment handler
-        document.getElementById('submit-payment').addEventListener('click', async () => {
-            // Create payment intent
-            const { clientSecret } = await fetch('/create-payment-intent', {
-                method: 'POST'
-            }).then(res => res.json());
+      const { error } = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: { card }
+      });
 
-            // Confirm payment
-            const { error } = await stripe.confirmCardPayment(clientSecret, {
-                payment_method: {
-                    card: elements.getElement(CardElement)
-                }
-            });
-
-            if (error) {
-                document.getElementById('payment-message').textContent = error.message;
-            } else {
-                // Update payment status
-                await fetch('/confirm-payment', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ paymentIntentId })
-                });
-                window.location.href = '/payment-success';
-            }
-        });
-    } catch (error) {
-        console.error('Payment initialization failed:', error);
-        document.getElementById('payment-message').textContent = 'Payment system error';
-    }
+      error ? showError(error.message) : window.location.href = '/payment-success';
+    });
+    
+  } catch (error) {
+    showError('Payment system initialization failed');
+  }
 }
+
+// Keep existing user verification logic
+// Add to existing code:
+document.getElementById('card-element').style.padding = '10px';
+document.getElementById('submit-payment').classList.add('mx-auto', 'd-block', 'mt-3');
