@@ -1037,38 +1037,38 @@ app.post('/create-payment-intent', verifyRole(["Player"]), async (req, res) => {
 // Handle payment confirmation and database update
 app.post('/confirm-payment', verifyRole(["Player"]), async (req, res) => {
     try {
-      const { paymentMethodId } = req.body;
-      const userId = req.session.userId;
-  
-      // 1. Create PaymentIntent
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: 1000, // $10.00
-        currency: 'usd',
-        payment_method: paymentMethodId,
-        confirm: true,
-        metadata: { userId }
-      });
-  
-      // 2. Update payedFee if confirmed
-      if (paymentIntent.status === 'succeeded') {
-        await db.execute(
-          'UPDATE Players SET payedFee = 1 WHERE UserID = ?',
-          [userId]
-        );
-        res.json({ success: true });
-      } else {
-        res.status(400).json({ error: 'Payment failed' });
-      }
-  
+        const { paymentMethodId } = req.body;
+        const userId = req.session.userId;
+
+        // 1. Create PaymentIntent
+        const paymentIntent = await stripe.paymentIntents.create({
+            amount: 1000, // $10.00
+            currency: 'usd',
+            payment_method: paymentMethodId,
+            confirm: true,
+            metadata: { userId }
+        });
+
+        // 2. Update payedFee if confirmed
+        if (paymentIntent.status === 'succeeded') {
+            await db.execute(
+                'UPDATE Players SET payedFee = 1 WHERE UserID = ?',
+                [userId]
+            );
+            res.json({ success: true });
+        } else {
+            res.status(400).json({ error: 'Payment failed' });
+        }
+
     } catch (error) {
-      res.status(500).json({ error: error.message });
+        res.status(500).json({ error: error.message });
     }
-  });
-  
+});
+
 
 app.get('/payment-success', verifyRole(["Player"]), verifyPayment, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'payment-success.html'));
-  });
+});
 
 
 /*// payment processing route
