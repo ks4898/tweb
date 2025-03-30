@@ -1104,10 +1104,10 @@ app.post('/create-payment-intent', verifyRole(["Player"]), async (req, res) => {
     }
 });*/
 
-app.post('/create-payment-intent', /*verifyRole(["Player"]),*/ async (req, res) => {
+/*app.post('/create-payment-intent', /*verifyRole(["Player"]), async (req, res) => {
     // mock implementation
     res.json({ clientSecret: 'mock_client_secret' });
-});
+});*/
 
 /*// confirm payment
 app.post('/confirm-payment', verifyRole(["Player"]), async (req, res) => {
@@ -1138,8 +1138,8 @@ app.post('/confirm-payment', verifyRole(["Player"]), async (req, res) => {
     }
 });*/
 
-// mock payment confirm
-app.post('/confirm-payment', /*verifyRole(["Player"]),*/ async (req, res) => {
+/* mock payment confirm
+app.post('/confirm-payment', /*verifyRole(["Player"]), async (req, res) => {
     const userId = req.session.userId;
 
     try {
@@ -1153,7 +1153,7 @@ app.post('/confirm-payment', /*verifyRole(["Player"]),*/ async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
-});
+});*/
 
 
 // tournament signup route

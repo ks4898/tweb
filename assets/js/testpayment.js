@@ -34,39 +34,47 @@ document.addEventListener('DOMContentLoaded', async function () {
         });
 });
 
-let stripe, elements;
+// Initialize Stripe FIRST
+const stripe = Stripe('pk_test_51R8PKGQ563EKpadRONF5n8pWipbZcJH8OoH3HC0pF1I9GRFoUUhybDBZOGDLS6nnS2zBiRBYMvbOVotS9jR6mq9v00kZgS46TL');
+const elements = stripe.elements();
+
+// Create card element with constrained styling
+const card = elements.create('card', {
+    style: {
+        base: {
+            fontSize: '16px',
+            color: '#32325d',
+            '::placeholder': { color: '#aab7c4' }
+        }
+    },
+    classes: { base: 'md-3' } // Match your existing column width
+});
+
+// Mount to container
+card.mount('#card-element');
+
+function clearError() {
+    document.getElementById('payment-message').textContent = '';
+}
 
 async function initStripePayment() {
-  try {
-    stripe = Stripe('pk_test_51R8PKGQ563EKpadRONF5n8pWipbZcJH8OoH3HC0pF1I9GRFoUUhybDBZOGDLS6nnS2zBiRBYMvbOVotS9jR6mq9v00kZgS46TL');
-    elements = stripe.elements();
-    
-    const card = elements.create('card', {
-      style: {
-        base: {
-          fontSize: '16px',
-          color: '#32325d',
-          '::placeholder': { color: '#aab7c4' }
-        }
-      }
-    });
-    card.mount('#card-element');
+    try {
+        document.getElementById('submit-payment').addEventListener('click', async () => {
+            clearError();
+            const { clientSecret } = await fetch('/create-payment-intent', {
+                method: 'POST'
+            }).then(res => res.json());
 
-    document.getElementById('submit-payment').addEventListener('click', async () => {
-      const { clientSecret } = await fetch('/create-payment-intent', {
-        method: 'POST'
-      }).then(res => res.json());
+            const { error } = await stripe.confirmCardPayment(clientSecret, {
+                payment_method: { card }
+            });
 
-      const { error } = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: { card }
-      });
+            error ? showError(error.message) : window.location.href = '/payment-success';
+        });
 
-      error ? showError(error.message) : window.location.href = '/payment-success';
-    });
-    
-  } catch (error) {
-    showError('Payment system initialization failed');
-  }
+    } catch (error) {
+        document.getElementById('payment-message').textContent = error.message;
+    }
 }
 
 // Keep existing user verification logic
