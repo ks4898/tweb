@@ -1020,55 +1020,73 @@ app.get("/player/:userId", async (req, res) => {
 app.post('/create-payment-intent', verifyRole(["Player"]), async (req, res) => {
     try {
         const userId = req.session.userId;
+
+        // Verify user hasn't already paid
+        const [user] = await db.execute(
+            'SELECT payedFee FROM Players WHERE UserID = ?',
+            [userId]
+        );
+
+        if (user[0].payedFee === 1) {
+            return res.status(400).json({ error: "Payment already completed, we don't want you paying twice! ;)" });
+        }
+
         const paymentIntent = await stripe.paymentIntents.create({
-            amount: 1000, // Amount in cents (e.g., $10.00)
+            amount: 1000, // $10.00 in cents
             currency: 'usd',
             payment_method_types: ['card'],
             metadata: { userId }
         });
 
         res.json({ clientSecret: paymentIntent.client_secret });
+
     } catch (error) {
+        console.error('Payment intent error:', error);
         res.status(500).json({ error: error.message });
     }
 });
 
 // Payment confirmation
-// Handle payment confirmation and database update
 app.post('/confirm-payment', verifyRole(["Player"]), async (req, res) => {
     try {
-        const { paymentMethodId } = req.body;
-        const userId = req.session.userId;
+        const { paymentIntentId } = req.body;
+        const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 
-        // 1. Create PaymentIntent
-        const paymentIntent = await stripe.paymentIntents.create({
-            amount: 1000, // $10.00
-            currency: 'usd',
-            payment_method: paymentMethodId,
-            confirm: true,
-            metadata: { userId }
-        });
-
-        // 2. Update payedFee if confirmed
         if (paymentIntent.status === 'succeeded') {
             await db.execute(
                 'UPDATE Players SET payedFee = 1 WHERE UserID = ?',
-                [userId]
+                [paymentIntent.metadata.userId]
             );
-            res.json({ success: true });
-        } else {
-            res.status(400).json({ error: 'Payment failed' });
+            return res.json({ success: true });
         }
 
+        res.status(400).json({ error: 'Payment not completed' });
+
     } catch (error) {
+        console.error('Payment confirmation error:', error);
         res.status(500).json({ error: error.message });
     }
 });
 
 
-app.get('/payment-success', verifyRole(["Player"]), verifyPayment, (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'payment-success.html'));
-});
+app.get('/payment-success',
+    verifyRole(["Player"]),
+    async (req, res, next) => {
+        try {
+            const [user] = await db.execute(
+                'SELECT payedFee FROM Players WHERE UserID = ?',
+                [req.session.userId]
+            );
+            if (user[0].payedFee !== 1) throw new Error('Payment not verified');
+            next();
+        } catch (error) {
+            res.status(403).send('Access denied');
+        }
+    },
+    (req, res) => {
+        res.sendFile(path.join(__dirname, 'public', 'payment-success.html'));
+    }
+);
 
 
 /*// payment processing route
