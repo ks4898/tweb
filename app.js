@@ -1019,29 +1019,35 @@ app.get("/player/:userId", async (req, res) => {
 app.post('/create-payment-intent', verifyRole(["Player"]), async (req, res) => {
     try {
         const userId = req.session.userId;
-
-        // Verify user hasn't already paid
-        const [user] = await db.execute(
+        
+        // Add error handling for database query
+        const [players] = await db.execute(
             'SELECT payedFee FROM Players WHERE UserID = ?',
             [userId]
         );
 
-        if (user[0].payedFee === 1) {
-            return res.status(400).json({ error: "Payment already completed, we don't want you paying twice! ;)" });
+        if (!players.length) {
+            return res.status(404).json({ error: "Player not found" });
+        }
+
+        if (players[0].payedFee === 1) {
+            return res.status(400).json({ error: "Payment already completed" });
         }
 
         const paymentIntent = await stripe.paymentIntents.create({
-            amount: 1000, // $10.00 in cents
+            amount: 1000,
             currency: 'usd',
-            payment_method_types: ['card'],
             metadata: { userId }
         });
 
-        res.json({ clientSecret: paymentIntent.client_secret });
+        // Ensure proper response format
+        res.json({ 
+            clientSecret: paymentIntent.client_secret 
+        });
 
     } catch (error) {
-        console.error('Payment intent error:', error);
-        res.status(500).json({ error: error.message });
+        console.error('Payment Intent Error:', error);
+        res.status(500).json({ error: "Payment system error" });
     }
 });
 

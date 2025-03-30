@@ -60,16 +60,37 @@ function clearError() {
 async function initStripePayment() {
     try {
         document.getElementById('submit-payment').addEventListener('click', async () => {
-            clearError();
-            const { clientSecret } = await fetch('/create-payment-intent', {
-                method: 'POST'
-            }).then(res => res.json());
+            try {
+                // Get client secret PROPERLY
+                const response = await fetch('/create-payment-intent', {
+                    method: 'POST'
+                });
 
-            const { error } = await stripe.confirmCardPayment(clientSecret, {
-                payment_method: { card }
-            });
+                if (!response.ok) {
+                    throw new Error('Failed to create payment intent');
+                }
 
-            error ? showError(error.message) : window.location.href = '/payment-success';
+                const { clientSecret } = await response.json();
+
+                // Verify clientSecret exists
+                if (!clientSecret) {
+                    throw new Error('Invalid payment intent');
+                }
+
+                const { error } = await stripe.confirmCardPayment(clientSecret, {
+                    payment_method: {
+                        card: elements.getElement(CardElement)
+                    }
+                });
+
+                if (error) throw error;
+
+                window.location.href = '/payment-success';
+
+            } catch (error) {
+                console.error('Payment Error:', error);
+                document.getElementById('payment-message').textContent = error.message;
+            }
         });
 
     } catch (error) {
