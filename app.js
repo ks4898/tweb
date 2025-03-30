@@ -1021,16 +1021,15 @@ app.post('/create-payment-intent', verifyRole(["Player"]), async (req, res) => {
         const userId = req.session.userId;
         
         // Fixed database query destructuring
-        const [playerRows] = await db.execute(
+        const player = await db.execute(
             'SELECT payedFee FROM Players WHERE UserID = ?',
             [userId]
         );
 
-        if (!playerRows || playerRows.length === 0) {
+        if (!player || player.length === 0) {
             return res.status(404).json({ error: "Player account not found" });
         }
-
-        if (playerRows[0].payedFee === 1) {
+        if (player.payedFee === 1) {
             return res.status(400).json({ error: "Payment already completed" });
         }
 
