@@ -30,29 +30,14 @@
             <a href="/brackets" class="nav-link">Brackets</a>
             <a href="/schedule" class="nav-link">Schedule</a>
             <a href="/news" class="nav-link">News</a>
-            <a href="/about" class="nav-link active">About Us</a>
+            <a href="/about" class="nav-link">About Us</a>
             <a href="/signup" class="nav-link">Account</a>
         </div>
     </nav>
 
     <div class="container">
         <h1>Tournament Standings</h1>
-        <div id="matches">
-            <div class="match">
-                <div class="team">
-                    <img src="/media/img/kyoto-university.jpg" alt="Team B">
-                    <input class="name" type="text" value="Team B">
-                </div>
-                <input type="number" class="score" value="0">
-                <span>vs</span>
-                <input type="number" class="score" value="0">
-                <div class="team">
-                    <img src="/media/img/rit-emblem.jpg" alt="Team B">
-                    <input class="name" type="text" value="Team B">
-                </div>
-                <button class="remove-btn" onclick="removeMatch(this)">X</button>
-            </div>
-        </div>
+        <div id="matches"> </div>
         <button onclick="addMatch()">Add Match</button>
     </div>
 
