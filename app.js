@@ -339,7 +339,7 @@ app.delete("/delete-college/:collegeId", verifyRole(["SuperAdmin", "Admin"]), (r
 // route to fetch all teams
 app.get("/teams", (req, res) => {
     db.execute(`
-        SELECT t.TeamID, t.Name, t.UniversityID, u.Name AS UniversityName, t.CreatedDate 
+        SELECT t.TeamID, t.Name, t.UniversityID, u.Name AS UniversityName, t.CreatedDate
         FROM Teams t
         JOIN University u ON t.UniversityID = u.UniversityID
     `, (err, results) => {
@@ -1239,6 +1239,34 @@ app.delete('/delete-news/:PostID', verifyRole(['Admin', 'SuperAdmin']), async (r
         console.error('Error deleting news article:', error);
         res.status(500).json({ message: 'Error deleting news article' });
     }
+});
+
+app.post("/api/matches", (req, res) => {
+    const { tournamentID, team1ID, team2ID, matchDate, scoreTeam1, scoreTeam2 } = req.body;
+
+    const query = `
+        INSERT INTO Matches (TournamentID, Team1ID, Team2ID, MatchDate, ScoreTeam1, ScoreTeam2)
+        VALUES (?, ?, ?, ?, ?, ?)
+    `;
+
+    db.query(query, [tournamentID, team1ID, team2ID, matchDate, scoreTeam1, scoreTeam2], (err, result) => {
+        if (err) {
+            console.error("Error inserting match:", err);
+            return res.status(500).json({ error: "Database error" });
+        }
+        res.status(200).json({ message: "Match inserted", matchID: result.insertId });
+    });
+});
+
+app.get("/api/teams", (req, res) => {
+    const query = "SELECT name FROM teams"; // Adjust column names as per your DB
+    db.query(query, (err, results) => {
+        if (err) {
+            console.error("Error fetching teams:", err);
+            return res.status(500).json({ error: "Database error" });
+        }
+        res.json(results);
+    });
 });
 
 

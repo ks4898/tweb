@@ -22,6 +22,7 @@ CREATE TABLE Tournaments (
     Location VARCHAR(255) NOT NULL,
     Status VARCHAR(50) NOT NULL
 );
+SELECT * FROM Tournaments;
 
 DROP TABLE IF EXISTS University;
 CREATE TABLE University (
@@ -263,6 +264,7 @@ INSERT INTO Schedule (ScheduleID, MatchID, ScheduledDate) VALUES
 (16, 16, '2025-04-16 16:00:00');
 
 SELECT * FROM Schedule;
+SELECT * FROM Matches;
 
 SELECT s.ScheduleID, m.MatchID, m.Team1ID, m.Team2ID, s.ScheduledDate
 FROM Schedule s
