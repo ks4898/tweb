@@ -90,7 +90,7 @@ app.get("/details", (req, res) => {
 });
 
 // serve payment page
-app.get("/payment", (req, res) => {
+app.get("/payment", verifyRole(["Player"]), (req, res) => {
     res.sendFile(path.join(__dirname, "public", "payment.html"));
 });
 
@@ -122,7 +122,7 @@ app.get("/signup", (req, res) => {
 });
 
 // session check
-app.get("/check-session", (req, res) => {
+app.get("/check-session", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
     return res.json({
         loggedIn: !!req.session.userId,
         role: req.session.role || null

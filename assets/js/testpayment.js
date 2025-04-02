@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     let user_id, user_name, user_role;
 
     fetch('/user-info')
-        .then(response => response.json())
+        .then(response =>response.json())
         .then(data => {
             user_id = data.userId;
             user_name = data.name;
