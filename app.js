@@ -682,7 +682,13 @@ app.get('/teams', async (req, res) => {
             `;
         }
 
-        const teams = await db.execute(query, params);
+        // Execute query and destructure results properly
+        const [rows] = await db.execute(query, params);
+
+        // Validate that rows is an array
+        if (!Array.isArray(rows)) {
+            throw new Error('Query result is not an array');
+        }
 
         // Read and render the HTML template for teams directory
         fs.readFile(path.join(__dirname, 'public', 'teams.html'), 'utf8', (err, data) => {
@@ -693,7 +699,7 @@ app.get('/teams', async (req, res) => {
 
             // Generate HTML for team cards
             let teamsHtml = '';
-            teams[0].forEach(team => {
+            rows.forEach(team => {
                 teamsHtml += `
                     <div class="col">
                         <div class="card h-100">
