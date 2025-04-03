@@ -682,11 +682,11 @@ app.get('/teams', async (req, res) => {
             `;
         }
 
-        // Execute query and destructure results properly
-        const [rows] = await db.execute(query, params);
+        // Execute query using promise-based MySQL2 method
+        const [teams] = await db.promise().execute(query, params);
 
-        // Validate that rows is an array
-        if (!Array.isArray(rows)) {
+        // Validate that teams is an array
+        if (!Array.isArray(teams)) {
             throw new Error('Query result is not an array');
         }
 
@@ -699,7 +699,7 @@ app.get('/teams', async (req, res) => {
 
             // Generate HTML for team cards
             let teamsHtml = '';
-            rows.forEach(team => {
+            teams.forEach(team => {
                 teamsHtml += `
                     <div class="col">
                         <div class="card h-100">
