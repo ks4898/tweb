@@ -490,14 +490,11 @@ app.get("/team-members", (req, res) => {
 app.get('/teams/:teamName', async (req, res) => {
     try {
         const teamName = decodeURIComponent(req.params.teamName);
-        const userId = req.session.userId;
+        const userId = req.session.userId; // Will be undefined if not logged in
 
-        // Get team data
+        // Get team details
         const [team] = await db.promise().execute(`
-            SELECT 
-                t.*, 
-                u.Name AS UniversityName, 
-                u.ImageURL AS UniversityImage 
+            SELECT t.*, u.Name AS UniversityName, u.ImageURL AS UniversityImage 
             FROM Teams t
             LEFT JOIN University u ON t.UniversityID = u.UniversityID
             WHERE t.Name = ?
@@ -505,12 +502,20 @@ app.get('/teams/:teamName', async (req, res) => {
 
         if (!team[0]) return res.status(404).send('Team not found');
 
-        // Check if current user is a team member
-        const [isMember] = await db.promise().execute(`
-            SELECT 1 FROM Players WHERE TeamID = ? AND UserID = ?
-        `, [team[0].TeamID, userId]);
+        let isMember = false;
+        
+        // Only check membership if user is logged in
+        if (userId) {
+            [isMember] = await db.promise().execute(`
+                SELECT 1 FROM Players 
+                WHERE TeamID = ? AND UserID = ?
+            `, [
+                team[0].TeamID,
+                userId ?? null  // Handle undefined as SQL NULL
+            ]);
+        }
 
-        // Get team members
+        // Get team members (public info)
         const [players] = await db.promise().execute(`
             SELECT p.*, u.Name 
             FROM Players p
@@ -518,7 +523,7 @@ app.get('/teams/:teamName', async (req, res) => {
             WHERE p.TeamID = ?
         `, [team[0].TeamID]);
 
-        // Render template
+        // Build template
         const html = (await fs.promises.readFile('public/team.html', 'utf8'))
             .replace('{{TEAM_NAME}}', team[0].Name)
             .replace('{{TEAM_IMAGE}}', team[0].ImageURL || '/default-team.png')
