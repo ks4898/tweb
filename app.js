@@ -338,7 +338,7 @@ app.delete("/delete-college/:collegeId", verifyRole(["SuperAdmin", "Admin"]), (r
 
 
 // route to fetch all teams
-app.get("/teams", (req, res) => {
+/*app.get("/teams", (req, res) => {
     db.execute(`
         SELECT t.TeamID, t.Name, t.UniversityID, u.Name AS UniversityName, t.CreatedDate
         FROM Teams t
@@ -350,7 +350,7 @@ app.get("/teams", (req, res) => {
         }
         res.json(results);
     });
-});
+});*/
 
 // fetch teams and players for a college
 app.get("/teams-for-college", (req, res) => {
@@ -645,7 +645,7 @@ app.post('/teams/:teamId/update', async function(req, res) {
     }
 });
 
-// Teams directory route
+// Teams directory route (renders teams.html)
 app.get('/teams', async (req, res) => {
     try {
         const searchQuery = req.query.q || '';
@@ -656,33 +656,33 @@ app.get('/teams', async (req, res) => {
 
         if (searchQuery && searchBy === 'name') {
             query = `
-                SELECT t.TeamID, t.Name, c.Name AS UniversityName 
+                SELECT t.TeamID, t.Name, u.Name AS UniversityName 
                 FROM Teams t
-                LEFT JOIN Colleges c ON t.CollegeID = c.CollegeID
+                LEFT JOIN University u ON t.UniversityID = u.UniversityID
                 WHERE t.Name LIKE ?
                 ORDER BY t.Name
             `;
             params = [`%${searchQuery}%`];
         } else if (searchQuery && searchBy === 'college') {
             query = `
-                SELECT t.TeamID, t.Name, c.Name AS UniversityName 
+                SELECT t.TeamID, t.Name, u.Name AS UniversityName 
                 FROM Teams t
-                LEFT JOIN Colleges c ON t.CollegeID = c.CollegeID
-                WHERE c.Name LIKE ?
-                ORDER BY c.Name, t.Name
+                LEFT JOIN University u ON t.UniversityID = u.UniversityID
+                WHERE u.Name LIKE ?
+                ORDER BY u.Name, t.Name
             `;
             params = [`%${searchQuery}%`];
         } else {
             // Default: all teams, alphabetically sorted
             query = `
-                SELECT t.TeamID, t.Name, c.Name AS UniversityName 
+                SELECT t.TeamID, t.Name, u.Name AS UniversityName 
                 FROM Teams t
-                LEFT JOIN Colleges c ON t.CollegeID = c.CollegeID
+                LEFT JOIN University u ON t.UniversityID = u.UniversityID
                 ORDER BY t.Name
             `;
         }
 
-        const [teams] = await db.execute(query, params);
+        const teams = await db.execute(query, params);
 
         // Read and render the HTML template for teams directory
         fs.readFile(path.join(__dirname, 'public', 'teams.html'), 'utf8', (err, data) => {
@@ -693,7 +693,7 @@ app.get('/teams', async (req, res) => {
 
             // Generate HTML for team cards
             let teamsHtml = '';
-            teams.forEach(team => {
+            teams[0].forEach(team => {
                 teamsHtml += `
                     <div class="col">
                         <div class="card h-100">
