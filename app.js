@@ -8,6 +8,7 @@ const { verifyRole } = require("./assets/js/auth.js"); // user authorization
 const errorHandler = require('./assets/js/errorhandler'); // error handling
 const Stripe = require('stripe');
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
+const fs = require('fs');
 
 /* DEPRECATED!
  require('express-async-errors');*/
@@ -482,6 +483,239 @@ app.get("/team-members", (req, res) => {
         }
         res.json(results);
     });
+});
+
+// TEAMS
+
+// Team public page route
+app.get('/teams/:teamId', async (req, res) => {
+    try {
+        const teamId = req.params.teamId;
+
+        // Get team details with college information
+        const [teamResults] = await db.execute(`
+            SELECT t.*, c.Name AS CollegeName 
+            FROM Teams t
+            LEFT JOIN Colleges c ON t.CollegeID = c.CollegeID
+            WHERE t.TeamID = ?
+        `, [teamId]);
+
+        if (teamResults.length === 0) {
+            return res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
+        }
+
+        // Get team members
+        const [playerResults] = await db.execute(`
+            SELECT p.*, u.Name 
+            FROM Players p
+            JOIN Users u ON p.UserID = u.UserID
+            WHERE p.TeamID = ?
+        `, [teamId]);
+
+        // Read the team template file
+        fs.readFile(path.join(__dirname, 'public', 'team.html'), 'utf8', (err, data) => {
+            if (err) {
+                console.error('Error reading team template:', err);
+                return res.status(500).send('Server error');
+            }
+
+            // Replace placeholders with actual data
+            let html = data.replace('{{TEAM_NAME}}', teamResults[0].Name)
+                .replace('{{COLLEGE_NAME}}', teamResults[0].CollegeName)
+                .replace('{{TEAM_IMAGE}}', teamResults[0].ImageURL || '/media/img/default-team.png')
+                .replace('{{TEAM_DESCRIPTION}}', teamResults[0].Description || 'No description available')
+                .replace('{{TEAM_ACHIEVEMENTS}}', teamResults[0].Achievements || 'No achievements listed');
+
+            // Generate team members HTML
+            let membersHtml = '';
+            playerResults.forEach(player => {
+                membersHtml += `<li class="list-group-item d-flex justify-content-between align-items-center">
+                    ${player.Name}
+                    ${player.Role === 'Captain' ? '<span class="badge bg-primary">Captain</span>' : ''}
+                </li>`;
+            });
+
+            html = html.replace('{{TEAM_MEMBERS}}', membersHtml);
+
+            // Add edit button if user is captain or admin
+            let editButtonHtml = '';
+            if (req.session.userId) {
+                const isAdmin = req.session.userRole === 'Admin';
+                const isCaptain = playerResults.some(p => p.UserID == req.session.userId && p.Role === 'Captain');
+
+                if (isAdmin || isCaptain) {
+                    editButtonHtml = `<a href="/teams/${teamId}/edit" class="btn btn-primary">Edit Team Profile</a>`;
+                }
+            }
+
+            html = html.replace('{{EDIT_BUTTON}}', editButtonHtml);
+
+            res.send(html);
+        });
+    } catch (error) {
+        console.error('Error fetching team details:', error);
+        res.status(500).send('Server error');
+    }
+});
+
+// Team edit page route
+app.get('/teams/:teamId/edit', async function(req, res) {
+    try {
+        const teamId = req.params.teamId;
+        const userId = req.session.userId;
+
+        // Ensure the user is logged in
+        if (!userId) {
+            return res.redirect('/login'); // Redirect to login if not authenticated
+        }
+
+        // Check if user is a member of the team
+        const [userTeam] = await db.execute(
+            'SELECT * FROM Players WHERE UserID = ? AND TeamID = ?',
+            [userId, teamId]
+        );
+
+        if (userTeam.length === 0) {
+            return res.status(403).sendFile(path.join(__dirname, 'public', '403.html')); // Unauthorized
+        }
+
+        // Get team details
+        const [teamResults] = await db.execute(
+            'SELECT Name, ImageURL, Description FROM Teams WHERE TeamID = ?',
+            [teamId]
+        );
+
+        if (teamResults.length === 0) {
+            return res.status(404).sendFile(path.join(__dirname, 'public', '404.html')); // Not Found
+        }
+
+        // Read the edit team template file
+        fs.readFile(path.join(__dirname, 'public', 'edit-team.html'), 'utf8', function(err, data) {
+            if (err) {
+                console.error('Error reading edit team template:', err);
+                return res.status(500).send('Server error');
+            }
+
+            // Replace placeholders with actual data
+            let html = data.replace('{{TEAM_NAME}}', teamResults[0].Name)
+                          .replace('{{TEAM_IMAGE_URL}}', teamResults[0].ImageURL || '')
+                          .replace('{{TEAM_DESCRIPTION}}', teamResults[0].Description || '');
+
+            res.send(html);
+        });
+    } catch (error) {
+        console.error('Error fetching team for editing:', error);
+        res.status(500).send('Server error');
+    }
+});
+
+// Team update route
+app.post('/teams/:teamId/update', async function(req, res) {
+    try {
+        const teamId = req.params.teamId;
+        const userId = req.session.userId;
+
+        // Ensure the user is logged in
+        if (!userId) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        const { imageURL, description } = req.body;
+
+        // Check if user is a member of the team
+        const [userTeam] = await db.execute(
+            'SELECT * FROM Players WHERE UserID = ? AND TeamID = ?',
+            [userId, teamId]
+        );
+
+        if (userTeam.length === 0) {
+            return res.status(403).json({ error: 'Unauthorized' }); // Unauthorized
+        }
+
+        // Update team profile
+        await db.execute(
+            'UPDATE Teams SET ImageURL = ?, Description = ? WHERE TeamID = ?',
+            [imageURL, description, teamId]
+        );
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error updating team profile:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Teams directory page
+app.get('/teams', async (req, res) => {
+    try {
+        const searchQuery = req.query.q || '';
+        const searchBy = req.query.by || 'all';
+
+        let query = '';
+        let params = [];
+
+        if (searchQuery && searchBy === 'name') {
+            query = `
+                SELECT t.TeamID, t.Name, c.Name AS UniversityName 
+                FROM Teams t
+                LEFT JOIN Colleges c ON t.CollegeID = c.CollegeID
+                WHERE t.Name LIKE ?
+                ORDER BY t.Name
+            `;
+            params = [`%${searchQuery}%`];
+        } else if (searchQuery && searchBy === 'college') {
+            query = `
+                SELECT t.TeamID, t.Name, c.Name AS UniversityName 
+                FROM Teams t
+                LEFT JOIN Colleges c ON t.CollegeID = c.CollegeID
+                WHERE c.Name LIKE ?
+                ORDER BY c.Name, t.Name
+            `;
+            params = [`%${searchQuery}%`];
+        } else {
+            // Default: all teams, alphabetically sorted
+            query = `
+                SELECT t.TeamID, t.Name, c.Name AS UniversityName 
+                FROM Teams t
+                LEFT JOIN Colleges c ON t.CollegeID = c.CollegeID
+                ORDER BY t.Name
+            `;
+        }
+
+        const [teams] = await db.execute(query, params);
+
+        // Render the teams directory page with the list of teams
+        fs.readFile(path.join(__dirname, 'public', 'teams.html'), 'utf8', (err, data) => {
+            if (err) {
+                console.error('Error reading teams template:', err);
+                return res.status(500).send('Server error');
+            }
+
+            // Generate HTML for the list of teams
+            let teamsHtml = '';
+            teams.forEach(team => {
+                teamsHtml += `
+                    <div class="col">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">${team.Name}</h5>
+                                <p class="card-text">${team.UniversityName}</p>
+                                <a href="/teams/${team.TeamID}" class="btn btn-primary">View Team</a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Replace placeholder with generated HTML
+            const html = data.replace('{{TEAMS_LIST}}', teamsHtml);
+
+            res.send(html);
+        });
+    } catch (error) {
+        console.error('Error fetching teams:', error);
+        res.status(500).send('Server error');
+    }
 });
 
 // ======================== TOURNAMENT MANAGEMENT ========================
@@ -1019,7 +1253,7 @@ app.get("/player/:userId", async (req, res) => {
 app.post('/create-payment-intent', verifyRole(["Player"]), async (req, res) => {
     try {
         const userId = req.session.userId;
-        
+
         // Fixed database query destructuring
         const player = await db.execute(
             'SELECT PayedFee FROM Players WHERE UserID = ?',
@@ -1054,7 +1288,7 @@ app.post('/confirm-payment', verifyRole(["Player"]), async (req, res) => {
     try {
         const { paymentIntentId } = req.body;
         const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-        
+
         if (paymentIntent.status !== 'succeeded') {
             return res.status(400).json({ error: 'Payment not completed' });
         }
@@ -1064,7 +1298,7 @@ app.post('/confirm-payment', verifyRole(["Player"]), async (req, res) => {
             'UPDATE Players SET PayedFee = TRUE WHERE UserID = ?',
             [paymentIntent.metadata.userId]
         );
-        
+
         res.json({ success: true });
     } catch (error) {
         console.error('Payment confirmation error:', error);
@@ -1084,7 +1318,7 @@ app.get('/payment-success', verifyRole(["Player"]), async (req, res) => {
         if (player[0].PayedFee !== 1) {
             return res.redirect('/payment');
         }
-        
+
         res.sendFile(path.join(__dirname, 'public', 'payment-success.html'));
     } catch (error) {
         console.error('Payment verification error:', error);
