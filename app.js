@@ -645,7 +645,7 @@ app.post('/teams/:teamId/update', async function(req, res) {
     }
 });
 
-// Teams directory page
+// Teams directory route
 app.get('/teams', async (req, res) => {
     try {
         const searchQuery = req.query.q || '';
@@ -684,14 +684,14 @@ app.get('/teams', async (req, res) => {
 
         const [teams] = await db.execute(query, params);
 
-        // Render the teams directory page with the list of teams
+        // Read and render the HTML template for teams directory
         fs.readFile(path.join(__dirname, 'public', 'teams.html'), 'utf8', (err, data) => {
             if (err) {
-                console.error('Error reading teams template:', err);
+                console.error('Error reading teams.html:', err);
                 return res.status(500).send('Server error');
             }
 
-            // Generate HTML for the list of teams
+            // Generate HTML for team cards
             let teamsHtml = '';
             teams.forEach(team => {
                 teamsHtml += `
@@ -707,7 +707,7 @@ app.get('/teams', async (req, res) => {
                 `;
             });
 
-            // Replace placeholder with generated HTML
+            // Replace placeholder with generated HTML content
             const html = data.replace('{{TEAMS_LIST}}', teamsHtml);
 
             res.send(html);
