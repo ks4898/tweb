@@ -489,53 +489,51 @@ app.get("/team-members", (req, res) => {
 
 app.get('/teams/:teamName', async (req, res) => {
     try {
-        const teamName = req.params.teamName;
+        const teamName = decodeURIComponent(req.params.teamName);
+        const userId = req.session.userId;
 
-        // Fetch team details with university information
-        const [teamRows] = await db.promise().execute(`
-            SELECT t.*, u.Name AS UniversityName 
+        // Get team data
+        const [team] = await db.promise().execute(`
+            SELECT 
+                t.*, 
+                u.Name AS UniversityName, 
+                u.ImageURL AS UniversityImage 
             FROM Teams t
             LEFT JOIN University u ON t.UniversityID = u.UniversityID
             WHERE t.Name = ?
         `, [teamName]);
 
-        if (teamRows.length === 0) {
-            return res.status(404).send('Team not found');
-        }
+        if (!team[0]) return res.status(404).send('Team not found');
 
-        // Fetch team members
-        const [playerRows] = await db.promise().execute(`
-            SELECT p.*, u.Name AS UserName 
+        // Check if current user is a team member
+        const [isMember] = await db.promise().execute(`
+            SELECT 1 FROM Players WHERE TeamID = ? AND UserID = ?
+        `, [team[0].TeamID, userId]);
+
+        // Get team members
+        const [players] = await db.promise().execute(`
+            SELECT p.*, u.Name 
             FROM Players p
             JOIN Users u ON p.UserID = u.UserID
             WHERE p.TeamID = ?
-        `, [teamRows[0].TeamID]);
+        `, [team[0].TeamID]);
 
-        // Render team page
-        fs.readFile(path.join(__dirname, 'public', 'team.html'), 'utf8', (err, data) => {
-            if (err) {
-                console.error('Error reading team.html:', err);
-                return res.status(500).send('Server error');
-            }
+        // Render template
+        const html = (await fs.promises.readFile('public/team.html', 'utf8'))
+            .replace('{{TEAM_NAME}}', team[0].Name)
+            .replace('{{TEAM_IMAGE}}', team[0].ImageURL || '/default-team.png')
+            .replace('{{UNIVERSITY_NAME}}', team[0].UniversityName)
+            .replace('{{UNIVERSITY_IMAGE}}', team[0].UniversityImage || '/default-university.png')
+            .replace('{{EDIT_BUTTON}}', isMember.length ? `
+                <a href="/edit-team/${team[0].TeamID}" class="btn btn-warning">Edit Profile</a>
+            ` : '');
 
-            // Replace placeholders in the template
-            let html = data.replace('{{TEAM_NAME}}', teamRows[0].Name)
-                           .replace('{{UNIVERSITY_NAME}}', teamRows[0].UniversityName)
-                           .replace('{{TEAM_DESCRIPTION}}', teamRows[0].Description || 'No description available.')
-                           .replace('{{TEAM_MEMBERS}}', playerRows.map(player => `
-                               <li class="list-group-item">
-                                   ${player.UserName}
-                               </li>
-                           `).join(''));
-
-            res.send(html);
-        });
+        res.send(html);
     } catch (error) {
-        console.error('Error fetching team details:', error);
+        console.error('Error:', error);
         res.status(500).send('Server error');
     }
 });
-
 
 // Team edit page route
 app.get('/teams/:teamId/edit', async function(req, res) {
@@ -629,67 +627,39 @@ app.get('/teams', async (req, res) => {
         const searchQuery = req.query.q || '';
         const searchBy = req.query.by || 'all';
 
-        let query = '';
-        let params = [];
+        const [teams] = await db.promise().execute(`
+            SELECT 
+                t.TeamID, 
+                t.Name, 
+                t.ImageURL AS TeamImage,
+                u.Name AS UniversityName,
+                u.ImageURL AS UniversityImage
+            FROM Teams t
+            LEFT JOIN University u ON t.UniversityID = u.UniversityID
+            ${searchQuery ? `WHERE ${searchBy === 'name' ? 't.Name' : 'u.Name'} LIKE ?` : ''}
+            ORDER BY t.Name
+        `, searchQuery ? [`%${searchQuery}%`] : []);
 
-        if (searchQuery && searchBy === 'name') {
-            query = `
-                SELECT t.TeamID, t.Name, u.Name AS UniversityName 
-                FROM Teams t
-                LEFT JOIN University u ON t.UniversityID = u.UniversityID
-                WHERE t.Name LIKE ?
-                ORDER BY t.Name
-            `;
-            params = [`%${searchQuery}%`];
-        } else if (searchQuery && searchBy === 'college') {
-            query = `
-                SELECT t.TeamID, t.Name, u.Name AS UniversityName 
-                FROM Teams t
-                LEFT JOIN University u ON t.UniversityID = u.UniversityID
-                WHERE u.Name LIKE ?
-                ORDER BY u.Name, t.Name
-            `;
-            params = [`%${searchQuery}%`];
-        } else {
-            // Default: all teams, alphabetically sorted
-            query = `
-                SELECT t.TeamID, t.Name, u.Name AS UniversityName 
-                FROM Teams t
-                LEFT JOIN University u ON t.UniversityID = u.UniversityID
-                ORDER BY t.Name
-            `;
-        }
-
-        const [teams] = await db.promise().execute(query, params);
-
-        // Read and render teams.html template
-        fs.readFile(path.join(__dirname, 'public', 'teams.html'), 'utf8', (err, data) => {
-            if (err) {
-                console.error('Error reading teams.html:', err);
-                return res.status(500).send('Server error');
-            }
-
-            // Generate HTML for team cards
-            let teamsHtml = teams.map(team => `
-                <div class="col">
-                    <div class="card h-100">
-                        <div class="card-body">
-                            <h5 class="card-title">${team.Name}</h5>
-                            <p class="card-text">${team.UniversityName}</p>
-                            <a href="/teams/${encodeURIComponent(team.Name)}" class="btn btn-primary">View Team</a>
-                        </div>
+        const teamsHtml = teams.map(team => `
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 shadow">
+                    ${team.TeamImage ? `<img src="${team.TeamImage}" class="card-img-top" alt="${team.Name}">` : ''}
+                    <div class="card-body">
+                        <h5 class="card-title">${team.Name}</h5>
+                        <p class="text-muted">${team.UniversityName}</p>
+                        <a href="/teams/${encodeURIComponent(team.Name)}" class="btn btn-primary">View Team</a>
                     </div>
                 </div>
-            `).join('');
+            </div>
+        `).join('');
 
-            // Replace placeholders in the template
-            const html = data.replace('{{TEAMS_LIST}}', teamsHtml)
-                             .replace('{{SEARCH_QUERY}}', searchQuery);
+        const html = (await fs.promises.readFile('public/teams.html', 'utf8'))
+            .replace('{{TEAMS_LIST}}', teamsHtml)
+            .replace('{{SEARCH_QUERY}}', searchQuery);
 
-            res.send(html);
-        });
+        res.send(html);
     } catch (error) {
-        console.error('Error fetching teams:', error);
+        console.error('Error:', error);
         res.status(500).send('Server error');
     }
 });
