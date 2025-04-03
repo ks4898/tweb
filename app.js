@@ -487,68 +487,46 @@ app.get("/team-members", (req, res) => {
 
 // TEAMS
 
-// Team public page route
-app.get('/teams/:teamId', async (req, res) => {
+app.get('/teams/:teamName', async (req, res) => {
     try {
-        const teamId = req.params.teamId;
+        const teamName = req.params.teamName;
 
-        // Get team details with college information
-        const [teamResults] = await db.execute(`
-            SELECT t.*, c.Name AS CollegeName 
+        // Fetch team details with university information
+        const [teamRows] = await db.promise().execute(`
+            SELECT t.*, u.Name AS UniversityName 
             FROM Teams t
-            LEFT JOIN Colleges c ON t.CollegeID = c.CollegeID
-            WHERE t.TeamID = ?
-        `, [teamId]);
+            LEFT JOIN University u ON t.UniversityID = u.UniversityID
+            WHERE t.Name = ?
+        `, [teamName]);
 
-        if (teamResults.length === 0) {
-            return res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
+        if (teamRows.length === 0) {
+            return res.status(404).send('Team not found');
         }
 
-        // Get team members
-        const [playerResults] = await db.execute(`
-            SELECT p.*, u.Name 
+        // Fetch team members
+        const [playerRows] = await db.promise().execute(`
+            SELECT p.*, u.Name AS UserName 
             FROM Players p
             JOIN Users u ON p.UserID = u.UserID
             WHERE p.TeamID = ?
-        `, [teamId]);
+        `, [teamRows[0].TeamID]);
 
-        // Read the team template file
+        // Render team page
         fs.readFile(path.join(__dirname, 'public', 'team.html'), 'utf8', (err, data) => {
             if (err) {
-                console.error('Error reading team template:', err);
+                console.error('Error reading team.html:', err);
                 return res.status(500).send('Server error');
             }
 
-            // Replace placeholders with actual data
-            let html = data.replace('{{TEAM_NAME}}', teamResults[0].Name)
-                .replace('{{COLLEGE_NAME}}', teamResults[0].CollegeName)
-                .replace('{{TEAM_IMAGE}}', teamResults[0].ImageURL || '/media/img/default-team.png')
-                .replace('{{TEAM_DESCRIPTION}}', teamResults[0].Description || 'No description available')
-                .replace('{{TEAM_ACHIEVEMENTS}}', teamResults[0].Achievements || 'No achievements listed');
-
-            // Generate team members HTML
-            let membersHtml = '';
-            playerResults.forEach(player => {
-                membersHtml += `<li class="list-group-item d-flex justify-content-between align-items-center">
-                    ${player.Name}
-                    ${player.Role === 'Captain' ? '<span class="badge bg-primary">Captain</span>' : ''}
-                </li>`;
-            });
-
-            html = html.replace('{{TEAM_MEMBERS}}', membersHtml);
-
-            // Add edit button if user is captain or admin
-            let editButtonHtml = '';
-            if (req.session.userId) {
-                const isAdmin = req.session.userRole === 'Admin';
-                const isCaptain = playerResults.some(p => p.UserID == req.session.userId && p.Role === 'Captain');
-
-                if (isAdmin || isCaptain) {
-                    editButtonHtml = `<a href="/teams/${teamId}/edit" class="btn btn-primary">Edit Team Profile</a>`;
-                }
-            }
-
-            html = html.replace('{{EDIT_BUTTON}}', editButtonHtml);
+            // Replace placeholders in the template
+            let html = data.replace('{{TEAM_NAME}}', teamRows[0].Name)
+                           .replace('{{UNIVERSITY_NAME}}', teamRows[0].UniversityName)
+                           .replace('{{TEAM_DESCRIPTION}}', teamRows[0].Description || 'No description available.')
+                           .replace('{{TEAM_MEMBERS}}', playerRows.map(player => `
+                               <li class="list-group-item">
+                                   ${player.UserName}
+                               </li>
+                           `).join(''));
 
             res.send(html);
         });
@@ -557,6 +535,7 @@ app.get('/teams/:teamId', async (req, res) => {
         res.status(500).send('Server error');
     }
 });
+
 
 // Team edit page route
 app.get('/teams/:teamId/edit', async function(req, res) {
@@ -645,7 +624,6 @@ app.post('/teams/:teamId/update', async function(req, res) {
     }
 });
 
-// Teams directory route (renders teams.html)
 app.get('/teams', async (req, res) => {
     try {
         const searchQuery = req.query.q || '';
@@ -682,15 +660,9 @@ app.get('/teams', async (req, res) => {
             `;
         }
 
-        // Execute query using promise-based MySQL2 method
         const [teams] = await db.promise().execute(query, params);
 
-        // Validate that teams is an array
-        if (!Array.isArray(teams)) {
-            throw new Error('Query result is not an array');
-        }
-
-        // Read and render the HTML template for teams directory
+        // Read and render teams.html template
         fs.readFile(path.join(__dirname, 'public', 'teams.html'), 'utf8', (err, data) => {
             if (err) {
                 console.error('Error reading teams.html:', err);
@@ -698,23 +670,21 @@ app.get('/teams', async (req, res) => {
             }
 
             // Generate HTML for team cards
-            let teamsHtml = '';
-            teams.forEach(team => {
-                teamsHtml += `
-                    <div class="col">
-                        <div class="card h-100">
-                            <div class="card-body">
-                                <h5 class="card-title">${team.Name}</h5>
-                                <p class="card-text">${team.UniversityName}</p>
-                                <a href="/teams/${team.TeamID}" class="btn btn-primary">View Team</a>
-                            </div>
+            let teamsHtml = teams.map(team => `
+                <div class="col">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">${team.Name}</h5>
+                            <p class="card-text">${team.UniversityName}</p>
+                            <a href="/teams/${encodeURIComponent(team.Name)}" class="btn btn-primary">View Team</a>
                         </div>
                     </div>
-                `;
-            });
+                </div>
+            `).join('');
 
-            // Replace placeholder with generated HTML content
-            const html = data.replace('{{TEAMS_LIST}}', teamsHtml);
+            // Replace placeholders in the template
+            const html = data.replace('{{TEAMS_LIST}}', teamsHtml)
+                             .replace('{{SEARCH_QUERY}}', searchQuery);
 
             res.send(html);
         });
@@ -723,6 +693,7 @@ app.get('/teams', async (req, res) => {
         res.status(500).send('Server error');
     }
 });
+
 
 // ======================== TOURNAMENT MANAGEMENT ========================
 
