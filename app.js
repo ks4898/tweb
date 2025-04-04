@@ -521,7 +521,7 @@ app.get('/teams/:teamName', async (req, res) => {
         // Replace ALL placeholders
         const html = template
             .replace(/{{TEAM_NAME}}/g, team[0].Name)
-            .replace(/{{TEAM_IMAGE}}/g, team[0].ImageURL || '/default-team.png')
+            .replace(/{{TEAM_IMAGE}}/g, team[0].ImageURL || '/media/img/chile.PNG')
             .replace(/{{TEAM_DESCRIPTION}}/g, team[0].Description || 'No description available.')
             .replace(/{{UNIVERSITY_NAME}}/g, team[0].UniversityName)
             .replace(/{{UNIVERSITY_IMAGE}}/g, team[0].UniversityImage || '/default-university.png')
