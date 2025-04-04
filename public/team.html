@@ -25,32 +25,35 @@
         </div>
     </nav>
 
-    <div class="container py-5">
-        <div class="card mb-4 shadow">
-            <img src="{{TEAM_IMAGE}}" class="card-img-top" alt="{{TEAM_NAME}}">
-            <div class="card-body">
-                <h1 class="card-title">{{TEAM_NAME}}</h1>
-                <p class="lead text-muted">From {{UNIVERSITY_NAME}}</p>
-                {{EDIT_BUTTON}}
-            </div>
-        </div>
-
-        <div class="row g-4">
+    <div class="container mt-5">
+        <div class="row">
             <div class="col-md-8">
-                <div class="card shadow">
+                <h1 class="mb-2">{{TEAM_NAME}}</h1>
+                <h5 class="text-muted mb-4">From {{UNIVERSITY_NAME}}</h5>
+                
+                <div class="mb-4">
+                    <img src="{{TEAM_IMAGE}}" class="img-fluid rounded" alt="{{TEAM_NAME}}">
+                </div>
+                
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h3>About Our Team</h3>
+                    </div>
                     <div class="card-body">
-                        <h3>Team Members</h3>
-                        <ul class="list-group list-group-flush">
-                            <!-- Populate players here -->
-                        </ul>
+                        <p>{{TEAM_DESCRIPTION}}</p>
                     </div>
                 </div>
             </div>
+            
             <div class="col-md-4">
-                <div class="card shadow">
-                    <img src="{{UNIVERSITY_IMAGE}}" class="card-img-top" alt="{{UNIVERSITY_NAME}}">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Team Members</h3>
+                    </div>
                     <div class="card-body">
-                        <h5 class="card-title">{{UNIVERSITY_NAME}}</h5>
+                        <ul class="list-group">
+                            {{TEAM_MEMBERS}}
+                        </ul>
                     </div>
                 </div>
             </div>

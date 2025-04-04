@@ -286,3 +286,13 @@ INSERT INTO Posts (Title, ImageURL, Content, Author, CreatedAt, UserID) VALUES
 INSERT INTO Posts (Title, ImageURL, Content, Author, CreatedAt, UserID) VALUES
 ('Sample News Article 4', NULL, 'Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium.', 'Author 4', STR_TO_DATE('March 21, 2025', '%M %d, %Y'), NULL);
 SELECT * FROM Posts;
+
+-- Add Description column to Teams table for team summaries
+ALTER TABLE Teams 
+ADD COLUMN Description TEXT NOT NULL AFTER Name;
+SELECT * FROM Teams;
+ALTER TABLE Teams 
+ADD COLUMN ImageURL VARCHAR(255) AFTER Description;
+-- Add RoundNumber column to Matches table for playoff brackets
+ALTER TABLE Matches 
+ADD COLUMN RoundNumber INT NOT NULL DEFAULT 0 AFTER MatchDate;
