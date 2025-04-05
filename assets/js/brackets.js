@@ -43,7 +43,7 @@ function createTeamDiv() {
 }
 
 async function addMatch() {
-    const teams = await fetch("/teams").then(res => res.json());
+    const teams = await fetch("/api/teams").then(res => res.json());
 
     const matchContainer = document.getElementById("matches");
     const match = document.createElement("div");

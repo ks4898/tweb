@@ -191,7 +191,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 async function fetchTeams() {
     try {
-        const response = await fetch('/teams');
+        const response = await fetch('/api/teams');
         if (!response.ok) {
             throw new Error('Failed to fetch teams: ' + response.statusText);
         }

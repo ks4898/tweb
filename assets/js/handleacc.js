@@ -54,7 +54,7 @@ document.addEventListener("DOMContentLoaded", function () {
             updateNavigation(data.loggedIn, data.role);
         })
         .catch(error => {
-            console.error("Error checking session:", error);
+            //console.error("Error checking session:", error);
             updateNavigation(false, null);
         });
 

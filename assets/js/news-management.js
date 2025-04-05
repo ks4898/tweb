@@ -51,16 +51,20 @@ document.addEventListener('DOMContentLoaded', function () {
     // search articles
     searchArticlesBtn.addEventListener('click', function () {
         const searchTerm = searchArticleInput.value.toLowerCase();
-        fetch('/news-articles')
-            .then(response => response.json())
-            .then(articles => {
-                const filteredArticles = articles.filter(article =>
-                    article.Title.toLowerCase().includes(searchTerm) ||
-                    article.Author.toLowerCase().includes(searchTerm)
-                );
-                displayArticles(filteredArticles);
-            })
-            .catch(error => console.error('Error searching articles:', error));
+        if (searchTerm !== "" || searchTerm !== " ") {
+            fetch('/news-articles')
+                .then(response => response.json())
+                .then(articles => {
+                    const filteredArticles = articles.filter(article =>
+                        article.Title.toLowerCase().includes(searchTerm) ||
+                        article.Author.toLowerCase().includes(searchTerm)
+                    );
+                    displayArticles(filteredArticles);
+                })
+                .catch(error => console.error('Error searching articles:', error));
+        } else {
+            fetchArticles();
+        }
     });
 
     // Add article

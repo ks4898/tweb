@@ -6,7 +6,7 @@ async function fetchCollegeData() {
 
     if (!collegeName) {
         console.error("No college name provided in URL.");
-        window.location.href = "/";
+        window.location.href = "/colleges";
     }
 
     try {
@@ -88,7 +88,7 @@ async function fetchCollegeData() {
 
             const teamHTML = `
                 <div class="team-section ${index % 2 === 0 ? '' : 'team-section-alt'}">
-                    <p class="team-title ${index % 2 === 0 ? '' : 'team-title-alt'}">Team ${index + 1} - ${team.name}</p>
+                    <p class="team-title ${index % 2 === 0 ? '' : 'team-title-alt'}"><a href="/teams/${encodeURIComponent(team.name)}">Team ${index + 1} - ${team.name}, click to find out more</a></p>
                     <div class="players-container">
                         ${team.players.map((player, playerIndex) => `
                             <div class="player-card">

@@ -137,3 +137,10 @@ img {
   .player-name-alt {
     color: #000000 !important;
   }
+
+  p > a {
+    color: white;
+  }
+  p > a:visited {
+    color: white;
+  }

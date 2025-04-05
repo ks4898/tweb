@@ -338,7 +338,7 @@ app.delete("/delete-college/:collegeId", verifyRole(["SuperAdmin", "Admin"]), (r
 
 
 // route to fetch all teams
-/*app.get("/teams", (req, res) => {
+app.get("/api/teams", (req, res) => {
     db.execute(`
         SELECT t.TeamID, t.Name, t.UniversityID, u.Name AS UniversityName, t.CreatedDate
         FROM Teams t
@@ -350,7 +350,7 @@ app.delete("/delete-college/:collegeId", verifyRole(["SuperAdmin", "Admin"]), (r
         }
         res.json(results);
     });
-});*/
+});
 
 // fetch teams and players for a college
 app.get("/teams-for-college", (req, res) => {
@@ -490,21 +490,35 @@ app.get("/team-members", (req, res) => {
 app.get('/teams/:teamName', async (req, res) => {
     try {
         const teamName = decodeURIComponent(req.params.teamName);
+        const userId = req.session.userId; // undefined if not logged in
 
-        // Fetch team and university data
+        // Get team + university data
         const [team] = await db.promise().execute(`
             SELECT 
-                t.*, 
-                u.Name AS UniversityName, 
+                t.*,
+                u.Name AS UniversityName,
                 u.ImageURL AS UniversityImage 
             FROM Teams t
             LEFT JOIN University u ON t.UniversityID = u.UniversityID
             WHERE t.Name = ?
         `, [teamName]);
 
-        if (!team[0]) return res.status(404).send('Team not found');
+        if (!team[0]) res.redirect("/teams"); //res.status(404).send('Team not found');
 
-        // Fetch team members
+        let isMember = false;
+
+        // Check membership only if user is logged in
+        if (userId) {
+            [isMember] = await db.promise().execute(`
+                SELECT 1 FROM Players 
+                WHERE TeamID = ? AND UserID = ?
+            `, [
+                team[0].TeamID,
+                userId
+            ]);
+        }
+
+        // Get team members (public info)
         const [players] = await db.promise().execute(`
             SELECT p.*, u.Name 
             FROM Players p
@@ -512,21 +526,22 @@ app.get('/teams/:teamName', async (req, res) => {
             WHERE p.TeamID = ?
         `, [team[0].TeamID]);
 
-        // Read template
-        const template = await fs.promises.readFile(
-            path.join(__dirname, 'public', 'team.html'), 
-            'utf8'
-        );
-
-        // Replace ALL placeholders
-        const html = template
+        // Build template
+        const html = (await fs.promises.readFile('public/team.html', 'utf8'))
             .replace(/{{TEAM_NAME}}/g, team[0].Name)
-            .replace(/{{TEAM_IMAGE}}/g, team[0].ImageURL || '/media/img/chile.PNG')
-            .replace(/{{TEAM_DESCRIPTION}}/g, team[0].Description || 'No description available.')
+            .replace(/{{TEAM_IMAGE}}/g, team[0].ImageURL || '/media/img/chile.png')
+            .replace(/{{TEAM_DESCRIPTION}}/g, team[0].Description || 'No description available')
             .replace(/{{UNIVERSITY_NAME}}/g, team[0].UniversityName)
             .replace(/{{UNIVERSITY_IMAGE}}/g, team[0].UniversityImage || '/default-university.png')
+            .replace('{{EDIT_BUTTON}}', isMember.length ? `
+                <div class="mt-0 text-end p-1">
+                    <a href="/teams/${team[0].TeamID}/edit" class="btn btn-primary">Edit Profile</a>
+                </div>` : '')
             .replace('{{TEAM_MEMBERS}}', players.map(p => `
-                <li class="list-group-item">${p.Name}</li>
+                <li class="list-group-item d-flex align-items-center">
+                    <span class="badge bg-primary me-2">${p.Role || 'Member'}</span>
+                    ${p.Name}
+                </li>
             `).join(''));
 
         res.send(html);
@@ -537,7 +552,7 @@ app.get('/teams/:teamName', async (req, res) => {
 });
 
 // Team edit page route
-app.get('/teams/:teamId/edit', async function(req, res) {
+app.get('/teams/:teamId/edit', async function (req, res) {
     try {
         const teamId = req.params.teamId;
         const userId = req.session.userId;
@@ -548,27 +563,29 @@ app.get('/teams/:teamId/edit', async function(req, res) {
         }
 
         // Check if user is a member of the team
-        const [userTeam] = await db.execute(
+        const [userTeam] = await db.promise().execute(
             'SELECT * FROM Players WHERE UserID = ? AND TeamID = ?',
             [userId, teamId]
         );
 
-        if (userTeam.length === 0) {
-            return res.status(403).sendFile(path.join(__dirname, 'public', '403.html')); // Unauthorized
+        if (!userTeam[0] || userTeam[0].length === 0) {
+            res.redirect("/teams");
+            //return res.status(403).sendFile(path.join(__dirname, 'public', '403.html')); // Unauthorized
         }
 
         // Get team details
-        const [teamResults] = await db.execute(
+        const [teamResults] = await db.promise().execute(
             'SELECT Name, ImageURL, Description FROM Teams WHERE TeamID = ?',
             [teamId]
         );
 
-        if (teamResults.length === 0) {
-            return res.status(404).sendFile(path.join(__dirname, 'public', '404.html')); // Not Found
+        if (!teamResults[0] || teamResults[0].length === 0) {
+            res.redirect("/teams");
+            //return res.status(404).sendFile(path.join(__dirname, 'public', '404.html')); // Not Found
         }
 
         // Read the edit team template file
-        fs.readFile(path.join(__dirname, 'public', 'edit-team.html'), 'utf8', function(err, data) {
+        fs.readFile(path.join(__dirname, 'public', 'edit-team.html'), 'utf8', function (err, data) {
             if (err) {
                 console.error('Error reading edit team template:', err);
                 return res.status(500).send('Server error');
@@ -576,8 +593,8 @@ app.get('/teams/:teamId/edit', async function(req, res) {
 
             // Replace placeholders with actual data
             let html = data.replace('{{TEAM_NAME}}', teamResults[0].Name)
-                          .replace('{{TEAM_IMAGE_URL}}', teamResults[0].ImageURL || '')
-                          .replace('{{TEAM_DESCRIPTION}}', teamResults[0].Description || '');
+                .replace('{{TEAM_IMAGE_URL}}', teamResults[0].ImageURL || '')
+                .replace('{{TEAM_DESCRIPTION}}', teamResults[0].Description || '');
 
             res.send(html);
         });
@@ -588,7 +605,7 @@ app.get('/teams/:teamId/edit', async function(req, res) {
 });
 
 // Team update route
-app.post('/teams/:teamId/update', async function(req, res) {
+app.post('/teams/:teamId/update', async function (req, res) {
     try {
         const teamId = req.params.teamId;
         const userId = req.session.userId;
@@ -601,17 +618,17 @@ app.post('/teams/:teamId/update', async function(req, res) {
         const { imageURL, description } = req.body;
 
         // Check if user is a member of the team
-        const [userTeam] = await db.execute(
+        const [userTeam] = await db.promise().execute(
             'SELECT * FROM Players WHERE UserID = ? AND TeamID = ?',
             [userId, teamId]
         );
 
-        if (userTeam.length === 0) {
+        if (!userTeam[0] || userTeam[0].length === 0) {
             return res.status(403).json({ error: 'Unauthorized' }); // Unauthorized
         }
 
         // Update team profile
-        await db.execute(
+        await db.promise().execute(
             'UPDATE Teams SET ImageURL = ?, Description = ? WHERE TeamID = ?',
             [imageURL, description, teamId]
         );
@@ -643,12 +660,22 @@ app.get('/teams', async (req, res) => {
 
         const teamsHtml = teams.map(team => `
             <div class="col-md-4 mb-4">
-                <div class="card h-100 shadow">
-                    ${team.TeamImage ? `<img src="${team.TeamImage}" class="card-img-top" alt="${team.Name}">` : ''}
-                    <div class="card-body">
+                <div class="card h-100 shadow d-flex flex-row">
+                    <!-- Team Image -->
+                    ${team.TeamImage ? `
+                        <div class="card-img-container p-3">
+                            <img src="${team.TeamImage}" class="card-img-left" alt="${team.Name}">
+                        </div>
+                    ` : `
+                        <div class="card-img-container p-3">
+                            <img src="/media/img/placeholder-250x250.png" class="card-img-left" alt="${team.Name}">
+                        </div>`}
+
+                    <!-- Team Info -->
+                    <div class="card-body d-flex flex-column justify-content-center">
                         <h5 class="card-title">${team.Name}</h5>
-                        <p class="text-muted">${team.UniversityName}</p>
-                        <a href="/teams/${encodeURIComponent(team.Name)}" class="btn btn-primary">View Team</a>
+                        <p class="text-muted mb-3">From ${team.UniversityName}</p>
+                        <a href="/teams/${encodeURIComponent(team.Name)}" class="btn btn-primary mt-auto">View Team</a>
                     </div>
                 </div>
             </div>

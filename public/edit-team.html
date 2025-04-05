@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="/css/team.css">
 </head>
 <body>
+    <script src="/js/handleacc.js"></script>
     <div class="container mt-5">
         <h1>Edit Team Profile</h1>
         <h4 class="text-muted mb-4">{{TEAM_NAME}}</h4>
@@ -43,7 +44,7 @@
             };
 
             try {
-                const response = await fetch(window.location.pathname + '/update', {
+                const response = await fetch(window.location.pathname.replace('edit', 'update'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(formData)
@@ -53,7 +54,7 @@
 
                 if (result.success) {
                     alert('Profile updated successfully!');
-                    window.location.href = window.location.pathname.replace('/edit', '');
+                    window.location.href = '/teams';
                 } else {
                     throw new Error(result.error || 'Failed to update profile');
                 }
