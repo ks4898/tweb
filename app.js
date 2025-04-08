@@ -1400,6 +1400,7 @@ app.post('/tournament-signup', verifyRole(["Player"]), async (req, res) => {
 app.get('/news-articles', async (req, res) => {
     try {
         const [posts] = await db.promise().query('SELECT * FROM Posts ORDER BY CreatedAt DESC');
+        console.log(posts);
         res.json(posts);
     } catch (error) {
         console.error('Error fetching news:', error);
