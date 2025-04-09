@@ -1,4 +1,18 @@
-document.addEventListener("DOMContentLoaded", fetchCollegeData);
+document.addEventListener("DOMContentLoaded", function () {
+    // Create a loading indicator
+    const loadingIndicator = document.createElement("div");
+    loadingIndicator.className = "loading-indicator";
+    loadingIndicator.textContent = "Loading college details...";
+    document.body.appendChild(loadingIndicator);
+
+    // Create a container for all content
+    const contentContainer = document.createElement("div");
+    contentContainer.className = "content-container";
+    document.body.appendChild(contentContainer);
+
+    // Start fetching data
+    fetchCollegeData();
+});
 
 async function fetchCollegeData() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -7,72 +21,208 @@ async function fetchCollegeData() {
     if (!collegeName) {
         console.error("No college name provided in URL.");
         window.location.href = "/colleges";
+        return;
     }
 
     try {
-        const response = await fetch(`/university?name=${collegeName}`);
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+        // Fetch college data and teams in parallel
+        const [collegeResponse, teamsResponse] = await Promise.all([
+            fetch(`/university?name=${collegeName}`),
+            fetch(`/teams-for-college?name=${collegeName}`)
+        ]);
+
+        if (!collegeResponse.ok) {
+            throw new Error(`HTTP error! Status: ${collegeResponse.status}`);
         }
-        const collegeData = await response.json();
+
+        if (!teamsResponse.ok) {
+            throw new Error(`HTTP error! Status: ${teamsResponse.status}`);
+        }
+
+        const collegeData = await collegeResponse.json();
+        const teams = await teamsResponse.json();
 
         if (!collegeData || !collegeData.Name || !collegeData.Location || !collegeData.Founded) {
             console.error("Invalid college data received.");
             return;
         }
 
-        document.querySelector(".college-name").textContent = collegeData.Name.toUpperCase();
-        document.querySelector(".location").textContent = `Location: ${collegeData.Location}`;
-        document.querySelector(".founded").textContent = `Founded: ${collegeData.Founded}`;
+        // Preload images
+        await preloadImages(collegeData, teams);
 
-        if (collegeData.Emblem) {
-            document.querySelector(".college-emblem").src = collegeData.Emblem;
-            document.querySelector(".college-emblem").setAttribute("alt", `${collegeData.Name} Logo`);
+        // Render the content
+        renderCollegeDetails(collegeData, teams);
+
+    } catch (error) {
+        console.error("Error fetching data:", error);
+        const loadingIndicator = document.querySelector(".loading-indicator");
+        if (loadingIndicator) {
+            loadingIndicator.textContent = "Error loading college details. Please try again later.";
         }
-        if (collegeData.ImageURL) {
-            document.querySelector(".college-image").src = collegeData.ImageURL;
-            document.querySelector(".college-image").setAttribute("alt", `${collegeData.Name} Picture`);
-        }
+    }
+}
 
-        const desc = document.querySelector(".college-description");
-        const para = document.createElement("p");
-        desc.appendChild(para);
-        para.textContent = collegeData.Description;
+async function preloadImages(collegeData, teams) {
+    const imagesToPreload = [];
 
-        const teamsResponse = await fetch(`/teams-for-college?name=${collegeName}`);
-        if (!teamsResponse.ok) {
-            throw new Error(`HTTP error! Status: ${teamsResponse.status}`);
-        }
-        const teams = await teamsResponse.json();
+    // Add college images
+    if (collegeData.Emblem) {
+        imagesToPreload.push(collegeData.Emblem);
+    }
 
-        if (teams.length <= 0) {
-            const div = document.createElement("div");
-            div.classList.add("team-section");
-            div.setAttribute("style", "height: 30vh;");
-            const parag = document.createElement("p");
-            const parag2 = document.createElement("p");
-            parag.textContent = "No teams have applied for this college yet.";
-            parag2.textContent = "Please check again later.";
-            parag.setAttribute("style", "color: #F1FDFF; margin-top: 1em; text-align: center; font-size: 2em;");
-            parag.setAttribute("class", "text-center");
-            parag2.setAttribute("style", "color: #F1FDFF; text-align: center; font-size: 2em;");
-            parag2.setAttribute("class", "text-center");
-            div.appendChild(parag);
-            div.appendChild(parag2);
-            document.getElementsByTagName("body")[0].appendChild(div);
-            return;
+    if (collegeData.ImageURL) {
+        imagesToPreload.push(collegeData.ImageURL);
+    }
+
+    // Add team player images
+    const teamMap = {};
+    teams.forEach(team => {
+        if (!teamMap[team.TeamID]) {
+            teamMap[team.TeamID] = {
+                name: team.Name,
+                players: []
+            };
         }
 
-        console.log("Teams fetched:", teams);
+        if (team.PlayerName && team.ImageURL) {
+            teamMap[team.TeamID].players.push({
+                name: team.PlayerName,
+                imageURL: team.ImageURL,
+                role: team.Role
+            });
 
-        const teamsContainer = document.getElementById('teams-container');
-        teamsContainer.innerHTML = '';
+            imagesToPreload.push(team.ImageURL);
+        }
+    });
 
+    // Preload all images
+    const preloadPromises = imagesToPreload.map(src => {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => resolve();
+            img.onerror = () => resolve(); // Continue even if image fails to load
+            img.src = src;
+        });
+    });
+
+    return Promise.all(preloadPromises);
+}
+
+function renderCollegeDetails(collegeData, teams) {
+    const contentContainer = document.querySelector(".content-container");
+    
+    // Create college info section
+    const collegeInfoSection = document.createElement("div");
+    collegeInfoSection.className = "college-info";
+    
+    // College info content
+    const infoContent = document.createElement("div");
+    infoContent.className = "college-info-content";
+    
+    // College header with name and emblem
+    const header = document.createElement("div");
+    header.className = "college-header";
+    
+    const collegeName = document.createElement("h1");
+    collegeName.className = "college-name";
+    collegeName.textContent = collegeData.Name.toUpperCase();
+    
+    const emblem = document.createElement("img");
+    emblem.className = "college-emblem";
+    emblem.src = collegeData.Emblem || '';
+    emblem.alt = `${collegeData.Name} Logo`;
+    
+    header.appendChild(collegeName);
+    header.appendChild(emblem);
+    
+    // Location details
+    const locationDetails = document.createElement("div");
+    locationDetails.className = "location-details";
+    
+    const location = document.createElement("p");
+    location.className = "location";
+    location.textContent = `Location: ${collegeData.Location}`;
+    
+    const founded = document.createElement("p");
+    founded.className = "founded";
+    founded.textContent = `Founded: ${collegeData.Founded}`;
+    
+    locationDetails.appendChild(location);
+    locationDetails.appendChild(founded);
+    
+    // Horizontal rule
+    const hr = document.createElement("hr");
+    
+    // College description
+    const description = document.createElement("div");
+    description.className = "college-description";
+    
+    const descPara = document.createElement("p");
+    descPara.textContent = collegeData.Description || 'No description available.';
+    
+    description.appendChild(descPara);
+    
+    // Assemble info content
+    infoContent.appendChild(header);
+    infoContent.appendChild(locationDetails);
+    infoContent.appendChild(hr);
+    infoContent.appendChild(description);
+    
+    // College image container
+    const imageContainer = document.createElement("div");
+    imageContainer.className = "college-image-container";
+    
+    const collegeImage = document.createElement("img");
+    collegeImage.className = "college-image";
+    collegeImage.src = collegeData.ImageURL || '';
+    collegeImage.alt = `${collegeData.Name} Picture`;
+    
+    imageContainer.appendChild(collegeImage);
+    
+    // Assemble college info section
+    collegeInfoSection.appendChild(infoContent);
+    collegeInfoSection.appendChild(imageContainer);
+    
+    // Add college info to content container
+    contentContainer.appendChild(collegeInfoSection);
+    
+    // Create teams section
+    if (teams.length <= 0) {
+        const teamSection = document.createElement("div");
+        teamSection.className = "team-section";
+        teamSection.style.height = "30vh";
+        
+        const noTeamsMsg = document.createElement("p");
+        noTeamsMsg.textContent = "No teams have applied for this college yet.";
+        noTeamsMsg.style.color = "#F1FDFF";
+        noTeamsMsg.style.marginTop = "1em";
+        noTeamsMsg.style.textAlign = "center";
+        noTeamsMsg.style.fontSize = "2em";
+        noTeamsMsg.className = "text-center";
+        
+        const checkLaterMsg = document.createElement("p");
+        checkLaterMsg.textContent = "Please check again later.";
+        checkLaterMsg.style.color = "#F1FDFF";
+        checkLaterMsg.style.textAlign = "center";
+        checkLaterMsg.style.fontSize = "2em";
+        checkLaterMsg.className = "text-center";
+        
+        teamSection.appendChild(noTeamsMsg);
+        teamSection.appendChild(checkLaterMsg);
+        
+        contentContainer.appendChild(teamSection);
+    } else {
+        // Process teams data
         const teamMap = {};
         teams.forEach(team => {
             if (!teamMap[team.TeamID]) {
-                teamMap[team.TeamID] = { name: team.Name, players: [] };
+                teamMap[team.TeamID] = {
+                    id: team.TeamID,
+                    name: team.Name,
+                    players: []
+                };
             }
+            
             if (team.PlayerName) {
                 teamMap[team.TeamID].players.push({
                     name: team.PlayerName,
@@ -81,29 +231,103 @@ async function fetchCollegeData() {
                 });
             }
         });
-
-        Object.keys(teamMap).forEach((teamId, index) => {
-            const team = teamMap[teamId];
+        
+        // Create team section
+        const teamSection = document.createElement("div");
+        teamSection.className = "team-section";
+        
+        const teamTitle = document.createElement("h2");
+        teamTitle.className = "team-title";
+        teamTitle.textContent = "Teams from this College";
+        
+        teamSection.appendChild(teamTitle);
+        
+        // Create team cards
+        Object.values(teamMap).forEach((team, index) => {
+            // Sort players to have leader first
             team.players.sort((a, b) => (a.role === 'Leader' ? -1 : b.role === 'Leader' ? 1 : 0));
-
-            const teamHTML = `
-                <div class="team-section ${index % 2 === 0 ? '' : 'team-section-alt'}">
-                    <p class="team-title ${index % 2 === 0 ? '' : 'team-title-alt'}"><a href="/teams/${encodeURIComponent(team.name)}">Team ${index + 1} - ${team.name}, click to find out more</a></p>
-                    <div class="players-container">
-                        ${team.players.map((player, playerIndex) => `
-                            <div class="player-card">
-                                <img src="${player.imageURL}" alt="Player picture">
-                                <p>${player.name}${playerIndex === 0 ? ' (Leader)' : ''}</p>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
-            teamsContainer.innerHTML += teamHTML;
+            
+            const teamCard = document.createElement("div");
+            teamCard.className = "team-card";
+            teamCard.onclick = function() {
+                window.location.href = `/teams/${encodeURIComponent(team.name)}`;
+            };
+            
+            const teamName = document.createElement("h3");
+            teamName.textContent = `${team.name}`;
+            
+            const viewButton = document.createElement("button");
+            viewButton.className = "view-team-btn";
+            viewButton.textContent = "View Team Details";
+            viewButton.onclick = function(e) {
+                e.stopPropagation();
+                window.location.href = `/teams/${encodeURIComponent(team.name)}`;
+            };
+            
+            teamCard.appendChild(teamName);
+            teamCard.appendChild(viewButton);
+            
+            teamSection.appendChild(teamCard);
+            
+            // Create players section for this team
+            const playersTitle = document.createElement("h3");
+            playersTitle.className = "team-title";
+            playersTitle.style.fontSize = "20px";
+            playersTitle.textContent = `Team Members`;
+            
+            teamSection.appendChild(playersTitle);
+            
+            const playersContainer = document.createElement("div");
+            playersContainer.className = "players-container";
+            
+            // Check if team has players
+            if (team.players.length === 0) {
+                // Display message when no team members exist
+                const noPlayersMsg = document.createElement("p");
+                noPlayersMsg.textContent = "This team currently has no members.";
+                noPlayersMsg.style.color = "#F1FDFF";
+                noPlayersMsg.style.textAlign = "center";
+                noPlayersMsg.style.fontSize = "1.2em";
+                noPlayersMsg.style.width = "100%";
+                noPlayersMsg.style.margin = "20px 0";
+                
+                playersContainer.appendChild(noPlayersMsg);
+            } else {
+                // Display team members
+                team.players.forEach((player, playerIndex) => {
+                    const playerCard = document.createElement("div");
+                    playerCard.className = "player-card";
+                    
+                    const playerImg = document.createElement("img");
+                    playerImg.src = player.imageURL || '/media/img/profile-placeholder.PNG';
+                    playerImg.alt = `${player.name} Photo`;
+                    
+                    const playerName = document.createElement("p");
+                    playerName.textContent = `${player.name}${playerIndex === 0 ? ' (Leader)' : ''}`;
+                    
+                    playerCard.appendChild(playerImg);
+                    playerCard.appendChild(playerName);
+                    
+                    playersContainer.appendChild(playerCard);
+                });
+            }
+            
+            teamSection.appendChild(playersContainer);
         });
-
-    } catch (error) {
-        console.error('Error:', error);
-        window.location.href = "/colleges";
+        
+        contentContainer.appendChild(teamSection);
     }
+    
+    setTimeout(() => {
+        // Remove loading indicator
+        const loadingIndicator = document.querySelector(".loading-indicator");
+        if (loadingIndicator) {
+            loadingIndicator.remove();
+        }
+    }, 300);
+    
+    // Show content with a fade-in effect
+    setTimeout(() => {
+        contentContainer.classList.add('loaded');
+    }, 200);
 }

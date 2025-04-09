@@ -9,115 +9,157 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
     }
 
-    // no colleges found message
+    // Add a loading indicator
+    const loadingIndicator = document.createElement("div");
+    loadingIndicator.className = "loading-indicator";
+    loadingIndicator.textContent = "Loading colleges...";
+    containerParent.appendChild(loadingIndicator);
+
+    // No colleges found message
     let noResultsMessage = document.createElement("p");
     noResultsMessage.textContent = `No colleges found matching your search.\nPlease check for any typing errors and try again.`;
     noResultsMessage.classList.add("no-results-message");
-    noResultsMessage.style.display = "none"; // hide by default
-    noResultsMessage.style.textAlign = "center";
-    noResultsMessage.style.fontSize = "3em";
-    noResultsMessage.style.marginTop = "3em";
-    noResultsMessage.style.color = "#003f4f";
-    containerParent.appendChild(noResultsMessage); // add message to the page
+    noResultsMessage.style.display = "none";
+    containerParent.appendChild(noResultsMessage);
 
     searchButton.addEventListener("click", filterColleges);
-    searchInput.addEventListener("keyup", filterColleges);
+    searchInput.addEventListener("keyup", debounce(filterColleges, 300));
 
     console.log("Search event listeners attached.");
 
-    // fetch and load colleges dynamically, then apply styles
+    // Fetch and load colleges
     fetchColleges();
 });
 
-// function to fetch colleges and apply alternating styles
+// Debounce function
+function debounce(func, wait) {
+    let timeout;
+    return function () {
+        const context = this;
+        const args = arguments;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(context, args), wait);
+    };
+}
+
+// Fetch colleges data
 function fetchColleges() {
     fetch("/universities")
         .then(response => response.json())
         .then(data => {
-            const container = document.getElementById("colleges-list");
-            container.innerHTML = ""; // clear any existing content
-
-            data.forEach((college, index) => {
-                let descriptionText = college.Description || 
-                    `Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. 
-                    Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. 
-                    Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. 
-                    Excepteur sint occaecat cupidatat non proident, sunt in culpa...`;
-
-                let collegeHTML = `
-                    <div class="college-container">
-                        <img src="${college.Emblem || 'default.png'}" alt="${college.Name} Logo">
-                        <div class="college-info">
-                            <h2>${college.Name.toUpperCase()}</h2>
-                            <hr>
-                            <p>${descriptionText}</p>
-                            <a href="/details.html?name=${college.Name}" class="btn-link">View Details</a>
-                        </div>
-                    </div>
-                `;
-
-                container.innerHTML += collegeHTML;
+            // Preload images first
+            preloadImages(data).then(() => {
+                // After images are preloaded, prepare the display
+                prepareCollegesDisplay(data);
             });
-
-            // apply Alternating Styles After Loading
-            applyAlternatingStyles(document.querySelectorAll(".college-container"));
         })
-        .catch(error => console.error("Error fetching colleges:", error));
+        .catch(error => {
+            console.error("Error fetching colleges:", error);
+            const loadingIndicator = document.querySelector(".loading-indicator");
+            if (loadingIndicator) {
+                loadingIndicator.textContent = "Error loading colleges. Please refresh the page.";
+            }
+        });
 }
 
-function applyAlternatingStyles(collegeList) {
-    collegeList.forEach((college, index) => {
-        const img = college.querySelector("img");
-        const info = college.querySelector(".college-info");
-        const button = college.querySelector(".btn-link");
-
-        if (!img || !info || !button) {
-            console.warn("Missing image, info, or button for:", college);
-            return;
-        }
-
-        // reset all previous styles to prevent conflicts
-        college.style.removeProperty("background-color");
-        college.style.removeProperty("color");
-        img.style.removeProperty("order");
-        info.style.removeProperty("order");
-        button.style.removeProperty("background-color");
-        button.style.removeProperty("color");
-        button.style.removeProperty("border");
-
-        // force apply correct styling using `setProperty()`
-        if (index % 2 === 0) {
-            
-            college.style.setProperty("background-color", "#F1FDFF", "important");
-            college.style.setProperty("color", "#13505b", "important");
-            img.style.setProperty("order", "1", "important");
-            info.style.setProperty("order", "2", "important");
-
-            
-            button.style.setProperty("background-color", "#13505b", "important");
-            button.style.setProperty("color", "#F1FDFF", "important");
-            button.style.setProperty("border", "2px solid #13505b", "important");
-        } else {
-            
-            college.style.setProperty("background-color", "#275861", "important");
-            college.style.setProperty("color", "#F1FDFF", "important");
-            img.style.setProperty("order", "2", "important");
-            info.style.setProperty("order", "1", "important");
-
-            
-            button.style.setProperty("background-color", "#F1FDFF", "important");
-            button.style.setProperty("color", "#275861", "important");
-            button.style.setProperty("border", "2px solid #275861", "important");
-        }
-
-        console.log(
-            `Styled college ${index + 1}: Background ${college.style.backgroundColor}, ` +
-            `Button ${button.style.backgroundColor}, Button Text ${button.style.color}`
-        );
+// Preload all images
+function preloadImages(data) {
+    const imagePromises = data.map(college => {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => resolve();
+            img.onerror = () => resolve(); // Continue even if image fails to load
+            img.src = college.Emblem || 'default.png';
+        });
     });
+
+    return Promise.all(imagePromises);
 }
 
+// Prepare colleges display
+function prepareCollegesDisplay(data) {
+    const container = document.getElementById("colleges-list");
+    const fragment = document.createDocumentFragment();
 
+    // Clear any existing content
+    container.innerHTML = "";
+
+    // Create all college elements
+    data.forEach((college, index) => {
+        const collegeElement = createCollegeElement(college, index);
+        fragment.appendChild(collegeElement);
+    });
+
+    // Add all elements at once
+    container.appendChild(fragment);
+
+
+    // Remove loading indicator
+    const loadingIndicator = document.querySelector(".loading-indicator");
+    setTimeout(() => {
+        if (loadingIndicator) {
+            loadingIndicator.remove();
+        }
+    }, 400);
+
+    // Delay showing the colleges to ensure everything is ready
+    setTimeout(() => {
+        container.classList.add('loaded');
+    }, 200);
+}
+// Create college element
+function createCollegeElement(college, index) {
+    let descriptionText = college.Description ||
+        `Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+        Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+        Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+        Excepteur sint occaecat cupidatat non proident, sunt in culpa...`;
+
+    // Create college container
+    const collegeContainer = document.createElement('div');
+    collegeContainer.className = 'college-container';
+    collegeContainer.classList.add(index % 2 === 0 ? 'odd-style' : 'even-style');
+
+    // Create image
+    const img = document.createElement('img');
+    img.alt = `${college.Name} Logo`;
+    img.src = college.Emblem || 'default.png';
+
+    // Create info div
+    const infoDiv = document.createElement('div');
+    infoDiv.className = 'college-info';
+
+    // Create heading
+    const heading = document.createElement('h2');
+    heading.textContent = college.Name.toUpperCase();
+
+    // Create horizontal rule
+    const hr = document.createElement('hr');
+
+    // Create paragraph
+    const paragraph = document.createElement('p');
+    paragraph.textContent = descriptionText;
+
+    // Create button link
+    const link = document.createElement('a');
+    link.href = `/details?name=${encodeURIComponent(college.Name)}`;
+    link.className = 'btn-link';
+    link.classList.add(index % 2 === 0 ? 'odd-button' : 'even-button');
+    link.textContent = 'View Details';
+
+    // Assemble the elements
+    infoDiv.appendChild(heading);
+    infoDiv.appendChild(hr);
+    infoDiv.appendChild(paragraph);
+    infoDiv.appendChild(link);
+
+    collegeContainer.appendChild(img);
+    collegeContainer.appendChild(infoDiv);
+
+    return collegeContainer;
+}
+
+// Filter colleges
 function filterColleges() {
     const searchInput = document.querySelector(".search-bar input");
     const query = searchInput.value.toLowerCase().trim();
@@ -126,35 +168,30 @@ function filterColleges() {
 
     let visibleColleges = [];
 
-    console.log("Search query:", query);
-
-    // if query is empty, show all colleges and reset their order
+    // If query is empty, show all colleges
     if (query === "") {
-        console.log("Empty search query detected. Showing all colleges.");
-        
-        collegeContainers.forEach(college => {
-            college.style.display = "flex"; // show all colleges
+        collegeContainers.forEach((college, index) => {
+            college.style.display = "flex";
+            college.className = 'college-container';
+            college.classList.add(index % 2 === 0 ? 'odd-style' : 'even-style');
+
+            const button = college.querySelector(".btn-link");
+            if (button) {
+                button.className = 'btn-link';
+                button.classList.add(index % 2 === 0 ? 'odd-button' : 'even-button');
+            }
         });
 
-        // hide "No results found" message
         noResultsMessage.style.display = "none";
-
-        // re-apply correct alternating styling after reset
-        applyAlternatingStyles(collegeContainers);
-        
-        console.log("Colleges restored in original order.");
         return;
     }
 
-    // filter colleges based on query
+    // Filter colleges based on query
     collegeContainers.forEach(college => {
         const collegeNameElement = college.querySelector("h2");
-        if (!collegeNameElement) {
-            console.warn("Missing college name in:", college);
-            return;
-        }
-        const collegeName = collegeNameElement.textContent.toLowerCase();
+        if (!collegeNameElement) return;
 
+        const collegeName = collegeNameElement.textContent.toLowerCase();
         if (collegeName.includes(query)) {
             college.style.display = "flex";
             visibleColleges.push(college);
@@ -163,15 +200,18 @@ function filterColleges() {
         }
     });
 
-    console.log("Visible colleges count:", visibleColleges.length);
+    // Show or hide no results message
+    noResultsMessage.style.display = visibleColleges.length === 0 ? "block" : "none";
 
-    // show or hide no colleges found message
-    if (visibleColleges.length === 0) {
-        noResultsMessage.style.display = "block";
-    } else {
-        noResultsMessage.style.display = "none";
-    }
+    // Apply alternating styles to visible colleges
+    visibleColleges.forEach((college, index) => {
+        college.className = 'college-container';
+        college.classList.add(index % 2 === 0 ? 'odd-style' : 'even-style');
 
-    // force correct alternating order
-    applyAlternatingStyles(visibleColleges);
+        const button = college.querySelector(".btn-link");
+        if (button) {
+            button.className = 'btn-link';
+            button.classList.add(index % 2 === 0 ? 'odd-button' : 'even-button');
+        }
+    });
 }

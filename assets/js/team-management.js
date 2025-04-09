@@ -65,6 +65,7 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById('createTeamBtn').addEventListener('click', async function () {
         const teamName = document.getElementById('addTeamName').value;
         const universityId = document.getElementById('selectAddCollege').value;
+
         if (!teamName || !universityId) {
             alert('Please fill in all fields.');
             return;

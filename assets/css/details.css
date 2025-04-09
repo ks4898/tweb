@@ -1,146 +1,326 @@
+body {
+  background-color: #F1FDFF;
+}
+
 img {
-    object-fit: cover;
-  }
+  object-fit: cover;
+}
 
-  .college-info {
-    display: flex;
-    height: 500px;
-  }
+.college-info {
+  display: flex;
+  min-height: 500px; /* Changed from fixed height to min-height */
+  height: auto; /* Allow auto expansion */
+}
 
-  .college-info-content {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    background-color: rgb(255, 255, 255);
-    width: 65%;
-    justify-content: center;
-    margin-top: 20px;
-  }
+.college-info-content {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  background-color: #F1FDFF;
+  width: 65%;
+  justify-content: center;
+  margin-top: 20px;
+  padding-bottom: 20px; /* Add padding to ensure space at bottom */
+}
 
-  .college-header {
-    font-size: 60px;
-    font-weight: 800;
-    display: flex;
-    color: #10414a;
-  }
+.college-header {
+  font-size: 60px;
+  font-weight: 800;
+  display: flex;
+  flex-wrap: wrap; /* Allow wrapping for long titles */
+  color: #10414a;
+}
 
-  .college-header img {
-    max-width: 100px;
-    align-self: flex-end;
-    margin-left: 5%;
-  }
+.college-header img {
+  max-width: 100px;
+  align-self: flex-end;
+  margin-left: 5%;
+}
 
-  .location, .founded {
-    margin: 5px;
-    margin-top: 10px;
-  }
+.location, .founded {
+  margin: 5px;
+  margin-top: 10px;
+}
 
-  .college-name {
-    margin-left: 10%;
-    display: flex;
-    max-width: 16ch;
-    line-height: 60px;
-    margin-top: 20px;
-  }
+.college-name {
+  margin-left: 10%;
+  display: flex;
+  max-width: 80%; /* Increased from 16ch to percentage-based */
+  line-height: 60px;
+  margin-top: 20px;
+  word-wrap: break-word; /* Handle long words */
+  hyphens: auto; /* Enable hyphenation */
+}
 
-  .location-details {
-    font-size: 18px;
-    margin-left: 10%;
-    color: #10414a;
-    font-weight: 600;
-  }
+.location-details {
+  font-size: 18px;
+  margin-left: 10%;
+  color: #10414a;
+  font-weight: 600;
+}
 
-  .location-details p:last-child {
-    margin-top: -30px;
-  }
+.location-details p:last-child {
+  margin-top: 10px;
+}
 
-  hr {
-    height: 3px;
-    background-color: #13505B;
-    width: 80%;
-    margin-top: 20px;
-  }
+hr {
+  height: 3px;
+  background-color: #13505B;
+  width: 80%;
+  margin-top: 20px;
+  margin-left: 10%;
+  margin-right: 10%;
+}
 
-  .college-description {
-    font-size: 18px;
-    width: 80%;
-    margin-left: 10%;
-    color: #13505B;
-  }
+.college-description {
+  font-size: 18px;
+  width: 80%;
+  margin-left: 10%;
+  margin-bottom: 20px; /* Add bottom margin for spacing */
+  color: #13505B;
+  box-sizing: border-box;
+  padding: 0;
+  max-width: 80%;
+}
 
-  .college-image-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: rgb(255, 255, 255);
-    width: 35%;
-  }
+.college-description p {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow-wrap: break-word;
+}
 
-  .college-image {
-    max-height: 250px;
-    border-radius: 15px;
-  }
+.college-image-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #F1FDFF;
+  width: 35%;
+}
 
-  /* Team Section */
-  .team-section {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    background-color: #13505B;
-  }
+.college-image {
+  max-height: 250px;
+  border-radius: 15px;
+}
 
-  .team-title {
-    color: #9EF01A;
-    font-weight: 700;
-    margin-top: 18px;
-    margin-bottom: 22px;
-    font-size: 25px;
-  }
+/* Team Section */
+.team-section {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: #13505B;
+  padding: 30px 0;
+  margin-top: 20px; /* Add margin to separate from college info */
+}
 
-  .players-container {
-    display: flex;
-    width: 100%;
-    justify-content: space-evenly;
-  }
+.team-title {
+  color: #9EF01A;
+  font-weight: 700;
+  margin-top: 18px;
+  margin-bottom: 22px;
+  font-size: 25px;
+}
 
+.team-card {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 15px 25px;
+  margin-bottom: 30px;
+  width: 80%;
+  max-width: 800px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.team-card:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.team-card h3 {
+  color: #FFFFFF;
+  font-size: 22px;
+  margin: 0;
+}
+
+.team-card .view-team-btn {
+  background-color: #9EF01A;
+  color: #13505B;
+  border: none;
+  border-radius: 5px;
+  padding: 8px 15px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.team-card .view-team-btn:hover {
+  background-color: #F1FDFF;
+}
+
+.players-container {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.player-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0 10px 30px;
+  width: calc(20% - 20px);
+  min-width: 180px;
+}
+
+.player-card img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 25px;
+  box-shadow: rgba(0, 0, 0, 0.4) 0px 2px 4px, rgba(0, 0, 0, 0.3) 0px 7px 13px -3px, rgba(0, 0, 0, 0.2) 0px -3px 0px inset;
+}
+
+.player-card p {
+  font-weight: 700;
+  font-size: 18px;
+  color: white;
+  margin-top: 15px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+/* New Team Section (White Background & Black Text) */
+.team-section-alt {
+  background-color: #F1FDFF;
+}
+
+.team-title-alt {
+  color: #000000;
+}
+
+.player-name-alt {
+  color: #000000 !important;
+}
+
+p > a {
+  color: white;
+}
+
+p > a:visited {
+  color: white;
+}
+
+/* Loading indicator */
+.loading-indicator {
+  text-align: center;
+  font-size: 1.5rem;
+  margin: 2rem 0;
+  color: #13505b;
+  padding: 20px;
+}
+
+/* Content visibility control */
+.content-container {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.content-container.loaded {
+  opacity: 1;
+}
+
+/* Responsive design */
+@media (max-width: 1200px) {
   .player-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+      width: calc(25% - 20px);
   }
+}
 
+@media (max-width: 992px) {
+  .college-info {
+      height: auto;
+      flex-direction: column;
+  }
+  
+  .college-info-content, .college-image-container {
+      width: 100%;
+  }
+  
+  .college-header {
+      font-size: 40px;
+      line-height: normal;
+  }
+  
+  .college-name {
+      line-height: normal;
+      margin-top: 10px;
+  }
+  
+  hr {
+      width: 90%;
+      margin-left: 5%;
+      margin-right: 5%;
+  }
+  
+  .college-description {
+      width: 90%;
+      margin-left: 5%;
+      max-width: 90%;
+  }
+  
+  .team-card {
+      width: 90%;
+  }
+  
+  .player-card {
+      width: calc(33.33% - 20px);
+  }
+}
+
+@media (max-width: 768px) {
+  .college-name {
+      margin-left: 5%;
+      max-width: 100%;
+  }
+  
+  .location-details {
+      margin-left: 5%;
+  }
+  
+  .player-card {
+      width: calc(50% - 20px);
+  }
+  
   .player-card img {
-    width: 250px;
-    height: 250px;
-    border-radius: 25px;
-    box-shadow: rgba(0, 0, 0, 0.4) 0px 2px 4px, rgba(0, 0, 0, 0.3) 0px 7px 13px -3px, rgba(0, 0, 0, 0.2) 0px -3px 0px inset;
+      height: 160px;
   }
+  
+  .team-card {
+      flex-direction: column;
+      text-align: center;
+  }
+  
+  .team-card .view-team-btn {
+      margin-top: 15px;
+  }
+}
 
-  .player-card p {
-    font-weight: 700;
-    font-size: 20px;
-    color: white;
-    margin-top: 20px;
-    margin-bottom: 40px;
+@media (max-width: 480px) {
+  .player-card {
+      width: calc(100% - 20px);
+      max-width: 250px;
   }
-
-  /* New Team Section (White Background & Black Text) */
-  .team-section-alt {
-    background-color: #FFFFFF;
+  
+  .player-card img {
+      height: 200px;
   }
-
-  .team-title-alt {
-    color: #000000;
-  }
-
-  .player-name-alt {
-    color: #000000 !important;
-  }
-
-  p > a {
-    color: white;
-  }
-  p > a:visited {
-    color: white;
-  }
+}

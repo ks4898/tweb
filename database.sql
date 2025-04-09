@@ -287,12 +287,42 @@ INSERT INTO Posts (Title, ImageURL, Content, Author, CreatedAt, UserID) VALUES
 ('Sample News Article 4', NULL, 'Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium.', 'Author 4', STR_TO_DATE('March 21, 2025', '%M %d, %Y'), NULL);
 SELECT * FROM Posts;
 
+UPDATE Posts SET ImageURL = "" WHERE PostID = 4;
 -- Add Description column to Teams table for team summaries
 ALTER TABLE Teams 
-ADD COLUMN Description TEXT NOT NULL AFTER Name;
+ADD COLUMN Description TEXT AFTER Name;
 SELECT * FROM Teams;
 ALTER TABLE Teams 
 ADD COLUMN ImageURL VARCHAR(255) AFTER Description;
 -- Add RoundNumber column to Matches table for playoff brackets
 ALTER TABLE Matches 
 ADD COLUMN RoundNumber INT NOT NULL DEFAULT 0 AFTER MatchDate;
+SELECT * FROM Tournaments;
+
+INSERT INTO Tournaments (TournamentID, Name, Description, StartDate, EndDate, Location, Status) VALUES
+(1, 'Spring Championship 2025', 'An international tournament featuring teams from universities worldwide.', '2025-04-01', '2025-04-20', 'Tokyo, Japan', 'Ongoing'),
+(2, 'Summer Invitational 2025', 'Elite invitation-only tournament with top-ranked university teams.', '2025-06-15', '2025-06-30', 'Berlin, Germany', 'Upcoming'),
+(3, 'Fall Classic 2025', 'Annual fall tournament celebrating strategic gameplay and university rivalry.', '2025-09-10', '2025-09-25', 'Boston, USA', 'Upcoming'),
+(4, 'Winter Challenge 2025', 'Year-end championship featuring innovative gameplay and special rule variations.', '2025-12-05', '2025-12-20', 'Sydney, Australia', 'Upcoming');
+
+-- Update semifinal matches
+UPDATE Matches 
+SET RoundNumber = 3 
+WHERE MatchID IN (14, 15) AND TournamentID = 1;
+
+-- Update final match
+UPDATE Matches 
+SET RoundNumber = 4 
+WHERE MatchID = 16 AND TournamentID = 1;
+
+SELECT 
+    m.MatchID, m.RoundNumber, m.MatchDate,
+    m.Team1ID, m.Team2ID, m.ScoreTeam1, m.ScoreTeam2, m.WinnerID,
+    t1.Name AS Team1Name, t2.Name AS Team2Name, 
+    wt.Name AS WinnerName
+FROM Matches m
+LEFT JOIN Teams t1 ON m.Team1ID = t1.TeamID
+LEFT JOIN Teams t2 ON m.Team2ID = t2.TeamID
+LEFT JOIN Teams wt ON m.WinnerID = wt.TeamID
+WHERE m.TournamentID = 1 AND m.RoundNumber BETWEEN 3 AND 4
+ORDER BY m.RoundNumber, m.MatchDate;

@@ -2,15 +2,7 @@ body {
     background-color: #F1FDFF !important;
 }
 
-body,
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-p,
-a {
+body, h1, h2, h3, h4, h5, h6, p, a {
     font-family: 'Kanit', sans-serif !important;
 }
 
@@ -68,10 +60,10 @@ a {
     color: #F1FDFF;
     width: 85vw;
     padding: 30px;
-    margin: 0;
+    margin: 20px 0;
 }
 
-.college-container>.btn-link:hover,
+.college-container .btn-link:hover,
 .btn-link:focus,
 .btn-link:visited {
     cursor: pointer;
@@ -116,6 +108,11 @@ hr {
 
 .no-results-message {
     white-space: pre-line;
+    text-align: center;
+    font-size: 3em;
+    margin-top: 3em;
+    color: #003f4f;
+    display: none;
 }
 
 .hidden {
@@ -145,4 +142,89 @@ hr {
     background-color: #F1FDFF !important;
     color: #275861 !important;
     border: 2px solid #275861 !important;
+}
+
+/* Image ordering for odd/even styles */
+.odd-style img {
+    order: 1;
+}
+
+.odd-style .college-info {
+    order: 2;
+}
+
+.even-style img {
+    order: 2;
+}
+
+.even-style .college-info {
+    order: 1;
+}
+
+/* Loading indicator */
+.loading-indicator {
+    text-align: center;
+    font-size: 1.5rem;
+    margin: 2rem 0;
+    color: #13505b;
+}
+
+/* Completely hide colleges list until ready */
+#colleges-list {
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+#colleges-list.loaded {
+    opacity: 1;
+}
+
+/* Responsive design */
+@media (max-width: 992px) {
+    .college-container {
+        width: 95vw;
+        padding: 20px;
+    }
+    
+    .college-info p {
+        width: auto;
+    }
+}
+
+@media (max-width: 768px) {
+    .search-bar {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .search-bar input {
+        width: 80vw;
+    }
+    
+    .college-container {
+        flex-direction: column;
+        width: 90vw;
+        padding: 15px;
+    }
+    
+    .college-container img {
+        width: 50vw;
+        height: auto;
+        margin-right: 0;
+        margin-bottom: 15px;
+        order: 1 !important;
+    }
+    
+    .college-info {
+        order: 2 !important;
+        text-align: center;
+    }
+    
+    .college-info p {
+        width: 100%;
+    }
+    
+    hr {
+        width: 100%;
+    }
 }

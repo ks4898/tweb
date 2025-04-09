@@ -4,77 +4,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign Up - A New World</title>
-
-    <script src="https://js.stripe.com/v3/"></script>
+    <title>Sign Up - Aardvark Games</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="/css/formstyles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css">
-    <style>
-        input[type="password"]::-ms-reveal,
-        input[type="password"]::-ms-clear {
-            display: none;
-        }
-
-        .input-group {
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            justify-content: center;
-            gap: 0.52vw;
-        }
-
-        .input-group input {
-            width: 11.58vw;
-        }
-
-        .input-group-text {
-            cursor: pointer;
-        }
-    </style>
 </head>
 
 <body>
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            fetch("/check-session") // an endpoint to check session
-                .then(response => response.json())
-                .then(data => {
-                    if (data.loggedIn) {
-                        window.location.href = "/"; // redirect to home page if logged in already
-                    }
-                });
-            document.getElementById('passwordToggle').addEventListener('click', function () {
-                const passwordInput = document.getElementById('password');
-                const form = document.getElementsByClassName('form-group')[2];
-                const eyeIcon = document.getElementById('eyeIcon');
-                const inputGroup = document.getElementsByClassName('input-group')[0];
-
-                if (passwordInput.type === "password") {
-                    passwordInput.type = "text";
-                    passwordInput.setAttribute("style", "margin-left: 3px;");
-                    passwordInput.setAttribute("style", "margin-right: 0;");
-                    inputGroup.setAttribute("style", "margin-left: 12px;");
-                    inputGroup.setAttribute("style", "gap: 8px;");
-                    eyeIcon.classList.remove('fa-eye');
-                    eyeIcon.classList.add('fa-eye-slash');
-                } else {
-                    passwordInput.type = "password";
-                    passwordInput.setAttribute("style", "margin-left: 0;");
-                    passwordInput.setAttribute("style", "margin-right: 0;");
-                    inputGroup.setAttribute("style", "margin-left: 0;");
-                    inputGroup.setAttribute("style", "gap: 10px;");
-                    eyeIcon.classList.remove('fa-eye-slash');
-                    eyeIcon.classList.add('fa-eye');
-                }
-            });
-        });
-    </script>
     <div class="form-container">
         <h2>Create an Account</h2>
-        <form id="signup-form">
+        <form action="/signup" method="post">
             <div class="form-group">
-                <label for="username">Your Name:</label>
-                <input type="text" id="username" name="username" required>
+                <label for="name">Your Name:</label>
+                <input type="text" id="name" name="name" required>
             </div>
             <div class="form-group">
                 <label for="email">Email:</label>
@@ -82,47 +24,97 @@
             </div>
             <div class="form-group">
                 <label for="password">Password:</label>
-                <div class="input-group">
-                    <input type="password" class="form-control" id="password" required>
-                    <span class="input-group-text" id="passwordToggle">
-                        <i class="fa fa-eye" id="eyeIcon"></i>
-                    </span>
+                <div class="password-container">
+                    <input type="password" id="password" name="password" required>
+                    <button type="button" class="toggle-password" aria-label="Toggle password visibility">
+                        <i class="fas fa-eye" id="eye-icon"></i>
+                    </button>
                 </div>
             </div>
-            <button type="submit" style="border-radius: 15px;">Sign Up</button>
-            <p id="signup-message"></p>
+            <button type="submit">Sign Up</button>
         </form>
-        <p>Already have an account? <a href="login.html">Login Here!</a></p>
-        <p>Return back to the home page: <a href="index.html">Home</a></p>
+        <p>Already have an account? <a href="/login">Login Here!</a></p>
+        <p>Return back to the home page: <a href="/">Home</a></p>
     </div>
 
     <script>
-        document.getElementById("signup-form").addEventListener("submit", async function (event) {
-            event.preventDefault();
+        document.addEventListener('DOMContentLoaded', function () {
+            const togglePassword = document.querySelector('.toggle-password');
+            const password = document.querySelector('#password');
+            const eyeIcon = document.querySelector('#eye-icon');
 
-            const username = document.getElementById("username").value;
-            const email = document.getElementById("email").value;
-            const password = document.getElementById("password").value;
+            togglePassword.addEventListener('click', function () {
+                // Toggle the password field type
+                const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+                password.setAttribute('type', type);
 
-            const response = await fetch("/signup", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ username, email, password }),
+                // Toggle the eye icon
+                eyeIcon.classList.toggle('fa-eye');
+                eyeIcon.classList.toggle('fa-eye-slash');
             });
 
-            const data = await response.json();
-            const messageElement = document.getElementById("signup-message");
-            if (response.ok) {
-                messageElement.style.color = "green";
-                messageElement.textContent = data.message + " Redirecting to login...";
-                setTimeout(() => {
-                    window.location.href = "login.html"; // redirect to login page after signing up
-                }, 2000);
-            } else {
-                messageElement.textContent = data.message;
+            const urlParams = new URLSearchParams(window.location.search);
+            const error = urlParams.get('error');
+            const success = urlParams.get('success');
+
+            // Create message container if it doesn't exist
+            if (!document.getElementById('signup-message')) {
+                const messageDiv = document.createElement('div');
+                messageDiv.id = 'signup-message';
+                document.querySelector('.form-container').appendChild(messageDiv);
             }
+
+            const messageContainer = document.getElementById('signup-message');
+
+            if (error) {
+                messageContainer.textContent = decodeURIComponent(error);
+                messageContainer.style.color = '#e74c3c';
+            } else if (success) {
+                messageContainer.textContent = 'Account created successfully! Redirecting...';
+                messageContainer.style.color = '#2ecc71';
+
+                // Redirect after 2 seconds
+                setTimeout(function () {
+                    window.location.href = '/login';
+                }, 2000);
+            }
+
+            // Handle form submission
+            document.querySelector('form').addEventListener('submit', async function (e) {
+                e.preventDefault();
+
+                try {
+                    const response = await fetch('/signup', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            username: document.getElementById('name').value,
+                            email: document.getElementById('email').value,
+                            password: document.getElementById('password').value
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        messageContainer.textContent = 'Account created successfully! Redirecting...';
+                        messageContainer.style.color = '#2ecc71';
+
+                        setTimeout(function () {
+                            window.location.href = '/login';
+                        }, 2000);
+                    } else {
+                        messageContainer.textContent = data.message || 'Signup failed. Please try again.';
+                        messageContainer.style.color = '#e74c3c';
+                    }
+                } catch (error) {
+                    messageContainer.textContent = 'An error occurred. Please try again.';
+                    messageContainer.style.color = '#e74c3c';
+                }
+            });
+
         });
     </script>
 </body>

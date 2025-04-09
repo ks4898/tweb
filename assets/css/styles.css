@@ -246,7 +246,7 @@ a:hover {
     text-decoration: none;
     text-shadow: 2px 2px 2px black;
     font-size: 1.1rem;
-    transition: 0.3s;
+    transition: all 0.2s ease;
     display: flex;
     align-items: center;
     height: 100%;

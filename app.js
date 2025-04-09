@@ -29,6 +29,18 @@ const db = mysql.createConnection({
 // middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Middleware to redirect .html URLs to clean URLs
+app.use((req, res, next) => {
+    if (req.path.endsWith('.html')) {
+        const cleanPath = req.path.slice(0, -5); // remove .html extension
+        const queryString = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
+        return res.redirect(301, cleanPath + queryString); // 301 is permanent redirect, preserve query string
+    } else {
+        next(); // only proceed if not redirecting
+    }
+});
+
 app.use(express.static("assets")); // serve static files from assets folder
 app.use(express.static(path.join(__dirname, "public"))); // serve static files from public folder (pages)
 app.use(errorHandler); // error handling
@@ -76,9 +88,9 @@ app.get("/colleges", (req, res) => {
 });
 
 // serve brackets page
-app.get("/brackets", (req, res) => {
+/*app.get("/brackets", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "brackets.html"));
-});
+});*/
 
 // serve schedule page
 app.get("/schedule", (req, res) => {
@@ -173,7 +185,7 @@ app.post("/signup", async (req, res) => {
 
     // check inputs
     if (!username || !email || !password) {
-        return res.status(400).json({ message: "Please fill all of the fields." });
+        return res.status(400).json({ message: "Please fill all of the fields correctly." });
     }
 
     // validate email format
@@ -198,7 +210,7 @@ app.post("/signup", async (req, res) => {
         if (results.length > 0) {
             // check whether email exists already
             const copycat = results[0];
-            if (copycat.email === email) {
+            if (copycat.Email === email) {
                 return res.status(400).json({ message: "Email already in use. Try logging in." });
             }
         }
@@ -375,12 +387,52 @@ app.get("/teams-for-college", (req, res) => {
 // add team (Admins & SuperAdmins)
 app.post("/add-team", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
     const { name, universityId } = req.body;
+    const desc = "";
+    // Add validation logging
+    console.log("Team creation attempt:", { name, universityId });
 
-    db.execute("INSERT INTO Teams (Name, UniversityID) VALUES (?, ?)", [name, universityId], (err, result) => {
-        if (err) return res.status(500).json({ message: "Database error. Please try again later." });
+    // Check if required fields are provided
+    if (!name || !universityId) {
+        console.error("Missing required fields:", { name, universityId });
+        return res.status(400).json({ message: "Missing required fields" });
+    }
 
-        res.status(201).json({ message: "Team added successfully!" });
-    });
+    db.execute("INSERT INTO Teams (Name, UniversityID, Description) VALUES (?, ?, ?)",
+        [name, universityId, desc],
+        (err, result) => {
+            if (err) {
+                // Enhanced error logging
+                console.error("Database error when adding team:", {
+                    error: err.message,
+                    code: err.code,
+                    sqlState: err.sqlState,
+                    sqlMessage: err.sqlMessage,
+                    teamName: name,
+                    universityId: universityId
+                });
+
+                // Return more specific error messages
+                if (err.code === 'ER_DUP_ENTRY') {
+                    return res.status(400).json({ message: "Team name already exists" });
+                } else if (err.code === 'ER_NO_REFERENCED_ROW_2') {
+                    return res.status(400).json({ message: "Selected university doesn't exist" });
+                }
+
+                return res.status(500).json({ message: "Database error. Please try again later." });
+            }
+
+            console.log("Team created successfully:", {
+                teamId: result.insertId,
+                teamName: name,
+                universityId: universityId
+            });
+
+            res.status(201).json({
+                message: "Team added successfully!",
+                teamId: result.insertId
+            });
+        }
+    );
 });
 
 // edit team (Admins & SuperAdmins)
@@ -497,7 +549,8 @@ app.get('/teams/:teamName', async (req, res) => {
             SELECT 
                 t.*,
                 u.Name AS UniversityName,
-                u.ImageURL AS UniversityImage 
+                u.ImageURL AS UniversityImage,
+                u.Emblem AS UniversityEmblem
             FROM Teams t
             LEFT JOIN University u ON t.UniversityID = u.UniversityID
             WHERE t.Name = ?
@@ -526,23 +579,35 @@ app.get('/teams/:teamName', async (req, res) => {
             WHERE p.TeamID = ?
         `, [team[0].TeamID]);
 
-        // Build template
-        const html = (await fs.promises.readFile('public/team.html', 'utf8'))
-            .replace(/{{TEAM_NAME}}/g, team[0].Name)
-            .replace(/{{TEAM_IMAGE}}/g, team[0].ImageURL || '/media/img/chile.png')
-            .replace(/{{TEAM_DESCRIPTION}}/g, team[0].Description || 'No description available')
-            .replace(/{{UNIVERSITY_NAME}}/g, team[0].UniversityName)
-            .replace(/{{UNIVERSITY_IMAGE}}/g, team[0].UniversityImage || '/default-university.png')
-            .replace('{{EDIT_BUTTON}}', isMember.length ? `
-                <div class="mt-0 text-end p-1">
-                    <a href="/teams/${team[0].TeamID}/edit" class="btn btn-primary">Edit Profile</a>
-                </div>` : '')
-            .replace('{{TEAM_MEMBERS}}', players.map(p => `
+        // Check if the team has members and create appropriate content
+        let teamMembersHTML;
+        if (players.length === 0) {
+            teamMembersHTML = `
+                <li class="list-group-item text-center">
+                    <p class="mb-0 text-muted">This team currently has no members.</p>
+                </li>
+            `;
+        } else {
+            teamMembersHTML = players.map(p => `
                 <li class="list-group-item d-flex align-items-center">
                     <span class="badge bg-primary me-2">${p.Role || 'Member'}</span>
                     ${p.Name}
                 </li>
-            `).join(''));
+            `).join('');
+        }
+
+        // Build template
+        const html = (await fs.promises.readFile('public/team.html', 'utf8'))
+            .replace(/{{TEAM_NAME}}/g, team[0].Name)
+            .replace(/{{TEAM_IMAGE}}/g, team[0].ImageURL || team[0].UniversityEmblem)
+            .replace(/{{TEAM_DESCRIPTION}}/g, team[0].Description || 'No description available.')
+            .replace(/{{UNIVERSITY_NAME}}/g, team[0].UniversityName)
+            .replace(/{{UNIVERSITY_IMAGE}}/g, team[0].UniversityImage || '/media/img/new-world.jpg')
+            .replace('{{EDIT_BUTTON}}', isMember.length ? `
+                <div class="mt-0 text-end p-1">
+                    <a href="/teams/${team[0].TeamID}/edit" class="btn btn-primary">Edit Profile</a>
+                </div>` : '')
+            .replace('{{TEAM_MEMBERS}}', teamMembersHTML);
 
         res.send(html);
     } catch (error) {
@@ -1301,74 +1366,6 @@ app.get('/payment-success', verifyRole(["Player"]), async (req, res) => {
     }
 });
 
-
-/*// payment processing route
-app.post('/create-payment-intent', verifyRole(["Player"]), async (req, res) => {
-    try {
-        const paymentIntent = await stripe.paymentIntents.create({
-            amount: 1000, // $10 in cents
-            currency: 'usd',
-            metadata: { userId: req.session.userId }
-        });
-
-        res.json({ clientSecret: paymentIntent.client_secret });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});*/
-
-/*app.post('/create-payment-intent', /*verifyRole(["Player"]), async (req, res) => {
-    // mock implementation
-    res.json({ clientSecret: 'mock_client_secret' });
-});*/
-
-/*// confirm payment
-app.post('/confirm-payment', verifyRole(["Player"]), async (req, res) => {
-    const { paymentIntentId } = req.body;
-    const userId = req.session.userId;
-
-    try {
-        const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-
-        if (paymentIntent.metadata.userId !== userId.toString()) {
-            return res.status(403).json({ error: 'Unauthorized' });
-        }
-
-        if (paymentIntent.status === 'succeeded') {
-            // update the database to mark the player as paid
-            db.execute('UPDATE Players SET PayedFee = TRUE WHERE UserID = ?', [userId], (err, result) => {
-                if (err) {
-                    console.error('Database error:', err);
-                    return res.status(500).json({ error: 'Failed to update payment status' });
-                }
-                res.json({ success: true, message: 'Payment confirmed and recorded' });
-            });
-        } else {
-            res.status(400).json({ error: 'Payment not successful' });
-        }
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});*/
-
-/* mock payment confirm
-app.post('/confirm-payment', /*verifyRole(["Player"]), async (req, res) => {
-    const userId = req.session.userId;
-
-    try {
-        db.execute('UPDATE Players SET PayedFee = TRUE WHERE UserID = ?', [userId], (err, result) => {
-            if (err) {
-                console.error('Database error:', err);
-                return res.status(500).json({ error: 'Failed to update payment status' });
-            }
-            res.json({ success: true, message: 'Payment confirmed and recorded' });
-        });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});*/
-
-
 // tournament signup route
 app.post('/tournament-signup', verifyRole(["Player"]), async (req, res) => {
     const { tournamentId } = req.body;
@@ -1478,6 +1475,141 @@ app.get("/api/teams", (req, res) => {
         res.json(results);
     });
 });
+
+app.get('/brackets', async (req, res) => {
+    try {
+        // Fetch all tournaments for the dropdown
+        const [tournaments] = await db.promise().execute(`SELECT TournamentID, Name FROM Tournaments ORDER BY Name`);
+
+        // Check if tournament ID 1 exists in the list
+        const defaultTournament = tournaments.find(t => t.TournamentID === 1) || tournaments[0];
+        const selectedTournamentName = req.query.tournament || defaultTournament.Name;
+
+        // Find the tournament ID based on the name
+        const selectedTournament = tournaments.find(t => t.Name === selectedTournamentName) || defaultTournament;
+        const tournamentId = selectedTournament.TournamentID;
+
+        // Generate tournament dropdown HTML with Bootstrap styling
+        const tournamentDropdownHtml = `
+            <div class="form-group mb-4">
+                <select id="tournament-select" class="form-select" style="max-width: 300px; border-radius: 8px; border: 1px solid #134c5b;" onchange="changeTournament(this.value)">
+                    ${tournaments.map(t => `
+                        <option value="${t.Name}" ${t.Name === selectedTournamentName ? 'selected' : ''}>
+                            ${t.Name}
+                        </option>
+                    `).join('')}
+                </select>
+            </div>
+        `;
+
+        // Fetch matches for the selected tournament
+        const [matches] = await db.promise().execute(`
+            SELECT 
+                m.MatchID, m.RoundNumber, m.MatchDate,
+                m.Team1ID, m.Team2ID, m.ScoreTeam1, m.ScoreTeam2, m.WinnerID,
+                t1.Name AS Team1Name, t2.Name AS Team2Name, 
+                wt.Name AS WinnerName
+            FROM Matches m
+            LEFT JOIN Teams t1 ON m.Team1ID = t1.TeamID
+            LEFT JOIN Teams t2 ON m.Team2ID = t2.TeamID
+            LEFT JOIN Teams wt ON m.WinnerID = wt.TeamID
+            WHERE m.TournamentID = ? AND m.RoundNumber BETWEEN 3 AND 4
+            ORDER BY m.RoundNumber, m.MatchDate
+        `, [tournamentId]);
+
+        // Organize matches by round
+        const semifinalMatches = matches.filter(m => m.RoundNumber === 3);
+        const finalMatch = matches.find(m => m.RoundNumber === 4);
+
+        // Generate HTML for semifinals
+        const semifinalHtml = semifinalMatches.map((m, index) =>
+            generateSemifinalCardHTML(m, index === 0 ? 'left' : 'right')
+        ).join('');
+
+        // Generate placeholders for missing semifinal matches
+        const semifinalPlaceholders = Array.from({ length: Math.max(0, 2 - semifinalMatches.length) })
+            .map((_, index) => generateSemifinalCardHTML(null, semifinalMatches.length === 1 ? 'right' : (index === 0 ? 'left' : 'right')))
+            .join('');
+
+        // Generate HTML for final match
+        const finalHtml = generateFinalCardHTML(finalMatch);
+
+        // Read template file and replace placeholders
+        const templatePath = path.join(__dirname, 'public', 'brackets.html');
+        const template = await fs.promises.readFile(templatePath, 'utf8');
+
+        const html = template
+            .replace('{{TOURNAMENT_DROPDOWN}}', tournamentDropdownHtml)
+            .replace('{{SEMIFINAL_MATCHES}}', semifinalHtml)
+            .replace('{{SEMIFINAL_PLACEHOLDERS}}', semifinalPlaceholders)
+            .replace('{{FINAL_MATCH}}', finalHtml);
+
+        res.send(html);
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).send('Server error');
+    }
+});
+
+/// Helper function to generate semifinal match card HTML
+function generateSemifinalCardHTML(match, position) {
+    if (!match) return `
+        <div class="semifinal-card ${position}-semifinal">
+            <h4 class="card-title">Semifinal</h4>
+            <div class="match-card text-center">
+                <p class="text-muted">Match not scheduled</p>
+            </div>
+            <div class="connector ${position}-connector"></div>
+        </div>
+    `;
+
+    return `
+        <div class="semifinal-card ${position}-semifinal">
+            <h4 class="card-title">Semifinal</h4>
+            <div class="match-card">
+                <div class="team-row">
+                    <span class="team-name ${match.WinnerID === match.Team1ID ? 'winner' : ''}">${match.Team1Name || 'TBD'}</span>
+                    <span class="vs-text">vs</span>
+                    <span class="team-name ${match.WinnerID === match.Team2ID ? 'winner' : ''}">${match.Team2Name || 'TBD'}</span>
+                </div>
+                <div class="score-row">
+                    <span class="team-score">${match.ScoreTeam1 || 0}</span>
+                    <span class="vs-text">vs</span>
+                    <span class="team-score">${match.ScoreTeam2 || 0}</span>
+                </div>
+                <div class="match-date">${new Date(match.MatchDate).toLocaleDateString()}</div>
+            </div>
+            <div class="connector ${position}-connector"></div>
+        </div>
+    `;
+}
+
+// Helper function to generate final match card HTML
+function generateFinalCardHTML(match) {
+    if (!match) return `
+        <h3 class="final-title">Grand Final</h3>
+        <div class="match-card text-center">
+            <p class="text-muted">Match not scheduled</p>
+        </div>
+    `;
+
+    return `
+        <h3 class="final-title">Grand Final</h3>
+        <div class="match-card">
+            <div class="team-row">
+                <span class="team-name ${match.WinnerID === match.Team1ID ? 'winner' : ''}">${match.Team1Name || 'TBD'}</span>
+                <span class="vs-text">vs</span>
+                <span class="team-name ${match.WinnerID === match.Team2ID ? 'winner' : ''}">${match.Team2Name || 'TBD'}</span>
+            </div>
+            <div class="score-row">
+                <span class="team-score">${match.ScoreTeam1 || 0}</span>
+                <span class="vs-text">vs</span>
+                <span class="team-score">${match.ScoreTeam2 || 0}</span>
+            </div>
+            <div class="match-date">${new Date(match.MatchDate).toLocaleDateString()}</div>
+        </div>
+    `;
+}
 
 
 // start the server
