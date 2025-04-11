@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A New World - Reports</title>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;700&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap JS (Optional) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/reports.css">
+</head>
+
+<body>
+    <!-- Bootstrap JS (Optional) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <nav class="navbar">
+      <a href="/" class="navbar-logo">Aardvark Games</a>
+      <div class="navbar-links">
+          <a href="/colleges" class="nav-link">Colleges</a>
+          <a href="/teams" class="nav-link">Teams</a>
+          <a href="/brackets" class="nav-link">Brackets</a>
+          <a href="/schedule" class="nav-link">Schedule</a>
+          <a href="/news" class="nav-link">News</a>
+          <a href="/about" class="nav-link">About Us</a>
+          <a href="/signup" class="nav-link active">Account</a>
+      </div>
+  </nav>
+
+    <div class="container mt-5">
+        <section id="ticket-management">
+            <h1 class="text-center mb-4">Reports</h1>
+    
+            <div class="search-container">
+                <input type="text" id="ticketSearch" placeholder="Search tickets...">
+              
+                <!-- Sort by Date Dropdown -->
+                <div class="dropdown-group">
+                  <label for="sortDate" class="dropdown-label">Sort by Date</label>
+                  <!-- Date Sorting -->
+                    <select id="sortDate" class="form-select">
+                        <option value="desc">Newest</option>
+                        <option value="asc">Oldest</option>
+                    </select>
+                </div>
+              
+                <!-- Filter by Type Dropdown -->
+                <div class="dropdown-group">
+                  <label for="filterType" class="dropdown-label">Filter by Type</label>
+                  <select id="filterType" class="form-select-sm">
+                    <option value="">None</option>
+                    <option value="User">User</option>
+                    <option value="System">System</option>
+                    <option value="Group">College</option>
+                  </select>
+                </div>
+              
+                <!-- Filter by Status Dropdown -->
+                <div class="dropdown-group">
+                  <label for="filterStatus" class="dropdown-label">Filter by Status</label>
+                  <select id="filterStatus" class="form-select-sm">
+                    <option value="">None</option>
+                    <option value="Open">Open</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Closed">Closed</option>
+                  </select>
+                </div>
+              </div>                    
+    
+            <div class="custom-table-container mt-4">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                          <th>ID</th>
+                          <th>Type</th>
+                          <th>Name</th>
+                          <th>Subject</th>
+                          <th>Date</th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>                      
+                      <tbody>
+                        <tr>
+                          <td>#001</td>
+                          <td>User</td>
+                          <td>john.doe</td>
+                          <td>Login Issue</td>
+                          <td>2025-04-01</td>
+                          <td><span class="status-badge open">Open</span></td>
+                        </tr>
+                        <tr>
+                          <td>#002</td>
+                          <td>System</td>
+                          <td>AutoBot</td>
+                          <td>Auto Shutdown</td>
+                          <td>2025-04-05</td>
+                          <td><span class="status-badge closed">Closed</span></td>
+                        </tr>
+                        <tr>
+                          <td>#003</td>
+                          <td>Group</td>
+                          <td>Moderators</td>
+                          <td>Game Crash Report</td>
+                          <td>2025-04-07</td>
+                          <td><span class="status-badge pending">Pending</span></td>
+                        </tr>
+                      </tbody>                                           
+                </table>
+            </div>
+        </section>
+    </div>
+    
+    <!-- Modal -->
+    <div class="modal fade" id="ticketModal" tabindex="-1" aria-labelledby="ticketModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="ticketModalLabel">Report</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Report details will be populated here -->
+                </div>
+                <div class="modal-footer">
+                    <!-- Footer buttons will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Role Management -->
+    <script src="/js/reports.js"></script>
+</body>
+
+</html>

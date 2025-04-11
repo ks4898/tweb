@@ -1,0 +1,214 @@
+html, section {
+    background-color: #041C20 !important;
+}
+
+/* General Styles */
+body {
+    font-family: 'Kanit', sans-serif;
+    background-color: #041C20;
+    color: #fff;
+}
+
+/* Ticket Table Styles */
+.custom-table-container {
+    overflow-y: auto;
+    max-height: 300px;
+    margin-top: 20px;
+    border: 1px solid #333;
+    border-radius: 5px;
+    background-color: #1f2d34;
+}
+
+.custom-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.custom-table th,
+.custom-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #333;
+}
+
+.custom-table th {
+    background-color: #1d3a45;
+}
+
+.custom-table tbody tr:hover {
+    background-color: #3a4e5c;
+    cursor: pointer;
+}
+
+.custom-table .selected {
+    background-color: #3a4e5c;
+}
+
+.custom-table td .status-badge {
+    display: inline-block;
+    text-align: center;
+    width: 100%;
+}
+
+/* Search Section */
+.search-container {
+    margin-top: 20px;
+    text-align: center;
+    display: inline-block;
+    width: 100%;
+    text-align: center;
+}
+
+.search-container input,
+.search-container select {
+    padding: 10px;
+    background-color: #fff;
+    border: 1px solid #333;
+    color: black;
+    border-radius: 5px;
+    font-family: 'Kanit', sans-serif;
+    margin-bottom: 10px;
+}
+
+.search-container .dropdown-group {
+    display: inline-block;
+    margin-right: 10px;
+    margin-bottom: 10px; /* Added margin to give some space between elements */
+}
+
+.search-container .dropdown-label {
+    font-size: 0.875rem;  /* Smaller text */
+    color: #9EF01A;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.search-container select {
+    min-width: 150px;
+}
+
+@media (max-width: 768px) {
+    .search-container {
+        display: block;
+    }
+
+    .search-container input,
+    .search-container select {
+        width: 100%;  /* Ensure input and select fields take full width */
+        margin-bottom: 10px;
+    }
+
+    .search-container .dropdown-group {
+        width: 100%; /* Full width for each dropdown on small screens */
+        margin-right: 0; /* Remove margin to align properly */
+    }
+}
+
+
+/* Ticket Status Badge */
+/* Add more status types if needed */
+.status-badge {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-weight: bold;
+    color: #041C20;
+    font-size: 0.9rem;
+}
+
+.status-badge.open {
+    background-color: #9EF01A;
+    color: #041C20;
+}
+
+.status-badge.closed {
+    background-color: #F84D50;
+    color: #fff;
+}
+
+.status-badge.pending {
+    background-color: #FFCC00;
+    color: #041C20;
+}
+
+/* Modal */
+.modal-content {
+    background-color: #1f2d34;
+    color: #fff;
+    border-radius: 8px;
+}
+
+.modal-header {
+    border-bottom: 1px solid #333;
+}
+
+.modal-title {
+    color: #9EF01A;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.form-label {
+    color: #9EF01A;
+    font-weight: bold;
+}
+
+.form-control {
+    background-color: #041C20;
+    border: 1px solid #333;
+    color: #fff;
+}
+
+.form-control.description {
+    height: 150px;
+    resize: vertical;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+}
+
+.form-select {
+    background-color: #041C20;
+    border: 1px solid #333;
+    color: #fff;
+}
+
+.modal-footer {
+    border-top: 1px solid #333;
+}
+
+/* Modal Button Styles */
+.btn-secondary {
+    background-color: #444;
+    color: #fff;
+}
+
+.btn-primary {
+    background-color: #9EF01A;
+    color: #13505B;
+    border: #13505B;
+}
+
+.btn-primary:hover {
+    background-color: #119DA4;
+    color: #9EF01A;
+    border: #9EF01A;
+}
+
+.btn-close {
+    background-color: transparent;
+    border: none;
+    color: #fff;
+}
+
+/* Disabled button style */
+#editUserButton:disabled {
+    pointer-events: none;  /* Prevent click */
+    opacity: 0.5; /* Make it look faded */
+}
+
+/* Ensuring Modal Overlay Blocks Background Interaction */
+.modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.6);
+}

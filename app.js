@@ -134,6 +134,11 @@ app.get("/signup", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "signup.html")); // not logged in, redirect to sign up page
 });
 
+// serve reports page
+app.get("/reports", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "reports.html"));
+});
+
 // session check
 app.get("/check-session", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
     return res.json({
