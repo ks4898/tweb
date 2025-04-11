@@ -26,11 +26,10 @@ const db = mysql.createConnection({
     database: process.env.DB_DATABASE
 });
 
-// middleware
+// middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// Middleware to redirect .html URLs to clean URLs
+// redirect .html URLs to clean URLs
 app.use((req, res, next) => {
     if (req.path.endsWith('.html')) {
         const cleanPath = req.path.slice(0, -5); // remove .html extension
@@ -57,62 +56,56 @@ app.use(session({
     }
 }));
 
-/* DEPRECATED!
-function requireAdminAuth(req, res) {
-    if (!req.session.userId) {
-        return res.sendFile(path.join(__dirname, "public", "login.html"));
-    }
-    if (req.session.role !== 'Admin' && req.session.role !== 'SuperAdmin') {
-        return res.sendFile(path.join(__dirname, "public", "index.html"));
-    }
-}*/
-
-
 // ======================== SERVE PAGES & SESSION CHECKING ========================
 
-// serve home page
+// serve home page endpoint
 app.get("/", (req, res) => {
     if (req.session.userId) {
         return res.sendFile(path.join(__dirname, "public", "index.html"));
     }
 });
 
-// serve about page
+// serve about page endpoint
 app.get("/about", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "about.html"));
 });
 
-// serve colleges page
+// serve reports page endpoint
+app.get("/reports", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "reports.html"));
+});
+
+// serve account page endpoint  |  maybe use same route to transfer to profile page if not staff?
+app.get("/account", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "account.html"));
+});
+
+// serve colleges page endpoint
 app.get("/colleges", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "colleges.html"));
 });
 
-// serve brackets page
-/*app.get("/brackets", (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "brackets.html"));
-});*/
-
-// serve schedule page
+// serve schedule page endpoint
 app.get("/schedule", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "schedule.html"));
 });
 
-// serve details page
+// serve details page endpoint
 app.get("/details", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "details.html"));
 });
 
-// serve payment page
+// serve payment page endpoint
 app.get("/payment", verifyRole(["Player"]), (req, res) => {
     res.sendFile(path.join(__dirname, "public", "payment.html"));
 });
 
-// serve news page
+// serve news page endpoint
 app.get("/news", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "news.html"));
 });
 
-// serve login page
+// serve login page endpoint
 app.get("/login", (req, res) => {
     if (req.session.userId) { // logged in check
         // user is already logged in, redirect to home page
@@ -121,7 +114,7 @@ app.get("/login", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "login.html")); // not logged in, redirect to login page
 });
 
-// serve sign up page
+// serve sign up page endpoint
 app.get("/signup", (req, res) => {
     if (req.session.userId) { // logged in check
         // user is already logged in, redirect
@@ -134,12 +127,12 @@ app.get("/signup", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "signup.html")); // not logged in, redirect to sign up page
 });
 
-// serve reports page
+// serve reports page endpoint
 app.get("/reports", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "reports.html"));
 });
 
-// session check
+// session check endpoint
 app.get("/check-session", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
     return res.json({
         loggedIn: !!req.session.userId,
@@ -150,7 +143,7 @@ app.get("/check-session", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
 
 // ======================== USER AUTHENTICATION ========================
 
-// login route
+// login endpoint
 app.post("/login", (req, res) => {
     const { email, password } = req.body;
 
@@ -184,7 +177,7 @@ app.post("/login", (req, res) => {
     });
 });
 
-// sign up route
+// sign up endpoint
 app.post("/signup", async (req, res) => {
     const { username, email, password } = req.body;
 
@@ -240,7 +233,7 @@ app.post("/signup", async (req, res) => {
     });
 });
 
-// logout route
+// logout endpoint
 app.get("/logout", (req, res) => {
     if (!req.session.userId) {
         return res.redirect('/');
@@ -258,7 +251,7 @@ app.get("/logout", (req, res) => {
 
 // ======================== COLLEGE & TEAM MANAGEMENT ========================
 
-// route to fetch all colleges
+// fetch all colleges endpoint
 app.get("/universities", (req, res) => {
     db.execute("SELECT * FROM University", (err, results) => {
         if (err) {
@@ -269,7 +262,7 @@ app.get("/universities", (req, res) => {
     });
 });
 
-// get all or search colleges
+// get all or search colleges endpoint
 app.get("/fetchColleges", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
     const searchTerm = req.query.search;
     let query = "SELECT UniversityID, Name, Location, Founded, Description, Emblem, ImageURL FROM University";
@@ -287,7 +280,7 @@ app.get("/fetchColleges", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
     });
 });
 
-// fetch college by id or name
+// fetch college by id or name endpoint
 app.get("/university", (req, res) => {
     const { name, id } = req.query;
 
@@ -309,6 +302,7 @@ app.get("/university", (req, res) => {
     }
 });
 
+// helper function to handle response
 function handleResponse(err, results, res) {
     if (err) {
         console.error("Database query error:", err);
@@ -322,7 +316,7 @@ function handleResponse(err, results, res) {
     res.json(results[0]);
 }
 
-// add college (Admins & SuperAdmins)
+// add college endpoint
 app.post("/add-college", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
     const { name, location, founded, description, logoURL, pictureURL } = req.body;
     db.execute("INSERT INTO University (Name, Location, Founded, Emblem, ImageURL, Description) VALUES (?, ?, ?, ?, ?, ?)", [name, location, founded, logoURL, pictureURL, description], (err, result) => {
@@ -332,7 +326,7 @@ app.post("/add-college", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
 });
 
 
-// edit college (Admins & SuperAdmins)
+// edit college endpoint
 app.put("/edit-college/:collegeId", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
     const { name, location, founded, description, logoURL, pictureURL } = req.body;
     const collegeId = req.params.collegeId;
@@ -344,7 +338,7 @@ app.put("/edit-college/:collegeId", verifyRole(["SuperAdmin", "Admin"]), (req, r
     });
 });
 
-// delete college (Admins & SuperAdmins)
+// delete college endpoint
 app.delete("/delete-college/:collegeId", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
     const collegeId = req.params.collegeId;
     db.execute("DELETE FROM University WHERE UniversityID = ?", [collegeId], (err, result) => {
@@ -354,7 +348,7 @@ app.delete("/delete-college/:collegeId", verifyRole(["SuperAdmin", "Admin"]), (r
 });
 
 
-// route to fetch all teams
+// fetch all teams endpoint
 app.get("/api/teams", (req, res) => {
     db.execute(`
         SELECT t.TeamID, t.Name, t.UniversityID, u.Name AS UniversityName, t.CreatedDate
@@ -369,7 +363,7 @@ app.get("/api/teams", (req, res) => {
     });
 });
 
-// fetch teams and players for a college
+// fetch teams and players for a college endpoint
 app.get("/teams-for-college", (req, res) => {
     const collegeName = req.query.name;
     db.execute(`
@@ -389,14 +383,14 @@ app.get("/teams-for-college", (req, res) => {
     });
 });
 
-// add team (Admins & SuperAdmins)
+// add team endpoint
 app.post("/add-team", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
     const { name, universityId } = req.body;
     const desc = "";
-    // Add validation logging
+    // add validation logging
     console.log("Team creation attempt:", { name, universityId });
 
-    // Check if required fields are provided
+    // check if required fields are provided
     if (!name || !universityId) {
         console.error("Missing required fields:", { name, universityId });
         return res.status(400).json({ message: "Missing required fields" });
@@ -406,7 +400,7 @@ app.post("/add-team", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
         [name, universityId, desc],
         (err, result) => {
             if (err) {
-                // Enhanced error logging
+                // enhanced error logging
                 console.error("Database error when adding team:", {
                     error: err.message,
                     code: err.code,
@@ -416,7 +410,7 @@ app.post("/add-team", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
                     universityId: universityId
                 });
 
-                // Return more specific error messages
+                // return more specific error messages
                 if (err.code === 'ER_DUP_ENTRY') {
                     return res.status(400).json({ message: "Team name already exists" });
                 } else if (err.code === 'ER_NO_REFERENCED_ROW_2') {
@@ -440,7 +434,7 @@ app.post("/add-team", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
     );
 });
 
-// edit team (Admins & SuperAdmins)
+// edit team endpoint
 app.put("/edit-team/:teamId", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
     const { name, universityId, newLeaderId, memberToDeleteId } = req.body;
     const teamId = req.params.teamId;
@@ -478,7 +472,7 @@ app.put("/edit-team/:teamId", verifyRole(["SuperAdmin", "Admin"]), (req, res) =>
     });
 });
 
-// delete team (Admins & SuperAdmins)
+// delete team endpoint
 app.delete("/delete-team/:teamId", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
     const teamId = req.params.teamId;
     db.execute("DELETE FROM Teams WHERE TeamID = ?", [teamId], (err, result) => {
@@ -487,7 +481,7 @@ app.delete("/delete-team/:teamId", verifyRole(["SuperAdmin", "Admin"]), (req, re
     });
 });
 
-// fetch a team
+// fetch a team endpoint
 app.get("/team", (req, res) => {
     const { id } = req.query;
     if (!id) {
@@ -505,7 +499,7 @@ app.get("/team", (req, res) => {
     });
 });
 
-// search teams
+// search teams endpoint
 app.get("/search-teams", (req, res) => {
     const { query } = req.query;
     if (!query) {
@@ -516,12 +510,12 @@ app.get("/search-teams", (req, res) => {
         [`%${query}%`, `%${query}%`],
         (err, results) => {
             if (err) return res.status(500).json({ message: "Database error. Please try again later." });
-            res.json(results); // Always return results, even if empty
+            res.json(results); // always return results, even if empty
         }
     );
 });
 
-// fetch team members
+// fetch team members endpoint
 app.get("/team-members", (req, res) => {
     const { teamId } = req.query;
     if (!teamId) {
@@ -549,7 +543,7 @@ app.get('/teams/:teamName', async (req, res) => {
         const teamName = decodeURIComponent(req.params.teamName);
         const userId = req.session.userId; // undefined if not logged in
 
-        // Get team + university data
+        // get team + university data
         const [team] = await db.promise().execute(`
             SELECT 
                 t.*,
@@ -565,7 +559,7 @@ app.get('/teams/:teamName', async (req, res) => {
 
         let isMember = false;
 
-        // Check membership only if user is logged in
+        // check membership only if user is logged in
         if (userId) {
             [isMember] = await db.promise().execute(`
                 SELECT 1 FROM Players 
@@ -576,7 +570,7 @@ app.get('/teams/:teamName', async (req, res) => {
             ]);
         }
 
-        // Get team members (public info)
+        // get team members (public info)
         const [players] = await db.promise().execute(`
             SELECT p.*, u.Name 
             FROM Players p
@@ -584,7 +578,7 @@ app.get('/teams/:teamName', async (req, res) => {
             WHERE p.TeamID = ?
         `, [team[0].TeamID]);
 
-        // Check if the team has members and create appropriate content
+        // check if the team has members and create appropriate content
         let teamMembersHTML;
         if (players.length === 0) {
             teamMembersHTML = `
@@ -601,7 +595,7 @@ app.get('/teams/:teamName', async (req, res) => {
             `).join('');
         }
 
-        // Build template
+        // build template
         const html = (await fs.promises.readFile('public/team.html', 'utf8'))
             .replace(/{{TEAM_NAME}}/g, team[0].Name)
             .replace(/{{TEAM_IMAGE}}/g, team[0].ImageURL || team[0].UniversityEmblem)
@@ -621,15 +615,15 @@ app.get('/teams/:teamName', async (req, res) => {
     }
 });
 
-// Team edit page route
+// serve team edit page endpoint
 app.get('/teams/:teamId/edit', async function (req, res) {
     try {
         const teamId = req.params.teamId;
         const userId = req.session.userId;
 
-        // Ensure the user is logged in
+        // ensure the user is logged in
         if (!userId) {
-            return res.redirect('/login'); // Redirect to login if not authenticated
+            return res.redirect('/login'); // redirect to login if not authenticated
         }
 
         // Check if user is a member of the team
@@ -643,7 +637,7 @@ app.get('/teams/:teamId/edit', async function (req, res) {
             //return res.status(403).sendFile(path.join(__dirname, 'public', '403.html')); // Unauthorized
         }
 
-        // Get team details
+        // get team details
         const [teamResults] = await db.promise().execute(
             'SELECT Name, ImageURL, Description FROM Teams WHERE TeamID = ?',
             [teamId]
@@ -654,14 +648,14 @@ app.get('/teams/:teamId/edit', async function (req, res) {
             //return res.status(404).sendFile(path.join(__dirname, 'public', '404.html')); // Not Found
         }
 
-        // Read the edit team template file
+        // read the edit team template file
         fs.readFile(path.join(__dirname, 'public', 'edit-team.html'), 'utf8', function (err, data) {
             if (err) {
                 console.error('Error reading edit team template:', err);
                 return res.status(500).send('Server error');
             }
 
-            // Replace placeholders with actual data
+            // replace placeholders with actual data
             let html = data.replace('{{TEAM_NAME}}', teamResults[0].Name)
                 .replace('{{TEAM_IMAGE_URL}}', teamResults[0].ImageURL || '')
                 .replace('{{TEAM_DESCRIPTION}}', teamResults[0].Description || '');
@@ -674,30 +668,30 @@ app.get('/teams/:teamId/edit', async function (req, res) {
     }
 });
 
-// Team update route
+// team update endpoint
 app.post('/teams/:teamId/update', async function (req, res) {
     try {
         const teamId = req.params.teamId;
         const userId = req.session.userId;
 
-        // Ensure the user is logged in
+        // ensure the user is logged in
         if (!userId) {
             return res.status(401).json({ error: 'Unauthorized' });
         }
 
         const { imageURL, description } = req.body;
 
-        // Check if user is a member of the team
+        // check if user is a member of the team
         const [userTeam] = await db.promise().execute(
             'SELECT * FROM Players WHERE UserID = ? AND TeamID = ?',
             [userId, teamId]
         );
 
         if (!userTeam[0] || userTeam[0].length === 0) {
-            return res.status(403).json({ error: 'Unauthorized' }); // Unauthorized
+            return res.status(403).json({ error: 'Unauthorized' });
         }
 
-        // Update team profile
+        // update team profile
         await db.promise().execute(
             'UPDATE Teams SET ImageURL = ?, Description = ? WHERE TeamID = ?',
             [imageURL, description, teamId]
@@ -710,6 +704,7 @@ app.post('/teams/:teamId/update', async function (req, res) {
     }
 });
 
+// serve teams page endpoint
 app.get('/teams', async (req, res) => {
     try {
         const searchQuery = req.query.q || '';
@@ -765,7 +760,7 @@ app.get('/teams', async (req, res) => {
 
 // ======================== TOURNAMENT MANAGEMENT ========================
 
-// sign up for a tournament
+// sign up for a tournament endpoint  || NEEDS UPDATE !
 app.post("/signup-tournament", (req, res) => {
     const { tournamentId, teamId } = req.body;
     const userId = req.session.userId;
@@ -785,7 +780,7 @@ app.post("/signup-tournament", (req, res) => {
     });
 });
 
-// cancel tournament sign up (only for the creator of the team)
+// cancel tournament sign up endpoint (only for the creator of the team)
 app.delete("/cancel-tournament-signup/:tournamentId", (req, res) => {
     const tournamentId = req.params.tournamentId;
     const userId = req.session.userId;
@@ -826,7 +821,7 @@ app.delete("/cancel-tournament-signup/:tournamentId", (req, res) => {
     );
 });
 
-// leave a team
+// leave a team endpoint  ||  NEEDS TO CHECK IF LEADER AND IF LEADER CAN BE ASSIGNED, AND DELETE TEAM IF LAST MEMBER !
 app.delete("/leave-team", verifyRole(["Player"]), (req, res) => {
     const userId = req.session.userId;
 
@@ -837,7 +832,7 @@ app.delete("/leave-team", verifyRole(["Player"]), (req, res) => {
     });
 });
 
-// create a tournament (SuperAdmins & Admins)
+// create a tournament endpoint
 app.post("/add-tournament", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
     const { name, startDate, location } = req.body;
 
@@ -850,10 +845,10 @@ app.post("/add-tournament", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
 
 // ======================== TOURNAMENT EXECUTION MANAGEMENT ========================
 
-// fetch schedules route
+// fetch schedules route endpoint  || NEEDS UPDATE !
 app.get("/schedules", (req, res) => {
-    const limit = req.query.limit || 6; // Default limit
-    const offset = req.query.offset || 1; // Default offset
+    const limit = req.query.limit || 6; // default limit
+    const offset = req.query.offset || 1; // default offset
 
     db.execute(`
         SELECT s.ScheduleID, m.MatchID, m.Team1ID, m.Team2ID, t1.Name AS Team1Name, t2.Name AS Team2Name, s.ScheduledDate
@@ -871,7 +866,7 @@ app.get("/schedules", (req, res) => {
     });
 });
 
-// add schedule
+// add schedule endpoint  || NEEDS UPDATE !
 app.post("/add-schedule", verifyRole(["SuperAdmin", "Admin"]), async (req, res) => {
     const { tournamentId, matchDate } = req.body;
 
@@ -885,7 +880,7 @@ app.post("/add-schedule", verifyRole(["SuperAdmin", "Admin"]), async (req, res) 
     );
 });
 
-// post results
+// post results endpoint  || NEEDS UPDATE !
 app.post("/post-results", verifyRole(["SuperAdmin", "Admin"]), async (req, res) => {
     const { matchId, scoreTeam1, scoreTeam2 } = req.body;
 
@@ -905,7 +900,7 @@ app.post("/post-results", verifyRole(["SuperAdmin", "Admin"]), async (req, res) 
 });
 
 
-// ======================== REPORT GENERATION ========================
+// ======================== REPORT GENERATION ========================  ||  NEEDS UPDATE !
 
 app.get("/generate-report", verifyRole(["SuperAdmin", "Admin"]), async (req, res) => {
     db.execute(
@@ -935,23 +930,7 @@ app.get("/generate-report", verifyRole(["SuperAdmin", "Admin"]), async (req, res
 
 // ======================== ADMIN MANAGEMENT ========================
 
-// handle management page
-app.get("/account.html", (req, res) => {
-    if (!req.session.userId) {
-        return res.sendFile(path.join(__dirname, "public", "index.html"));
-    }
-    if (!['Admin', 'SuperAdmin'].includes(req.session.role)) {
-        return res.sendFile(path.join(__dirname, "public", "index.html"));
-    }
-    res.sendFile(path.join(__dirname, "public", "account.html"));
-});
-
-// serve management page
-app.get("/account", (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "account.html"));
-});
-
-// get available roles based on current user admin privileges
+// fetch available roles based on current user admin privileges endpoint
 app.get("/roles", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
     let roles = [];
     if (req.session.role === "Admin") {
@@ -959,11 +938,10 @@ app.get("/roles", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
     } else if (req.session.role === "SuperAdmin") {
         roles = VALID_ROLES.filter(role => role !== "SuperAdmin");
     }
-    //res.setHeader('Cache-Control', 'no-store, max-age=0');
     res.json(roles);
 });
 
-// get user id, name, role
+// get user id, name, role endpoint
 app.get('/user-info', (req, res) => {
     if (req.session.userId) {
         res.json({
@@ -976,7 +954,7 @@ app.get('/user-info', (req, res) => {
     }
 });
 
-// get all or search users
+// get all or search users endpoint
 app.get("/users", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
     const searchTerm = req.query.search;
     let query = "SELECT UserID, Name, Email, Role FROM Users";
@@ -994,7 +972,7 @@ app.get("/users", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
     });
 });
 
-// route to display all necessary information when editing user, including Player specific info
+// display all necessary information when editing user, including Player specific info endpoint
 app.get("/user/:userId", verifyRole(["SuperAdmin", "Admin"]), async (req, res) => {
     const userId = req.params.userId;
     try {
@@ -1015,7 +993,7 @@ app.get("/user/:userId", verifyRole(["SuperAdmin", "Admin"]), async (req, res) =
     }
 });
 
-// add new user route
+// add user endpoint  ||  MISSING CHECK FOR EXISTING EMAIL !
 app.post("/add-user", verifyRole(["SuperAdmin", "Admin"]), async (req, res) => {
     const { firstName, lastName, email, password, role, imageURL, validStudent, teamId } = req.body;
     const fullName = `${firstName} ${lastName}`;
@@ -1089,7 +1067,7 @@ app.post("/add-user", verifyRole(["SuperAdmin", "Admin"]), async (req, res) => {
     });
 });
 
-// edit user route
+// edit user endpoint
 app.put("/edit-user/:userId", verifyRole(["SuperAdmin", "Admin"]), async (req, res) => {
     const { name, email, role, imageURL, validStudent, teamId } = req.body;
     const userId = req.params.userId;
@@ -1131,7 +1109,7 @@ app.put("/edit-user/:userId", verifyRole(["SuperAdmin", "Admin"]), async (req, r
             }
         }
 
-        /*// NOT WORKING NEEDS FIXING
+        /*//  ||  NOT WORKING NEEDS FIXING !
         if(teamId < 0 && !teamId === null) {
             return res.status(400).json({ message: "Invalid TeamID it cannot be less than zero" });
         }
@@ -1192,7 +1170,7 @@ app.put("/edit-user/:userId", verifyRole(["SuperAdmin", "Admin"]), async (req, r
     }
 });
 
-// delete user
+// delete user endpoint
 app.delete("/delete-user/:userId", verifyRole(["SuperAdmin", "Admin"]), async (req, res) => {
     const userId = req.params.userId;
     const currentUserId = req.session.userId;
@@ -1253,7 +1231,7 @@ app.delete("/delete-user/:userId", verifyRole(["SuperAdmin", "Admin"]), async (r
     }
 });
 
-// route to check if player has paid the fee
+// fetch a player by UserID endpoint
 app.get("/player/:userId", async (req, res) => {
     const userId = req.params.userId;
     try {
@@ -1271,12 +1249,11 @@ app.get("/player/:userId", async (req, res) => {
     }
 });
 
-// Create payment intent
+// create payment intent endpoint
 app.post('/create-payment-intent', verifyRole(["Player"]), async (req, res) => {
     try {
         const userId = req.session.userId;
 
-        // Fixed database query destructuring
         const player = await db.execute(
             'SELECT PayedFee FROM Players WHERE UserID = ?',
             [userId]
@@ -1289,7 +1266,7 @@ app.post('/create-payment-intent', verifyRole(["Player"]), async (req, res) => {
             return res.status(400).json({ error: "Payment already completed" });
         }
 
-        // Create payment intent
+        // create payment intent
         const paymentIntent = await stripe.paymentIntents.create({
             amount: 1000,
             currency: 'usd',
@@ -1305,7 +1282,7 @@ app.post('/create-payment-intent', verifyRole(["Player"]), async (req, res) => {
     }
 });
 
-// Payment confirmation
+// payment confirmation endpoint
 app.post('/confirm-payment', verifyRole(["Player"]), async (req, res) => {
     try {
         const { paymentIntentId } = req.body;
@@ -1315,7 +1292,7 @@ app.post('/confirm-payment', verifyRole(["Player"]), async (req, res) => {
             return res.status(400).json({ error: 'Payment not completed' });
         }
 
-        // Use TRUE for boolean column
+        // ue TRUE for boolean column
         await db.execute(
             'UPDATE Players SET PayedFee = TRUE WHERE UserID = ?',
             [paymentIntent.metadata.userId]
@@ -1328,6 +1305,7 @@ app.post('/confirm-payment', verifyRole(["Player"]), async (req, res) => {
     }
 });
 
+// payment success endpoint
 app.get('/payment-success', verifyRole(["Player"]), async (req, res) => {
     try {
         const [player] = await db.promise().query(
@@ -1336,7 +1314,7 @@ app.get('/payment-success', verifyRole(["Player"]), async (req, res) => {
         );
         console.log(player[0].PayedFee);
 
-        // Check for boolean TRUE (1 in MySQL)
+        // check for boolean TRUE (1 in MySQL)
         if (player[0].PayedFee !== 1) {
             return res.redirect('/payment');
         }
@@ -1348,7 +1326,7 @@ app.get('/payment-success', verifyRole(["Player"]), async (req, res) => {
     }
 });
 
-// tournament signup route
+// tournament signup endpoint  ||  NEEDS TO BE UPDATED!
 app.post('/tournament-signup', verifyRole(["Player"]), async (req, res) => {
     const { tournamentId } = req.body;
     const userId = req.session.userId;
@@ -1375,7 +1353,7 @@ app.post('/tournament-signup', verifyRole(["Player"]), async (req, res) => {
     }
 });
 
-// Fetch all news articles
+// fetch all news articles endpoint
 app.get('/news-articles', async (req, res) => {
     try {
         const [posts] = await db.promise().query('SELECT * FROM Posts ORDER BY CreatedAt DESC');
@@ -1387,7 +1365,7 @@ app.get('/news-articles', async (req, res) => {
     }
 });
 
-// Create a new news article
+// create a news article endpoint
 app.post('/create-news', verifyRole(['Admin', 'SuperAdmin']), async (req, res) => {
     const { Author, Title, ImageURL, Content } = req.body;
     try {
@@ -1402,7 +1380,7 @@ app.post('/create-news', verifyRole(['Admin', 'SuperAdmin']), async (req, res) =
     }
 });
 
-// Update a news article
+// update a news article endpoint
 app.put('/update-news/:PostID', verifyRole(['Admin', 'SuperAdmin']), async (req, res) => {
     const { PostID } = req.params;
     const { Title, ImageURL, Content } = req.body;
@@ -1418,7 +1396,7 @@ app.put('/update-news/:PostID', verifyRole(['Admin', 'SuperAdmin']), async (req,
     }
 });
 
-// Delete a news article
+// delete a news article endpoint
 app.delete('/delete-news/:PostID', verifyRole(['Admin', 'SuperAdmin']), async (req, res) => {
     const { PostID } = req.params;
     try {
@@ -1430,6 +1408,7 @@ app.delete('/delete-news/:PostID', verifyRole(['Admin', 'SuperAdmin']), async (r
     }
 });
 
+// create match endpoint
 app.post("/api/matches", (req, res) => {
     const { tournamentID, team1ID, team2ID, matchDate, scoreTeam1, scoreTeam2 } = req.body;
 
@@ -1447,8 +1426,9 @@ app.post("/api/matches", (req, res) => {
     });
 });
 
+// fetch teams by name endpoint
 app.get("/api/teams", (req, res) => {
-    const query = "SELECT name FROM teams"; // Adjust column names as per your DB
+    const query = "SELECT name FROM teams"; // adjust column names as per your DB
     db.query(query, (err, results) => {
         if (err) {
             console.error("Error fetching teams:", err);
@@ -1458,20 +1438,21 @@ app.get("/api/teams", (req, res) => {
     });
 });
 
+// brackets page endpoint
 app.get('/brackets', async (req, res) => {
     try {
-        // Fetch all tournaments for the dropdown
+        // fetch all tournaments for the dropdown
         const [tournaments] = await db.promise().execute(`SELECT TournamentID, Name FROM Tournaments ORDER BY Name`);
 
-        // Check if tournament ID 1 exists in the list
+        // check if tournament ID 1 exists in the list
         const defaultTournament = tournaments.find(t => t.TournamentID === 1) || tournaments[0];
         const selectedTournamentName = req.query.tournament || defaultTournament.Name;
 
-        // Find the tournament ID based on the name
+        // find the tournament ID based on the name
         const selectedTournament = tournaments.find(t => t.Name === selectedTournamentName) || defaultTournament;
         const tournamentId = selectedTournament.TournamentID;
 
-        // Generate tournament dropdown HTML with Bootstrap styling
+        // generate tournament dropdown HTML with Bootstrap styling
         const tournamentDropdownHtml = `
             <div class="form-group mb-4">
                 <select id="tournament-select" class="form-select" style="max-width: 300px; border-radius: 8px; border: 1px solid #134c5b;" onchange="changeTournament(this.value)">
@@ -1484,7 +1465,7 @@ app.get('/brackets', async (req, res) => {
             </div>
         `;
 
-        // Fetch matches for the selected tournament
+        // fetch matches for the selected tournament
         const [matches] = await db.promise().execute(`
             SELECT 
                 m.MatchID, m.RoundNumber, m.MatchDate,
@@ -1499,24 +1480,24 @@ app.get('/brackets', async (req, res) => {
             ORDER BY m.RoundNumber, m.MatchDate
         `, [tournamentId]);
 
-        // Organize matches by round
+        // organize matches by round
         const semifinalMatches = matches.filter(m => m.RoundNumber === 3);
         const finalMatch = matches.find(m => m.RoundNumber === 4);
 
-        // Generate HTML for semifinals
+        // generate HTML for semifinals
         const semifinalHtml = semifinalMatches.map((m, index) =>
             generateSemifinalCardHTML(m, index === 0 ? 'left' : 'right')
         ).join('');
 
-        // Generate placeholders for missing semifinal matches
+        // generate placeholders for missing semifinal matches
         const semifinalPlaceholders = Array.from({ length: Math.max(0, 2 - semifinalMatches.length) })
             .map((_, index) => generateSemifinalCardHTML(null, semifinalMatches.length === 1 ? 'right' : (index === 0 ? 'left' : 'right')))
             .join('');
 
-        // Generate HTML for final match
+        // generate HTML for final match
         const finalHtml = generateFinalCardHTML(finalMatch);
 
-        // Read template file and replace placeholders
+        // read template file and replace placeholders
         const templatePath = path.join(__dirname, 'public', 'brackets.html');
         const template = await fs.promises.readFile(templatePath, 'utf8');
 
@@ -1533,7 +1514,7 @@ app.get('/brackets', async (req, res) => {
     }
 });
 
-/// Helper function to generate semifinal match card HTML
+/// helper function to generate semifinal match card HTML
 function generateSemifinalCardHTML(match, position) {
     if (!match) return `
         <div class="semifinal-card ${position}-semifinal">
@@ -1566,7 +1547,7 @@ function generateSemifinalCardHTML(match, position) {
     `;
 }
 
-// Helper function to generate final match card HTML
+// helper function to generate final match card HTML
 function generateFinalCardHTML(match) {
     if (!match) return `
         <h3 class="final-title">Grand Final</h3>
@@ -1593,11 +1574,11 @@ function generateFinalCardHTML(match) {
     `;
 }
 
-// College Signup Report Endpoint
+// college signup report endpoint
 app.get('/api/reports/college-signups', (req, res) => {
     const { startDate, endDate } = req.query;
 
-    // Create a query with proper date handling
+    // create a query with proper date handling
     const query = `
       SELECT 
         DATE(u.DateAdded) AS DateAdded,
@@ -1616,7 +1597,7 @@ app.get('/api/reports/college-signups', (req, res) => {
       ORDER BY u.DateAdded DESC
     `;
 
-    // Use parameters twice to handle the OR conditions
+    // use parameters twice to handle the OR conditions
     db.execute(query, [
         startDate, startDate, startDate,
         endDate, endDate, endDate
@@ -1629,7 +1610,7 @@ app.get('/api/reports/college-signups', (req, res) => {
     });
 });
 
-// Tournament Status Report Endpoint
+// tournament status report endpoint
 app.get('/api/reports/tournament-status', (req, res) => {
     const { startDate, endDate } = req.query;
 
@@ -1663,7 +1644,7 @@ app.get('/api/reports/tournament-status', (req, res) => {
 });
 
 
-// Start the server
+// start server
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
 });

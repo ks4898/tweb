@@ -5,7 +5,7 @@ const verifyRole = (roles) => {
       }
   
       if (!req.session.role || !roles.includes(req.session.role)) {
-        return res.status(403).json({ message: "Forbidden. You do not have necessary privileges" });
+        return res.redirect("/");
       }
   
       next();

@@ -26,8 +26,9 @@ document.addEventListener('DOMContentLoaded', function () {
     function displayArticles(articles) {
         newsTableBody.innerHTML = '';
         articles.forEach(article => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
+            if (article.ImageURL !== null) {
+                const row = document.createElement('tr');
+                row.innerHTML = `
                 <td>${article.PostID}</td>
                 <td>${article.Author}</td>
                 <td>${article.UserID || 'N/A'}</td>
@@ -36,8 +37,22 @@ document.addEventListener('DOMContentLoaded', function () {
                 <td>${article.Content.length > 36 ? article.Content.substring(0, 36) + '...' : article.Content}</td>
                 <td>${new Date(article.CreatedAt).toLocaleDateString()}</td>
             `;
-            row.addEventListener('click', (e) => selectArticle(article, e));
-            newsTableBody.appendChild(row);
+                row.addEventListener('click', (e) => selectArticle(article, e));
+                newsTableBody.appendChild(row);
+            } else {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                <td>${article.PostID}</td>
+                <td>${article.Author}</td>
+                <td>${article.UserID || 'N/A'}</td>
+                <td>${article.Title.length > 24 ? article.Title.substring(0, 24) + '...' : article.Title}</td>
+                <td>${'N/A'}</td>
+                <td>${article.Content.length > 36 ? article.Content.substring(0, 36) + '...' : article.Content}</td>
+                <td>${new Date(article.CreatedAt).toLocaleDateString()}</td>
+            `;
+                row.addEventListener('click', (e) => selectArticle(article, e));
+                newsTableBody.appendChild(row);
+            }
         });
     }
 
