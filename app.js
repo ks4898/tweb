@@ -1616,6 +1616,76 @@ function generateFinalCardHTML(match) {
     `;
 }
 
+// College Signup Report Endpoint
+app.get('/api/reports/college-signups', (req, res) => {
+    const { startDate, endDate } = req.query;
+
+    // Create a query with proper date handling
+    const query = `
+      SELECT 
+        DATE(u.DateAdded) AS DateAdded,
+        u.Name AS collegeName,
+        u.Location AS country,
+        COUNT(DISTINCT t.TeamID) AS teamCount,
+        COUNT(DISTINCT p.PlayerID) AS memberCount,
+        EXISTS(SELECT 1 FROM CollegeModerators WHERE UniversityID = u.UniversityID) AS hasModerator,
+        u.HasPage
+      FROM University u
+      LEFT JOIN Teams t ON u.UniversityID = t.UniversityID
+      LEFT JOIN Players p ON t.TeamID = p.TeamID
+      WHERE (? IS NULL OR ? = '' OR DATE(u.DateAdded) >= DATE(?))
+        AND (? IS NULL OR ? = '' OR DATE(u.DateAdded) <= DATE(?))
+      GROUP BY u.UniversityID
+      ORDER BY u.DateAdded DESC
+    `;
+
+    // Use parameters twice to handle the OR conditions
+    db.execute(query, [
+        startDate, startDate, startDate,
+        endDate, endDate, endDate
+    ], (err, results) => {
+        if (err) {
+            console.error('Database error:', err);
+            return res.status(500).json({ error: err.message });
+        }
+        res.json(results);
+    });
+});
+
+// Tournament Status Report Endpoint
+app.get('/api/reports/tournament-status', (req, res) => {
+    const { startDate, endDate } = req.query;
+
+    const query = `
+      SELECT 
+        t.NextRoundDate,
+        u.Name AS collegeName,
+        u.Location AS country,
+        SUM(CASE WHEN m.Status = 'Planned' THEN 1 ELSE 0 END) AS plannedMatches,
+        SUM(CASE WHEN m.Status = 'Completed' THEN 1 ELSE 0 END) AS completedMatches,
+        t.EliminationsComplete
+      FROM Tournaments t
+      LEFT JOIN University u ON t.UniversityID = u.UniversityID
+      LEFT JOIN Matches m ON t.TournamentID = m.TournamentID
+      WHERE (? IS NULL OR ? = '' OR DATE(t.NextRoundDate) >= DATE(?))
+        AND (? IS NULL OR ? = '' OR DATE(t.NextRoundDate) <= DATE(?))
+      GROUP BY t.TournamentID
+      ORDER BY t.NextRoundDate DESC
+    `;
+
+    db.execute(query, [
+        startDate, startDate, startDate,
+        endDate, endDate, endDate
+    ], (err, results) => {
+        if (err) {
+            console.error('Database error:', err);
+            return res.status(500).json({ error: err.message });
+        }
+        res.json(results);
+    });
+});
+
+
 // Start the server
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
