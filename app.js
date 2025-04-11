@@ -848,29 +848,6 @@ app.post("/add-tournament", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
     });
 });
 
-/* DEPRECATED!
-// ======================== SEARCH FUNCTIONALITY ========================
-app.get("/search-teams", async (req, res) => {
-    const { query } = req.query;
-
-    if (!query) {
-        return res.status(400).json({ message: "Search query is required." });
-    }
-
-    db.execute(
-        "SELECT * FROM Teams WHERE Name LIKE ? OR UniversityID IN (SELECT UniversityID FROM University WHERE Name LIKE ?)",
-        [`%${query}%`, `%${query}%`],
-        (err, results) => {
-            if (err) return res.status(500).json({ message: "Database error. Please try again later." });
-            if (results.length === 0) {
-                return res.status(404).json({ message: "No teams found matching your search criteria." });
-            }
-            res.json(results);
-        }
-    );
-});*/
-
-
 // ======================== TOURNAMENT EXECUTION MANAGEMENT ========================
 
 // fetch schedules route
