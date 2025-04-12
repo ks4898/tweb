@@ -1640,6 +1640,10 @@ app.get('/api/reports/tournament-status', (req, res) => {
     });
 });
 
+app.use((req, res, next) => {
+    res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
+});
+
 
 // start server
 app.listen(port, () => {
