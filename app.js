@@ -10,9 +10,6 @@ const Stripe = require('stripe');
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 const fs = require('fs');
 
-/* DEPRECATED!
- require('express-async-errors');*/
-
 const VALID_ROLES = ["User", "Player", "CollegeRep", "Moderator", "Admin", "SuperAdmin"]; // list of all valid roles
 
 const app = express();
