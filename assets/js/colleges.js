@@ -69,7 +69,7 @@ function preloadImages(data) {
             const img = new Image();
             img.onload = () => resolve();
             img.onerror = () => resolve(); // Continue even if image fails to load
-            img.src = college.Emblem || 'default.png';
+            img.src = college.Emblem || '/media/img/placeholder-250x250.png';
         });
     });
 
@@ -111,9 +111,9 @@ function prepareCollegesDisplay(data) {
 function createCollegeElement(college, index) {
     let descriptionText = college.Description ||
         `Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-        Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-        Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
-        Excepteur sint occaecat cupidatat non proident, sunt in culpa...`;
+Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+Excepteur sint occaecat cupidatat non proident, sunt in culpa...`;
 
     // Create college container
     const collegeContainer = document.createElement('div');
@@ -123,7 +123,24 @@ function createCollegeElement(college, index) {
     // Create image
     const img = document.createElement('img');
     img.alt = `${college.Name} Logo`;
-    img.src = college.Emblem || 'default.png';
+
+    // --- MODIFICATION START ---
+
+    // Step 1: Set the initial src using the existing logic (attempts the real emblem first)
+    img.src = college.Emblem || '/media/img/placeholder-250x250.png';
+
+    // Step 2: Add the onerror handler to catch loading failures
+    img.onerror = function() {
+        // If the initial src fails to load for ANY reason (invalid path, 404, etc.)
+        // set the source to the placeholder image.
+        console.warn(`Failed to load emblem for ${college.Name} (Attempted: ${this.src}). Using placeholder.`); // Optional: for debugging
+        this.src = '/media/img/placeholder-250x250.png';
+        // Optionally update alt text if you want to indicate it's a placeholder
+        // this.alt = `${college.Name} Logo (Placeholder)`;
+    };
+
+    // --- MODIFICATION END ---
+
 
     // Create info div
     const infoDiv = document.createElement('div');
@@ -142,7 +159,7 @@ function createCollegeElement(college, index) {
 
     // Create button link
     const link = document.createElement('a');
-    link.href = `/details?name=${encodeURIComponent(college.Name)}`;
+    link.href = `/details?name=${encodeURIComponent(college.Name)}`; // Assuming a details route
     link.className = 'btn-link';
     link.classList.add(index % 2 === 0 ? 'odd-button' : 'even-button');
     link.textContent = 'View Details';
@@ -153,8 +170,8 @@ function createCollegeElement(college, index) {
     infoDiv.appendChild(paragraph);
     infoDiv.appendChild(link);
 
-    collegeContainer.appendChild(img);
-    collegeContainer.appendChild(infoDiv);
+    collegeContainer.appendChild(img); // Image added first
+    collegeContainer.appendChild(infoDiv); // Info div added second
 
     return collegeContainer;
 }

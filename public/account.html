@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>A New World - Account</title>
+    <title>Management - A New World</title>
 
     <script src="https://js.stripe.com/v3/"></script>
     <!-- Google Fonts -->
@@ -24,12 +24,6 @@
 </head>
 
 <body>
-    <script src="/js/handleacc.js"></script>
-    <script src="/js/user-management.js"></script> <!-- User Management -->
-    <script src="/js/college-management.js"></script> <!-- College Management -->
-    <script src="/js/team-management.js"></script> <!-- Team Management -->
-    <script src="/js/news-management.js"></script> <!-- News Management -->
-
     <!-- Navbar -->
     <nav class="navbar">
         <a href="/" class="navbar-logo">Aardvark Games</a>
@@ -191,7 +185,8 @@
                                 </select>
                             </div>
                             <div class="mb-3">
-                                <label for="editTeamId" class="form-label">Team ID (can be found under Team Management section):</label>
+                                <label for="editTeamId" class="form-label">Team ID (can be found under Team Management
+                                    section):</label>
                                 <input type="number" class="form-control" id="editTeamId" min="0">
                             </div>
                         </div>
@@ -533,7 +528,8 @@
     </section>
 
     <!-- Add Article Modal -->
-    <div class="modal fade" id="addArticleModal" tabindex="-1" aria-labelledby="addArticleModalLabel" aria-hidden="true">
+    <div class="modal fade" id="addArticleModal" tabindex="-1" aria-labelledby="addArticleModalLabel"
+        aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -569,7 +565,8 @@
     </div>
 
     <!-- Edit Article Modal -->
-    <div class="modal fade" id="editArticleModal" tabindex="-1" aria-labelledby="editArticleModalLabel" aria-hidden="true">
+    <div class="modal fade" id="editArticleModal" tabindex="-1" aria-labelledby="editArticleModalLabel"
+        aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -601,7 +598,8 @@
     </div>
 
     <!-- Delete Article Modal -->
-    <div class="modal fade" id="deleteArticleModal" tabindex="-1" aria-labelledby="deleteArticleModalLabel" aria-hidden="true">
+    <div class="modal fade" id="deleteArticleModal" tabindex="-1" aria-labelledby="deleteArticleModalLabel"
+        aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -641,6 +639,12 @@
             });
         });
     </script>
+
+    <script src="/js/handleacc.js" defer></script>
+    <script src="/js/user-management.js" defer></script> <!-- User Management -->
+    <script src="/js/college-management.js" defer></script> <!-- College Management -->
+    <script src="/js/team-management.js" defer></script> <!-- Team Management -->
+    <script src="/js/news-management.js" defer></script> <!-- News Management -->
 
 </body>
 
