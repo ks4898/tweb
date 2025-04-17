@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payment Success - A New World</title>
+    <title>Signup Success - A New World</title>
     <script src="https://js.stripe.com/v3/"></script>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;700&display=swap" rel="stylesheet">
@@ -18,7 +18,7 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="/css/styles.css">
     <script>
-        document.addEventListener('DOMContentLoaded', async function () {
+        /*document.addEventListener('DOMContentLoaded', async function () {
             fetch('/user-info')
                 .then(response => response.json())
                 .then(data => {
@@ -40,7 +40,7 @@
                         throw new Error("Unable to initialize page, please try again.");
                     }
                 });
-        });
+        });*/
     </script>
     <style>
         body {
@@ -56,15 +56,15 @@
 <body>
     <!-- Navbar -->
     <nav class="navbar">
-        <a href="javascript:void(0);" class="navbar-logo">Aardvark Games</a>
+        <a href="#" class="navbar-logo">Aardvark Games</a>
         <div class="navbar-links">
-            <a href="/colleges" class="nav-link">Colleges</a>
-            <a href="/teams" class="nav-link">Teams</a>
-            <a href="/brackets" class="nav-link">Brackets</a>
-            <a href="/schedules" class="nav-link">Schedules</a>
-            <a href="/news" class="nav-link">News</a>
-            <a href="/about" class="nav-link">About Us</a>
-            <a href="/signup" class="nav-link">Account</a>
+            <a href="/colleges" class="nav-link" draggable="false">Colleges</a>
+            <a href="/teams" class="nav-link" draggable="false">Teams</a>
+            <a href="/brackets" class="nav-link" draggable="false">Brackets</a>
+            <a href="/schedules" class="nav-link" draggable="false">Schedules</a>
+            <a href="/news" class="nav-link" draggable="false">News</a>
+            <a href="/about" class="nav-link" draggable="false">About Us</a>
+            <a href="/signup" class="nav-link" draggable="false">Account</a>
         </div>
     </nav>
 

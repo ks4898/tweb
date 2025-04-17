@@ -238,6 +238,11 @@ p.mb-0 {
     padding: 0 12px;
 }
 
+.nav-link[draggable="false"]:active,
+.nav-link[draggable="false"]:focus {
+  color: #119DA4 !important;
+}
+
 .nav-link:hover {
     background-color: #119DA4;
     color: #00303b !important;

@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Reports - A New World</title>
 
+  <script src="https://js.stripe.com/v3/"></script>
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;700&display=swap" rel="stylesheet">
 
@@ -21,21 +22,19 @@
 </head>
 
 <body>
-
   <nav class="navbar">
     <a href="/" class="navbar-logo">Aardvark Games</a>
     <div class="navbar-links">
-      <a href="/colleges" class="nav-link">Colleges</a>
-      <a href="/teams" class="nav-link">Teams</a>
-      <a href="/brackets" class="nav-link">Brackets</a>
-      <a href="/schedules" class="nav-link">Schedules</a>
-      <a href="/news" class="nav-link">News</a>
-      <a href="/about" class="nav-link">About Us</a>
-      <a href="/signup" class="nav-link active">Account</a>
+      <a href="/colleges" class="nav-link" draggable="false">Colleges</a>
+      <a href="/teams" class="nav-link" draggable="false">Teams</a>
+      <a href="/brackets" class="nav-link" draggable="false">Brackets</a>
+      <a href="/schedules" class="nav-link" draggable="false">Schedules</a>
+      <a href="/news" class="nav-link" draggable="false">News</a>
+      <a href="/about" class="nav-link" draggable="false">About Us</a>
+      <a href="/signup" class="nav-link active" draggable="false">Account</a>
     </div>
   </nav>
 
-  <!-- Add after existing content -->
   <div class="container-fluid px-4">
     <!-- College Signup Report -->
     <div class="report-container mb-4">
@@ -121,7 +120,6 @@
 
   <!-- Bootstrap JS (Optional) -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://js.stripe.com/v3/"></script>
   <script src="/js/handleacc.js" defer></script>
   <!-- Reports -->
   <script src="/js/reports.js" defer></script>
