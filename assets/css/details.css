@@ -8,8 +8,10 @@ img {
 
 .college-info {
   display: flex;
-  min-height: 500px; /* Changed from fixed height to min-height */
-  height: auto; /* Allow auto expansion */
+  min-height: 500px;
+  /* Changed from fixed height to min-height */
+  height: auto;
+  /* Allow auto expansion */
 }
 
 .college-info-content {
@@ -20,14 +22,16 @@ img {
   width: 65%;
   justify-content: center;
   margin-top: 20px;
-  padding-bottom: 20px; /* Add padding to ensure space at bottom */
+  padding-bottom: 20px;
+  /* Add padding to ensure space at bottom */
 }
 
 .college-header {
   font-size: 60px;
   font-weight: 800;
   display: flex;
-  flex-wrap: wrap; /* Allow wrapping for long titles */
+  flex-wrap: wrap;
+  /* Allow wrapping for long titles */
   color: #10414a;
 }
 
@@ -37,7 +41,8 @@ img {
   margin-left: 5%;
 }
 
-.location, .founded {
+.location,
+.founded {
   margin: 5px;
   margin-top: 10px;
 }
@@ -45,11 +50,14 @@ img {
 .college-name {
   margin-left: 10%;
   display: flex;
-  max-width: 80%; /* Increased from 16ch to percentage-based */
+  max-width: 70%;
+  /* Increased from 16ch to percentage-based */
   line-height: 60px;
   margin-top: 20px;
-  word-wrap: break-word; /* Handle long words */
-  hyphens: auto; /* Enable hyphenation */
+  word-wrap: break-word;
+  /* Handle long words */
+  hyphens: auto;
+  /* Enable hyphenation */
 }
 
 .location-details {
@@ -76,7 +84,8 @@ hr {
   font-size: 18px;
   width: 80%;
   margin-left: 10%;
-  margin-bottom: 20px; /* Add bottom margin for spacing */
+  margin-bottom: 20px;
+  /* Add bottom margin for spacing */
   color: #13505B;
   box-sizing: border-box;
   padding: 0;
@@ -98,8 +107,16 @@ hr {
   width: 35%;
 }
 
+.college-emblem {
+  max-width: 100px;
+  height: auto;
+  align-self: flex-end;
+  margin-left: 5%;
+}
+
 .college-image {
-  max-height: 250px;
+  max-width: 80%;
+  height: auto;
   border-radius: 15px;
 }
 
@@ -111,7 +128,8 @@ hr {
   align-items: center;
   background-color: #13505B;
   padding: 30px 0;
-  margin-top: 20px; /* Add margin to separate from college info */
+  margin-top: 20px;
+  /* Add margin to separate from college info */
 }
 
 .team-title {
@@ -177,22 +195,25 @@ hr {
   flex-direction: column;
   align-items: center;
   margin: 0 10px 30px;
-  width: calc(20% - 20px);
-  min-width: 180px;
+  width: calc(20% - 20px); /* Ensures 5 items per row */
+  min-width: 160px; /* Slightly reduced from 180px */
+  max-width: 220px; /* Maximum width for consistency */
 }
 
 .player-card img {
   width: 100%;
-  height: 180px;
-  object-fit: cover;
+  aspect-ratio: 1 / 1; /* Forces SQUARE aspect ratio */
+  object-fit: cover; /* CHANGED from 'contain' to 'cover' */
   border-radius: 25px;
-  box-shadow: rgba(0, 0, 0, 0.4) 0px 2px 4px, rgba(0, 0, 0, 0.3) 0px 7px 13px -3px, rgba(0, 0, 0, 0.2) 0px -3px 0px inset;
+  box-shadow: rgba(0, 0, 0, 0.4) 0px 2px 4px,
+              rgba(0, 0, 0, 0.3) 0px 7px 13px -3px,
+              rgba(0, 0, 0, 0.2) 0px -3px 0px inset;
 }
-
 .player-card p {
   font-weight: 700;
   font-size: 18px;
   color: white;
+  background-color: transparent !important;
   margin-top: 15px;
   margin-bottom: 20px;
   text-align: center;
@@ -211,11 +232,11 @@ hr {
   color: #000000 !important;
 }
 
-p > a {
+p>a {
   color: white;
 }
 
-p > a:visited {
+p>a:visited {
   color: white;
 }
 
@@ -241,86 +262,98 @@ p > a:visited {
 /* Responsive design */
 @media (max-width: 1200px) {
   .player-card {
-      width: calc(25% - 20px);
+    width: calc(25% - 20px);
   }
 }
 
 @media (max-width: 992px) {
   .college-info {
-      height: auto;
-      flex-direction: column;
+    height: auto;
+    flex-direction: column;
   }
-  
-  .college-info-content, .college-image-container {
-      width: 100%;
+
+  .college-info-content,
+  .college-image-container {
+    width: 100%;
   }
-  
+
   .college-header {
-      font-size: 40px;
-      line-height: normal;
+    font-size: 40px;
+    line-height: normal;
   }
-  
+
   .college-name {
-      line-height: normal;
-      margin-top: 10px;
+    line-height: normal;
+    margin-top: 10px;
   }
-  
+
   hr {
-      width: 90%;
-      margin-left: 5%;
-      margin-right: 5%;
+    width: 90%;
+    margin-left: 5%;
+    margin-right: 5%;
   }
-  
+
   .college-description {
-      width: 90%;
-      margin-left: 5%;
-      max-width: 90%;
+    width: 90%;
+    margin-left: 5%;
+    max-width: 90%;
   }
-  
+
   .team-card {
-      width: 90%;
+    width: 90%;
   }
-  
+
   .player-card {
-      width: calc(33.33% - 20px);
+    width: calc(33.33% - 20px);
   }
 }
 
 @media (max-width: 768px) {
   .college-name {
-      margin-left: 5%;
-      max-width: 100%;
+    margin-left: 5%;
+    max-width: 100%;
   }
-  
+
   .location-details {
-      margin-left: 5%;
+    margin-left: 5%;
   }
-  
+
   .player-card {
-      width: calc(50% - 20px);
+    width: calc(50% - 20px);
   }
   
   .player-card img {
-      height: 160px;
+    aspect-ratio: 1 / 1;
   }
-  
+
   .team-card {
-      flex-direction: column;
-      text-align: center;
+    flex-direction: column;
+    text-align: center;
   }
-  
+
   .team-card .view-team-btn {
-      margin-top: 15px;
+    margin-top: 15px;
   }
 }
 
+/* Add media query for mobile */
 @media (max-width: 480px) {
-  .player-card {
-      width: calc(100% - 20px);
-      max-width: 250px;
+  .college-header {
+    flex-direction: column;
+    align-items: center;
   }
-  
+
+  .college-emblem {
+    margin-left: 0;
+    margin-top: 15px;
+  }
+
+  .player-card {
+    width: calc(100% - 20px); /* 1 per row */
+    max-width: 250px;
+  }
+
   .player-card img {
-      height: 200px;
+    min-height: 150px;
   }
 }

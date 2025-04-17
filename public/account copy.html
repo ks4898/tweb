@@ -1,14 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Account Management</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>Management - A New World</title>
+
+    <script src="https://js.stripe.com/v3/"></script>
+    <!-- Google Fonts -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;700&display=swap">
+
+    <!-- Bootstrap JS (Optional) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css">
+
+    <!-- Custom CSS -->
     <link rel="stylesheet" href="/css/styles.css">
     <link rel="stylesheet" href="/css/account.css">
 </head>
+
 <body>
     <!-- Navbar -->
     <nav class="navbar">
@@ -23,170 +37,54 @@
             <a href="/signup" class="nav-link active">Account</a>
         </div>
     </nav>
-
-    <div class="container-fluid px-3 px-md-5">
-        <div id="admin-box" class="row mt-2 mb-2">
-            <div class="col-md-6 text-center text-md-start mb-3 mb-md-0">
-                <h2 id="currentAdmin">Welcome</h2>
-            </div>
-            <div class="col-md-6 text-center text-md-end">
-                <h2 id="currentRole">Role</h2>
-            </div>
+    <div id="admin-container">
+        <div id="admin-greeting">
+            <span id="currentUser" class="user-greeting"></span>
+            <span id="currentRole" class="role-indicator"></span>
         </div>
-
-        <!-- User Management Section -->
-        <section id="user-management" class="mb-5">
-            <h1 class="text-center mb-4">User Management</h1>
-            
-            <div class="row mb-3">
-                <div class="col-lg-8 col-xl-6 mx-auto">
-                    <div class="input-group">
-                        <input type="text" id="searchUser" class="form-control" placeholder="Search users...">
-                        <button id="searchButton" class="btn btn-primary">Search</button>
-                        <button id="clearSearchBtn" class="btn btn-secondary">Clear</button>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="row mb-3">
-                <div class="col-12 text-center">
-                    <button id="addUserBtn" class="btn btn-primary me-2 mb-2">Add User</button>
-                    <button id="editUserBtn" class="btn btn-primary me-2 mb-2">Edit User</button>
-                    <button id="deleteUserBtn" class="btn btn-delete mb-2">Delete User</button>
-                </div>
-            </div>
-            
-            <div class="table-responsive">
-                <table class="table user-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Full Name</th>
-                            <th>Email</th>
-                            <th>Role</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="userTableBody"></tbody>
-                </table>
-            </div>
-        </section>
-
-        <!-- College Management Section -->
-        <section id="college-management" class="mb-5">
-            <h1 class="text-center mb-4">College Management</h1>
-            
-            <div class="row mb-3">
-                <div class="col-lg-8 col-xl-6 mx-auto">
-                    <div class="input-group">
-                        <input type="text" id="searchCollege" class="form-control" placeholder="Search colleges...">
-                        <button id="searchCollegesButton" class="btn btn-primary">Search</button>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="row mb-3">
-                <div class="col-12 text-center">
-                    <button id="addCollegeBtn" class="btn btn-primary me-2 mb-2">Add College</button>
-                    <button id="editCollegeBtn" class="btn btn-primary me-2 mb-2">Edit College</button>
-                    <button id="deleteCollegeBtn" class="btn btn-delete mb-2">Delete College</button>
-                </div>
-            </div>
-            
-            <div class="table-responsive">
-                <table class="table user-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>College Name</th>
-                            <th>Location</th>
-                            <th>Founded</th>
-                            <th>Description</th>
-                            <th>Logo</th>
-                            <th>Picture</th>
-                        </tr>
-                    </thead>
-                    <tbody id="collegeTableBody"></tbody>
-                </table>
-            </div>
-        </section>
-
-        <!-- Team Management Section -->
-        <section id="team-management" class="mb-5">
-            <h1 class="text-center mb-4">Team Management</h1>
-            
-            <div class="row mb-3">
-                <div class="col-lg-8 col-xl-6 mx-auto">
-                    <div class="input-group">
-                        <input type="text" id="searchTeam" class="form-control" placeholder="Search teams...">
-                        <button id="searchTeamsBtn" class="btn btn-primary">Search</button>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="row mb-3">
-                <div class="col-12 text-center">
-                    <button id="addTeamBtn" class="btn btn-primary me-2 mb-2">Add Team</button>
-                    <button id="editTeamBtn" class="btn btn-primary me-2 mb-2">Edit Team</button>
-                    <button id="deleteTeamBtn" class="btn btn-delete mb-2">Delete Team</button>
-                </div>
-            </div>
-            
-            <div class="table-responsive">
-                <table class="table user-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Team Name</th>
-                            <th>University ID</th>
-                            <th>University Name</th>
-                            <th>Create Date</th>
-                        </tr>
-                    </thead>
-                    <tbody id="teamTableBody"></tbody>
-                </table>
-            </div>
-        </section>
-
-        <!-- News Management Section -->
-        <section id="news-management" class="mb-5">
-            <h1 class="text-center mb-4">News Management</h1>
-            
-            <div class="row mb-3">
-                <div class="col-lg-8 col-xl-6 mx-auto">
-                    <div class="input-group">
-                        <input type="text" id="searchArticle" class="form-control" placeholder="Search articles...">
-                        <button id="searchArticlesBtn" class="btn btn-primary">Search</button>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="row mb-3">
-                <div class="col-12 text-center">
-                    <button id="addArticleBtn" class="btn btn-primary me-2 mb-2">Add Article</button>
-                    <button id="editArticleBtn" class="btn btn-primary me-2 mb-2">Edit Article</button>
-                    <button id="deleteArticleBtn" class="btn btn-delete mb-2">Delete Article</button>
-                </div>
-            </div>
-            
-            <div class="table-responsive">
-                <table class="table user-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Author Name</th>
-                            <th>Author ID</th>
-                            <th>Article Title</th>
-                            <th>ImageURL</th>
-                            <th>Content</th>
-                            <th>Create Date</th>
-                        </tr>
-                    </thead>
-                    <tbody id="newsTableBody"></tbody>
-                </table>
-            </div>
-        </section>
     </div>
+    <!-- User Management Section -->
+    <section class="py-5" id="user-management">
+        <div class="container text-center">
+            <h1 class="mb-4">User Management</h1>
+            <!-- Search Bar -->
+            <div class="row justify-content-center">
+                <div class="search-container"
+                    style="display: flex; flex-direction: row; justify-content: center; width: 70vw; gap: 20px;">
+                    <input type="text" id="searchUser" placeholder="Search users (input matching user name or email)..."
+                        class="form-control">
+                    <div class="col-12 col-md-auto mb-2" style="margin: 0 !important;">
+                        <a href="javascript:void(0);" id="searchButton" class="btn-link w-100">Search</a>
+                    </div>
+                    <div class="col-12 col-md-auto mb-2" style="margin: 0 !important;">
+                        <a href="javascript:void(0);" id="clearSearchBtn" class="btn-link w-100">Clear Search</a>
+                    </div>
+                    <div class="col-12 col-md-auto mb-2" style="margin: 0 !important;">
+                        <a href="javascript:void(0);" id="addUserBtn" class="btn-link w-100">Add User</a>
+                    </div>
+                </div>
+
+                <!-- User Table List Box -->
+                <div class="user-table-container">
+                    <div class="table-responsive">
+                        <table class="user-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Full Name</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="userTableBody">
+                                <!-- JavaScript will populate this -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+    </section>
 
     <!-- Add User Modal -->
     <div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true">
@@ -326,6 +224,61 @@
         </div>
     </div>
 
+    <!-- College Management Section -->
+    <section class="py-5" id="college-management">
+        <div class="container text-center">
+            <h1 class="mb-4">College Management</h1>
+            <div class="row justify-content-center" id="collegeAction">
+                <!-- Search Bar -->
+                <div class="search-container"
+                    style="display: flex; flex-direction: row; justify-content: center; width: 100vw; gap: 20px;">
+                    <input type="text" id="searchCollege"
+                        style="margin-right: 1px !important; margin-top: 5px !important; height: 50px;"
+                        placeholder="Search colleges (input matching name)..." class="form-control">
+                    <div class="row justify-content-center">
+                        <div class="col-12 col-md-auto mb-2" style="margin: 0 !important; padding: 5px !important;">
+                            <a href="javascript:void(0);" id="searchCollegesButton" class="btn-link w-100">Search</a>
+                        </div>
+                        <div class="col-12 col-md-auto mb-2" style="margin: 0 !important; padding: 5px !important;">
+                            <a href="javascript:void(0);" id="addCollegeBtn" class="btn-link w-100">Add College</a>
+                        </div>
+                        <div class="col-12 col-md-auto mb-2" style="margin: 0 !important; padding: 5px !important;">
+                            <a href="javascript:void(0);" id="editCollegeBtn" class="btn-link w-100">Edit College</a>
+                        </div>
+                        <div class="col-12 col-md-auto mb-2"
+                            style="margin: 0 !important; margin-top: 2px !important; padding: 5px !important;">
+                            <a href="javascript:void(0);" id="deleteCollegeBtn" class="btn-delete w-100">Delete
+                                College</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- College Table List Box -->
+                <div class="user-table-container">
+                    <div class="table-responsive">
+                        <table class="user-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>College Name</th>
+                                    <th>Location</th>
+                                    <th>Founded</th>
+                                    <th>Description</th>
+                                    <th>Logo</th>
+                                    <th>Picture</th>
+                                </tr>
+                            </thead>
+                            <tbody id="collegeTableBody">
+                                <!-- JavaScript will populate this -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
     <!-- Add/Edit College Modal -->
     <div class="modal fade" id="collegeModal" tabindex="-1" aria-labelledby="collegeModalLabel" aria-hidden="true">
         <div class="modal-dialog">
@@ -390,6 +343,59 @@
             </div>
         </div>
     </div>
+
+    <!-- Team Management Section -->
+    <section class="py-5" id="team-management">
+        <div class="container text-center">
+            <h1 class="mb-4">Team Management</h1>
+            <div class="row justify-content-center" id="teamAction">
+                <!-- Search Bar -->
+                <div class="search-container"
+                    style="display: flex; flex-direction: row; justify-content: center; width: 100vw; gap: 20px;">
+                    <input type="text" id="searchTeam"
+                        style="margin-right: 1px !important; margin-top: 5px !important; height: 50px;"
+                        placeholder="Search teams (input matching name)..." class="form-control">
+                    <div class="row justify-content-center">
+                        <div class="col-12 col-md-auto mb-2" style="margin: 0 !important; padding: 5px !important;">
+                            <a href="javascript:void(0);" id="searchTeamsBtn" class="btn-link w-100">Search</a>
+                        </div>
+                        <div class="col-12 col-md-auto mb-2" style="margin: 0 !important; padding: 5px !important;">
+                            <a href="javascript:void(0);" id="addTeamBtn" class="btn-link w-100">Add Team</a>
+                        </div>
+                        <div class="col-12 col-md-auto mb-2" style="margin: 0 !important; padding: 5px !important;">
+                            <a href="javascript:void(0);" id="editTeamBtn" class="btn-link w-100">Edit Team</a>
+                        </div>
+                        <div class="col-12 col-md-auto mb-2"
+                            style="margin: 0 !important; margin-top: 2px !important; padding: 5px !important;">
+                            <a href="javascript:void(0);" id="deleteTeamBtn" class="btn-delete w-100">Delete
+                                Team</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Team Table List Box -->
+                <div class="user-table-container">
+                    <div class="table-responsive">
+                        <table class="user-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Team Name</th>
+                                    <th>University ID</th>
+                                    <th>University Name</th>
+                                    <th>Create Date</th>
+                                </tr>
+                            </thead>
+                            <tbody id="teamTableBody">
+                                <!-- JavaScript will populate this -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
 
     <!-- Add Team Modal -->
     <div class="modal fade" id="addTeamModal" tabindex="-1" aria-labelledby="addTeamModalLabel" aria-hidden="true">
@@ -475,6 +481,61 @@
             </div>
         </div>
     </div>
+
+    <!-- News Management Section -->
+    <section class="py-5" id="news-management">
+        <div class="container text-center">
+            <h1 class="mb-4">News Management</h1>
+            <div class="row justify-content-center" id="newsAction">
+                <!-- Search Bar -->
+                <div class="search-container"
+                    style="display: flex; flex-direction: row; justify-content: center; width: 100vw; gap: 20px;">
+                    <input type="text" id="searchArticle"
+                        style="margin-right: 1px !important; margin-top: 5px !important; height: 50px;"
+                        placeholder="Search articles (input matching article/author name)..." class="form-control">
+                    <div class="row justify-content-center">
+                        <div class="col-12 col-md-auto mb-2" style="margin: 0 !important; padding: 5px !important;">
+                            <a href="javascript:void(0);" id="searchArticlesBtn" class="btn-link w-100">Search</a>
+                        </div>
+                        <div class="col-12 col-md-auto mb-2" style="margin: 0 !important; padding: 5px !important;">
+                            <a href="javascript:void(0);" id="addArticleBtn" class="btn-link w-100">Add Article</a>
+                        </div>
+                        <div class="col-12 col-md-auto mb-2" style="margin: 0 !important; padding: 5px !important;">
+                            <a href="javascript:void(0);" id="editArticleBtn" class="btn-link w-100">Edit Article</a>
+                        </div>
+                        <div class="col-12 col-md-auto mb-2"
+                            style="margin: 0 !important; margin-top: 2px !important; padding: 5px !important;">
+                            <a href="javascript:void(0);" id="deleteArticleBtn" class="btn-delete w-100">Delete
+                                Article</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- News Table List Box -->
+                <div class="user-table-container">
+                    <div class="table-responsive">
+                    <table class="user-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Author Name</th>
+                                <th>Author ID</th>
+                                <th>Article Title</th>
+                                <th>ImageURL</th>
+                                <th>Content</th>
+                                <th>Create Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="newsTableBody">
+                            <!-- JavaScript will populate this -->
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
 
     <!-- Add Article Modal -->
     <div class="modal fade" id="addArticleModal" tabindex="-1" aria-labelledby="addArticleModalLabel"
@@ -594,5 +655,7 @@
     <script src="/js/college-management.js" defer></script> <!-- College Management -->
     <script src="/js/team-management.js" defer></script> <!-- Team Management -->
     <script src="/js/news-management.js" defer></script> <!-- News Management -->
+
 </body>
+
 </html>

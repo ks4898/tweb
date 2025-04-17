@@ -34,25 +34,24 @@ strong {
 }
 
 /* ----------------------------------------------------------- */
+
 /* Image Shadows */
 .shadow-dark {
     box-shadow: -20px 20px #13505B;
     border-radius: 10px;
-    max-width: 100%;
 }
 
 .shadow-light {
     box-shadow: -20px 20px #119DA4;
     border-radius: 10px;
-    max-width: 100%;
 }
 
 /* ----------------------------------------------------------- */
+
 /* Section Styles (Light and Dark) */
 .section-light {
     background-color: #F1FDFF;
     color: black;
-    padding: 30px;
 }
 
 .section-light h1 {
@@ -63,7 +62,6 @@ strong {
 .section-dark {
     background-color: #13505B;
     color: white;
-    padding: 30px;
 }
 
 .section-dark h1 {
@@ -72,6 +70,7 @@ strong {
 }
 
 /* ----------------------------------------------------------- */
+
 /* Custom Button */
 .btn-link {
     display: inline-block;
@@ -82,6 +81,7 @@ strong {
     text-decoration: none;
     border-radius: 50px;
     border-style: outset;
+    /*transition: background-color 0.3s ease, color 0.3s ease;*/
 }
 
 .btn-link:hover,
@@ -112,6 +112,7 @@ strong {
 }
 
 /* ----------------------------------------------------------- */
+
 /* Tournament Section Styles */
 .tournament-container {
     background-color: #1E1E1E;
@@ -138,6 +139,7 @@ strong {
     border-radius: 5px;
 }
 
+/* Team boxes placeholder, supposed to be images later */
 .team-1-box {
     background-color: #9EF01A;
 }
@@ -168,6 +170,7 @@ p.mb-0 {
 
 /* ----------------------------------------------------------- */
 /* Carousel */
+
 .carousel-inner {
     background-color: #13505B;
     height: 400px;
@@ -180,6 +183,7 @@ p.mb-0 {
     height: 400px;
 }
 
+/* Placeholder Images, needs work */
 #college-1 {
     background-image: url("../media/img/college1.jpg");
 }
@@ -206,9 +210,10 @@ p.mb-0 {
     align-items: center;
     padding: 0 40px;
     height: 60px;
-    flex-wrap: wrap;
+    /*width: 100%;*/
 }
 
+/* Aardvark Games clickable logo */
 .navbar-logo {
     color: #119DA4;
     font-size: 1.5rem;
@@ -217,6 +222,7 @@ p.mb-0 {
     text-shadow: 2px 2px 3px black;
 }
 
+/* Navbar links container */
 .navbar-links {
     display: flex;
     align-items: center;
@@ -225,6 +231,21 @@ p.mb-0 {
     text-shadow: 0.5px 1px black;
 }
 
+.nav-link,
+.nav-link:visited {
+    color: #119DA4 !important;
+    /* Keep visited links the same as normal */
+}
+
+a {
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: none;
+}
+
+/* Default link styles */
 .nav-link {
     color: #119DA4;
     font-weight: bold;
@@ -238,6 +259,7 @@ p.mb-0 {
     padding: 0 12px;
 }
 
+/* Hover tab effect */
 .nav-link:hover {
     background-color: #119DA4;
     color: #00303b !important;
@@ -245,12 +267,14 @@ p.mb-0 {
     text-shadow: none;
 }
 
+/* Clicked tab effect */
 .nav-link:active {
     background-color: #0d666b !important;
     color: #003f4f !important;
     font-weight: bolder !important;
 }
 
+/* Selected tab effect */
 .nav-link.active {
     background-color: #119DA4 !important;
     color: #003f4f !important;
@@ -260,17 +284,20 @@ p.mb-0 {
     text-shadow: none;
 }
 
+/* Style account tab */
 .nav-link.account-style {
     color: #119DA4 !important;
     text-shadow: 2px 2px 2px black !important;
 }
 
+/* Hover account */
 .nav-link.account-style:hover {
     background-color: #119DA4 !important;
     color: #00303b !important;
     text-shadow: none !important;
 }
 
+/* Link display */
 .college-container .btn-link {
     display: inline-block;
     padding: 10px 20px;
@@ -291,6 +318,7 @@ p.mb-0 {
     border-color: #13505b !important;
 }
 
+
 .college-container:nth-child(even) .btn-link {
     background-color: #F1FDFF !important;
     color: #275861 !important;
@@ -303,120 +331,86 @@ p.mb-0 {
     align-items: center;
     justify-content: center;
     gap: 10px;
+    /*padding-left: 10px;*/
 }
 
 .input-group-text {
     cursor: pointer;
 }
 
+/*#passwordToggle {
+    background-color: inherit;
+}*/
+
 input[type="password"]::-ms-reveal,
 input[type="password"]::-ms-clear {
     display: none;
 }
 
-/* Responsive Adjustments */
-@media (max-width: 1200px) {
-    .navbar {
-        padding: 0 30px;
+@media (max-width: 1000px)  {
+    #admin-box {
+        position: unset;
+        display: flex;
+        justify-content: space-around;
+        gap: 1rem;
+        margin-top: 1rem;
     }
-    
-    .navbar-links {
-        gap: 18px;
-    }
-    
-    .nav-link {
-        padding: 0 8px;
-        font-size: 1rem;
-    }
-}
 
-@media (max-width: 1100px) {
-    .navbar-links {
-        gap: 14px;
-    }
-    
-    .nav-link {
-        padding: 0 6px;
-        font-size: 0.95rem;
-    }
-}
-
-@media (max-width: 992px) {
     .navbar {
-        padding: 0 20px;
-    }
-    
-    .navbar-links {
-        gap: 8px;
-    }
-    
-    .nav-link {
-        padding: 0 4px;
-        font-size: 0.9rem;
-    }
-}
-
-/* New breakpoint specifically for 892px issue */
-@media (max-width: 900px) {
-    .navbar {
-        padding: 0 15px;
-    }
-    
-    .navbar-logo {
-        font-size: 1.3rem;
-    }
-    
-    .navbar-links {
-        gap: 5px;
-    }
-    
-    .nav-link {
-        padding: 0 3px;
-        font-size: 0.85rem;
-    }
-}
-
-/* Adjust tablet breakpoint to start earlier */
-@media (max-width: 800px) {
-    .navbar {
+        flex-direction: column;
+        align-items: center;
         height: auto;
-        padding: 15px 20px;
-        flex-direction: column;
+        width: 100%;
+        padding: 10px;
     }
-    
+
+    .navbar-logo {
+        margin-top: 10px;
+        margin-bottom: 15px;
+        text-shadow: none;
+    }
+
     .navbar-links {
         flex-direction: column;
-        width: 100%;
         gap: 10px;
-        margin-top: 15px;
-    }
-    
-    .nav-link {
         width: 100%;
-        justify-content: center;
-        padding: 12px 0;
-        font-size: 1.1rem; /* Restore original font size for vertical layout */
+        text-shadow: none;
     }
-    
-    .carousel-inner,
-    .carousel-item {
-        height: 50vw;
+
+    .nav-link {
+        justify-content: center;
+        width: 100%;
+        padding: 10px 0;
     }
 }
 
-@media (max-width: 576px) {
-    .section-light,
-    .section-dark {
-        padding: 20px;
+
+/* MOBILE NAVBAR SUPPORT */
+@media (max-width: 1100px) {
+    .navbar {
+        flex-direction: column;
+        align-items: center;
+        height: auto;
+        width: 100%;
+        padding: 10px;
     }
-    
-    .tournament-container,
-    .match-container {
-        padding: 20px;
+
+    .navbar-logo {
+        margin-top: 10px;
+        margin-bottom: 15px;
+        text-shadow: none;
     }
-    
-    .team-box {
-        width: 40px;
-        height: 40px;
+
+    .navbar-links {
+        flex-direction: column;
+        gap: 10px;
+        width: 100%;
+        text-shadow: none;
+    }
+
+    .nav-link {
+        justify-content: center;
+        width: 100%;
+        padding: 10px 0;
     }
 }

@@ -124,23 +124,14 @@ Excepteur sint occaecat cupidatat non proident, sunt in culpa...`;
     const img = document.createElement('img');
     img.alt = `${college.Name} Logo`;
 
-    // --- MODIFICATION START ---
 
-    // Step 1: Set the initial src using the existing logic (attempts the real emblem first)
+    // Set the initial src using the existing logic (attempts the real emblem first)
     img.src = college.Emblem || '/media/img/placeholder-250x250.png';
 
-    // Step 2: Add the onerror handler to catch loading failures
-    img.onerror = function() {
-        // If the initial src fails to load for ANY reason (invalid path, 404, etc.)
-        // set the source to the placeholder image.
-        console.warn(`Failed to load emblem for ${college.Name} (Attempted: ${this.src}). Using placeholder.`); // Optional: for debugging
+    // Add error handling
+    img.onerror = function () {
         this.src = '/media/img/placeholder-250x250.png';
-        // Optionally update alt text if you want to indicate it's a placeholder
-        // this.alt = `${college.Name} Logo (Placeholder)`;
     };
-
-    // --- MODIFICATION END ---
-
 
     // Create info div
     const infoDiv = document.createElement('div');

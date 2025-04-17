@@ -129,8 +129,13 @@ function renderCollegeDetails(collegeData, teams) {
     
     const emblem = document.createElement("img");
     emblem.className = "college-emblem";
-    emblem.src = collegeData.Emblem || '';
+    emblem.src = collegeData.Emblem || '/media/img/placeholder-250x250.png';
     emblem.alt = `${collegeData.Name} Logo`;
+
+    emblem.onerror = function() {
+        this.src = '/media/img/placeholder-250x250.png';
+        this.alt = `${collegeData.Name} Logo (Placeholder)`;
+    };
     
     header.appendChild(collegeName);
     header.appendChild(emblem);
@@ -174,8 +179,13 @@ function renderCollegeDetails(collegeData, teams) {
     
     const collegeImage = document.createElement("img");
     collegeImage.className = "college-image";
-    collegeImage.src = collegeData.ImageURL || '';
+    collegeImage.src = collegeData.ImageURL || '/media/img/placeholder-uni.png';
     collegeImage.alt = `${collegeData.Name} Picture`;
+
+    collegeImage.onerror = function() {
+        this.src = '/media/img/placeholder-uni.png';
+        this.alt = `${collegeData.Name} Picture (Placeholder)`;
+    };
     
     imageContainer.appendChild(collegeImage);
     
@@ -299,8 +309,13 @@ function renderCollegeDetails(collegeData, teams) {
                     playerCard.className = "player-card";
                     
                     const playerImg = document.createElement("img");
-                    playerImg.src = player.imageURL || '/media/img/profile-placeholder.PNG';
+                    playerImg.src = player.imageURL || '/media/img/profile-placeholder.png';
                     playerImg.alt = `${player.name} Photo`;
+
+                    playerImg.onerror = function() {
+                        this.src = '/media/img/profile-placeholder.png';
+                        this.alt = `${player.name} Photo (Placeholder)`;
+                    };
                     
                     const playerName = document.createElement("p");
                     playerName.textContent = `${player.name}${playerIndex === 0 ? ' (Leader)' : ''}`;

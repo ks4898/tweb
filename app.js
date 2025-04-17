@@ -726,7 +726,7 @@ app.get('/teams', async (req, res) => {
                     <!-- Team Image -->
                     ${team.TeamImage ? `
                         <div class="card-img-container p-3">
-                            <img src="${team.TeamImage}" class="card-img-left" alt="${team.Name}">
+                            <img src="${team.TeamImage || "/media/img/placeholder-250x250.png"}" class="card-img-left" alt="${team.Name}">
                         </div>
                     ` : `
                         <div class="card-img-container p-3">
