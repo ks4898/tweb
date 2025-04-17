@@ -50,7 +50,7 @@ img {
 .college-name {
   margin-left: 10%;
   display: flex;
-  max-width: 70%;
+  max-width: 65%;
   /* Increased from 16ch to percentage-based */
   line-height: 60px;
   margin-top: 20px;

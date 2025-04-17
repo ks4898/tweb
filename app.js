@@ -83,8 +83,8 @@ app.get("/colleges", (req, res) => {
 });
 
 // serve schedule page endpoint
-app.get("/schedule", (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "schedule.html"));
+app.get("/schedules", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "schedules.html"));
 });
 
 // serve details page endpoint
