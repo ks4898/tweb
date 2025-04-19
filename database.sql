@@ -66,6 +66,33 @@ CREATE TABLE CollegeModerators (
     FOREIGN KEY (UniversityID) REFERENCES University(UniversityID) ON DELETE CASCADE
 );
 
+DROP TABLE IF EXISTS SuperAdmins;
+CREATE TABLE SuperAdmins (
+    SuperAdminID INT PRIMARY KEY AUTO_INCREMENT,
+    UserID INT UNIQUE,
+    FOREIGN KEY (UserID) REFERENCES Users(UserID)
+);
+
+DROP TABLE IF EXISTS Admins;
+CREATE TABLE Admins (
+    AdminID INT PRIMARY KEY AUTO_INCREMENT,
+    UserID INT UNIQUE,
+    FOREIGN KEY (UserID) REFERENCES Users(UserID)
+);
+
+DROP TABLE IF EXISTS Moderators;
+CREATE TABLE Moderators (
+    ModeratorID INT PRIMARY KEY AUTO_INCREMENT,
+    UserID INT UNIQUE,
+    FOREIGN KEY (UserID) REFERENCES Users(UserID)
+);
+
+DROP TABLE IF EXISTS CollegeRep;
+CREATE TABLE CollegeRep (
+    CollegeRepID INT PRIMARY KEY AUTO_INCREMENT,
+    UserID INT UNIQUE,
+    FOREIGN KEY (UserID) REFERENCES Users(UserID)
+);
 -- Tournaments table to store tournament information
 DROP TABLE IF EXISTS Tournaments;
 CREATE TABLE Tournaments (
@@ -81,6 +108,21 @@ CREATE TABLE Tournaments (
     EliminationsComplete BOOLEAN DEFAULT FALSE,
     FOREIGN KEY (UniversityID) REFERENCES University(UniversityID) ON DELETE SET NULL
 );
+
+DROP TABLE IF EXISTS Registrations;
+CREATE TABLE Registrations (
+        RegistrationID INT PRIMARY KEY AUTO_INCREMENT,
+        UserID INT,
+        TournamentID INT,
+        TeamID INT,
+        NewTeamName VARCHAR(255),
+        Message TEXT,
+        Status VARCHAR(50) DEFAULT 'Pending',
+        RegistrationDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (UserID) REFERENCES Users(UserID) ON DELETE CASCADE,
+        FOREIGN KEY (TournamentID) REFERENCES Tournaments(TournamentID) ON DELETE CASCADE,
+        FOREIGN KEY (TeamID) REFERENCES Teams(TeamID) ON DELETE SET NULL
+    );
 
 -- Matches table to store match information
 DROP TABLE IF EXISTS Matches;
@@ -104,16 +146,17 @@ CREATE TABLE Matches (
 -- Payments table to store payment information
 DROP TABLE IF EXISTS Payments;
 CREATE TABLE Payments (
-    PaymentID INT PRIMARY KEY AUTO_INCREMENT,
-    TeamID INT,
-    TournamentID INT,
-    Amount DECIMAL(10, 2) NOT NULL,
-    Status VARCHAR(50) NOT NULL, -- Pending, Completed, Failed, Refunded
-    PaymentMethod VARCHAR(50) NOT NULL, -- CreditCard, PayPal, etc.
-    TransactionID VARCHAR(255),
-    PaymentDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (TeamID) REFERENCES Teams(TeamID) ON DELETE SET NULL,
-    FOREIGN KEY (TournamentID) REFERENCES Tournaments(TournamentID) ON DELETE SET NULL
+  PaymentID INT PRIMARY KEY AUTO_INCREMENT,
+  UserID INT,
+  TeamID INT,
+  TournamentID INT,
+  Amount DECIMAL(10, 2),
+  Status VARCHAR(50),
+  SuccessPageViewed BOOLEAN DEFAULT FALSE,
+  PaymentDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (UserID) REFERENCES Users(UserID),
+  FOREIGN KEY (TeamID) REFERENCES Teams(TeamID),
+  FOREIGN KEY (TournamentID) REFERENCES Tournaments(TournamentID)
 );
 
 -- News/blog posts table
@@ -130,7 +173,11 @@ CREATE TABLE Posts (
 );
 
 -- Insert test data for development and testing purposes
-
+SELECT * FROM Registrations;
+DELETE FROM Registrations WHERE RegistrationID >= 1;
+DELETE FROM Payments WHERE PaymentID >= 1;
+SELECT * FROM Users;
+UPDATE Users SET Role = "SuperAdmin" WHERE UserID = 6;
 -- Sample users with different roles
 INSERT INTO Users (Name, Email, Password, Role) VALUES
 ('Admin User', 'admin@aardvarkgames.com', '$2a$10$JfKpgwmzABNJ65AtF6M3SuUXNMJqmRdwoALGS2QYnGpTFQYJEk5aq', 'SuperAdmin'), -- password: adminpass
@@ -195,14 +242,14 @@ INSERT INTO Matches (TournamentID, Team1ID, Team2ID, MatchDate, RoundNumber, Sco
 (2, 1, 4, '2025-06-17 13:00:00', 1, 0, 0, NULL, 'Planned');
 
 -- Sample payments
-INSERT INTO Payments (TeamID, TournamentID, Amount, Status, PaymentMethod, TransactionID) VALUES
+/*INSERT INTO Payments (TeamID, TournamentID, Amount, Status, PaymentMethod, TransactionID) VALUES
 (1, 1, 50.00, 'Completed', 'CreditCard', 'txn_1234567890'),
 (2, 1, 50.00, 'Completed', 'PayPal', 'PP-1234567890'),
 (3, 1, 50.00, 'Completed', 'CreditCard', 'txn_0987654321'),
 (4, 1, 50.00, 'Completed', 'CreditCard', 'txn_1122334455'),
 (5, 1, 50.00, 'Completed', 'CreditCard', 'txn_5566778899'),
 (1, 2, 75.00, 'Pending', 'CreditCard', NULL),
-(3, 2, 75.00, 'Failed', 'PayPal', 'PP-FAILED12345');
+(3, 2, 75.00, 'Failed', 'PayPal', 'PP-FAILED12345');*/
 
 -- Sample blog posts
 INSERT INTO Posts (Title, ImageURL, Content, Author, CreatedAt, UserID) VALUES

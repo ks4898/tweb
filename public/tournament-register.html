@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tournament Sign Up - A New World</title>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;700&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/css/tsu.css">
+  <script>
+    function goHome() {
+      window.location.href = "/";
+    }
+  </script>
+</head>
+
+<body>
+  <!-- Navbar -->
+  <nav class="navbar">
+    <a href="/" class="navbar-logo">Aardvark Games</a>
+    <div class="navbar-links">
+      <a href="/colleges" class="nav-link" draggable="false">Colleges</a>
+      <a href="/teams" class="nav-link" draggable="false">Teams</a>
+      <a href="/brackets" class="nav-link" draggable="false">Brackets</a>
+      <a href="/schedules" class="nav-link" draggable="false">Schedules</a>
+      <a href="/news" class="nav-link" draggable="false">News</a>
+      <a href="/about" class="nav-link" draggable="false">About Us</a>
+      <a href="/signup" class="nav-link" draggable="false">Account</a>
+    </div>
+  </nav>
+
+  <section class="section-light py-5">
+    <div class="container">
+      <div class="section-dark p-4 rounded mx-auto" style="max-width: 600px;">
+        <h2 class="mb-4">Tournament Sign Up</h2>
+        <form id="signup-form">
+          <!-- Name -->
+          <div class="mb-3">
+            <label for="user-name" class="tsu-label">Name</label>
+            <input type="text" class="form-control" id="user-name" placeholder="John Doe" readonly>
+          </div>
+
+          <!-- College Dropdown -->
+          <div class="mb-3">
+            <label for="college-select" class="tsu-label">College</label>
+            <select class="form-select" id="college-select" required>
+              <option value="" disabled selected>Select your college</option>
+              <!-- JS populates the rest -->
+            </select>
+          </div>
+
+          <!-- Team Dropdown -->
+          <div class="mb-3">
+            <label for="team-select" class="tsu-label">Team</label>
+            <select class="form-select" id="team-select" required>
+              <option value="" disabled selected>Select your team</option>
+              <option value="new-team">Create a new team</option>
+              <!-- JS populates the rest -->
+            </select>
+          </div>
+
+          <!-- New Team Name Field (hidden by default) -->
+          <div class="mb-3" id="team-create-container" style="display: none;">
+            <label for="team-create" class="tsu-label">New Team Name</label>
+            <input type="text" class="form-control" id="team-create" placeholder="Enter your new team name..." required>
+          </div>
+
+          <!-- Tournament Dropdown -->
+          <div class="mb-3">
+            <label for="tournament-select" class="tsu-label">Tournament</label>
+            <select class="form-select" id="tournament-select" required>
+              <option value="" disabled selected>Select a tournament</option>
+              <!-- JS populates the rest -->
+            </select>
+          </div>
+
+          <!-- Message -->
+          <div class="mb-4">
+            <label for="message" class="tsu-label">Message</label>
+            <textarea class="form-control" id="message" rows="3"
+              placeholder="Type your preferred role, college and/or team if you can't find it in the list, etc."></textarea>
+          </div>
+
+          <!-- Submit / Cancel Buttons -->
+          <button type="submit" class="btn-link me-2">Submit</button>
+          <button type="button" class="btn-delete" onclick="goHome()">Cancel</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pending Verification Modal -->
+  <div class="modal fade" id="pendingVerificationModal" tabindex="-1" aria-labelledby="pendingVerificationModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="pendingVerificationModalLabel">Registration Status</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>Your registration is pending verification of your student status. Our staff will contact you soon.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" id="pendingVerificationOkBtn">OK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add these modal templates just before the closing body tag -->
+
+  <!-- Generic Message Modal -->
+  <div class="modal fade" id="messageModal" tabindex="-1" aria-labelledby="messageModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="messageModalLabel">Message</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="messageModalBody">
+          <!-- Message content will be inserted here -->
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" id="messageModalOkBtn" data-bs-dismiss="modal">OK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error Modal -->
+  <div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title" id="errorModalLabel">Error</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="errorModalBody">
+          <!-- Error message will be inserted here -->
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Success Modal -->
+  <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-success text-white">
+          <h5 class="modal-title" id="successModalLabel">Success</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="successModalBody">
+          <!-- Success message will be inserted here -->
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" id="successModalOkBtn" data-bs-dismiss="modal">OK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirmation Modal -->
+  <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="confirmModalLabel">Confirm</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="confirmModalBody">
+          <!-- Confirmation message will be inserted here -->
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
+            id="confirmModalCancelBtn">Cancel</button>
+          <button type="button" class="btn btn-primary" id="confirmModalOkBtn">Confirm</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/handleacc.js" defer></script>
+  <script src="/js/tsu.js"></script>
+</body>
+
+</html>

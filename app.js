@@ -37,6 +37,66 @@ app.use((req, res, next) => {
     }
 });
 
+function preventDirectAccess(req, res, next) {
+    // define allowed paths that should not be blocked
+    const allowedPaths = [
+        '/teams'  // allow the teams page
+    ];
+
+    // check if the path is explicitly allowed
+    if (allowedPaths.some(path => req.path === path || req.path.startsWith(path + '/'))) {
+        return next(); // this is an allowed path, proceed normally
+    }
+
+    // define patterns for protected endpoints
+    const protectedPatterns = [
+        /^\/payment-details($|\?|\/)/,
+        /^\/user-info-tournament($|\?|\/)/,
+        /^\/teams-for-college($|\?|\/)/,
+        /^\/teams-for-college-tournament($|\?|\/)/,
+        /^\/stripe-key($|\?|\/)/,
+        /^\/universities($|\?|\/)/,
+        /^\/check-session($|\?|\/)/,
+        /^\/fetchColleges($|\?|\/)/,
+        /^\/university($|\?|\/)/,
+        /^\/api\/teams($|\?|\/)/,
+        /^\/team($|\?|\/)/,
+        /^\/search-teams($|\?|\/)/,
+        /^\/team-members($|\?|\/)/,
+        /^\/user-info($|\?|\/)/,
+        /^\/player($|\?|\/)/,
+        /^\/api\/reports\/college-signups($|\?|\/)/,
+        /^\/api\/reports\/tournament-status($|\?|\/)/,
+        /^\/news-articles($|\?|\/)/
+    ];
+
+    // check if this path matches any protected pattern
+    const isProtectedPath = protectedPatterns.some(pattern =>
+        pattern.test(req.path)
+    );
+
+    if (!isProtectedPath) {
+        return next(); // not a protected path, proceed normally
+    }
+
+    // check if this is a browser request vs. an AJAX request
+    const acceptHeader = req.headers.accept || '';
+    const isXHR = req.xhr || req.headers['x-requested-with'] === 'XMLHttpRequest';
+    const referer = req.headers.referer || '';
+    const isDirectBrowserAccess = acceptHeader.includes('text/html') && !isXHR;
+
+    if (isDirectBrowserAccess) {
+        // return HTML not found page instead of JSON data
+        return res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
+    }
+
+    // if it's an AJAX request, proceed normally
+    next();
+}
+
+// apply middleware globally
+app.use(preventDirectAccess);
+
 app.use(express.static("assets")); // serve static files from assets folder
 app.use(express.static(path.join(__dirname, "public"))); // serve static files from public folder (pages)
 app.use(errorHandler); // error handling
@@ -82,6 +142,195 @@ app.get("/colleges", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "colleges.html"));
 });
 
+// serve teams page endpoint
+app.get('/teams', async (req, res) => {
+    try {
+        const searchQuery = req.query.q || '';
+        const searchBy = req.query.by || 'all';
+
+        const [teams] = await db.promise().execute(`
+            SELECT 
+                t.TeamID, 
+                t.Name, 
+                t.ImageURL AS TeamImage,
+                u.Name AS UniversityName,
+                u.ImageURL AS UniversityImage
+            FROM Teams t
+            LEFT JOIN University u ON t.UniversityID = u.UniversityID
+            ${searchQuery ? `WHERE ${searchBy === 'name' ? 't.Name' : 'u.Name'} LIKE ?` : ''}
+            ORDER BY t.Name
+        `, searchQuery ? [`%${searchQuery}%`] : []);
+
+        const teamsHtml = teams.map(team => `
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 shadow d-flex flex-row">
+                    <!-- Team Image -->
+                    ${team.TeamImage ? `
+                        <div class="card-img-container p-3">
+                            <img src="${team.TeamImage || "/media/img/placeholder-250x250.png"}" class="card-img-left" alt="${team.Name}">
+                        </div>
+                    ` : `
+                        <div class="card-img-container p-3">
+                            <img src="/media/img/placeholder-250x250.png" class="card-img-left" alt="${team.Name}">
+                        </div>`}
+
+                    <!-- Team Info -->
+                    <div class="card-body d-flex flex-column justify-content-center">
+                        <h5 class="card-title">${team.Name}</h5>
+                        <p class="text-muted mb-3">From ${team.UniversityName}</p>
+                        <a href="/teams/${encodeURIComponent(team.Name)}" class="btn btn-primary mt-auto">View Team</a>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+        const html = (await fs.promises.readFile('public/teams.html', 'utf8'))
+            .replace('{{TEAMS_LIST}}', teamsHtml)
+            .replace('{{SEARCH_QUERY}}', searchQuery);
+
+        res.send(html);
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).send('Server error');
+    }
+});
+
+// brackets page endpoint
+app.get('/brackets', async (req, res) => {
+    try {
+        // fetch all tournaments for the dropdown
+        const [tournaments] = await db.promise().execute(`SELECT TournamentID, Name FROM Tournaments ORDER BY Name`);
+
+        // check if tournament ID 1 exists in the list
+        const defaultTournament = tournaments.find(t => t.TournamentID === 1) || tournaments[0];
+        const selectedTournamentName = req.query.tournament || defaultTournament.Name;
+
+        // find the tournament ID based on the name
+        const selectedTournament = tournaments.find(t => t.Name === selectedTournamentName) || defaultTournament;
+        const tournamentId = selectedTournament.TournamentID;
+
+        // generate tournament dropdown HTML with Bootstrap styling
+        const tournamentDropdownHtml = `
+            <div class="form-group mb-4">
+                <select id="tournament-select" class="form-select" style="max-width: 300px; border-radius: 8px; border: 1px solid #134c5b;" onchange="changeTournament(this.value)">
+                    ${tournaments.map(t => `
+                        <option value="${t.Name}" ${t.Name === selectedTournamentName ? 'selected' : ''}>
+                            ${t.Name}
+                        </option>
+                    `).join('')}
+                </select>
+            </div>
+        `;
+
+        // fetch matches for the selected tournament
+        const [matches] = await db.promise().execute(`
+            SELECT 
+                m.MatchID, m.RoundNumber, m.MatchDate,
+                m.Team1ID, m.Team2ID, m.ScoreTeam1, m.ScoreTeam2, m.WinnerID,
+                t1.Name AS Team1Name, t2.Name AS Team2Name, 
+                wt.Name AS WinnerName
+            FROM Matches m
+            LEFT JOIN Teams t1 ON m.Team1ID = t1.TeamID
+            LEFT JOIN Teams t2 ON m.Team2ID = t2.TeamID
+            LEFT JOIN Teams wt ON m.WinnerID = wt.TeamID
+            WHERE m.TournamentID = ? AND m.RoundNumber BETWEEN 3 AND 4
+            ORDER BY m.RoundNumber, m.MatchDate
+        `, [tournamentId]);
+
+        // organize matches by round
+        const semifinalMatches = matches.filter(m => m.RoundNumber === 3);
+        const finalMatch = matches.find(m => m.RoundNumber === 4);
+
+        // generate HTML for semifinals
+        const semifinalHtml = semifinalMatches.map((m, index) =>
+            generateSemifinalCardHTML(m, index === 0 ? 'left' : 'right')
+        ).join('');
+
+        // generate placeholders for missing semifinal matches
+        const semifinalPlaceholders = Array.from({ length: Math.max(0, 2 - semifinalMatches.length) })
+            .map((_, index) => generateSemifinalCardHTML(null, semifinalMatches.length === 1 ? 'right' : (index === 0 ? 'left' : 'right')))
+            .join('');
+
+        // generate HTML for final match
+        const finalHtml = generateFinalCardHTML(finalMatch);
+
+        // read template file and replace placeholders
+        const templatePath = path.join(__dirname, 'public', 'brackets.html');
+        const template = await fs.promises.readFile(templatePath, 'utf8');
+
+        const html = template
+            .replace('{{TOURNAMENT_DROPDOWN}}', tournamentDropdownHtml)
+            .replace('{{SEMIFINAL_MATCHES}}', semifinalHtml)
+            .replace('{{SEMIFINAL_PLACEHOLDERS}}', semifinalPlaceholders)
+            .replace('{{FINAL_MATCH}}', finalHtml);
+
+        res.send(html);
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).send('Server error');
+    }
+});
+
+/// helper function to generate semifinal match card HTML
+function generateSemifinalCardHTML(match, position) {
+    if (!match) return `
+        <div class="semifinal-card ${position}-semifinal">
+            <h4 class="card-title">Semifinal</h4>
+            <div class="match-card text-center">
+                <p class="text-muted">Match not scheduled</p>
+            </div>
+            <div class="connector ${position}-connector"></div>
+        </div>
+    `;
+
+    return `
+        <div class="semifinal-card ${position}-semifinal">
+            <h4 class="card-title">Semifinal</h4>
+            <div class="match-card">
+                <div class="team-row">
+                    <span class="team-name ${match.WinnerID === match.Team1ID ? 'winner' : ''}">${match.Team1Name || 'TBD'}</span>
+                    <span class="vs-text">vs</span>
+                    <span class="team-name ${match.WinnerID === match.Team2ID ? 'winner' : ''}">${match.Team2Name || 'TBD'}</span>
+                </div>
+                <div class="score-row">
+                    <span class="team-score">${match.ScoreTeam1 || 0}</span>
+                    <span class="vs-text">vs</span>
+                    <span class="team-score">${match.ScoreTeam2 || 0}</span>
+                </div>
+                <div class="match-date">${new Date(match.MatchDate).toLocaleDateString()}</div>
+            </div>
+            <div class="connector ${position}-connector"></div>
+        </div>
+    `;
+}
+
+// helper function to generate final match card HTML
+function generateFinalCardHTML(match) {
+    if (!match) return `
+        <h3 class="final-title">Grand Final</h3>
+        <div class="match-card text-center">
+            <p class="text-muted">Match not scheduled</p>
+        </div>
+    `;
+
+    return `
+        <h3 class="final-title">Grand Final</h3>
+        <div class="match-card">
+            <div class="team-row">
+                <span class="team-name ${match.WinnerID === match.Team1ID ? 'winner' : ''}">${match.Team1Name || 'TBD'}</span>
+                <span class="vs-text">vs</span>
+                <span class="team-name ${match.WinnerID === match.Team2ID ? 'winner' : ''}">${match.Team2Name || 'TBD'}</span>
+            </div>
+            <div class="score-row">
+                <span class="team-score">${match.ScoreTeam1 || 0}</span>
+                <span class="vs-text">vs</span>
+                <span class="team-score">${match.ScoreTeam2 || 0}</span>
+            </div>
+            <div class="match-date">${new Date(match.MatchDate).toLocaleDateString()}</div>
+        </div>
+    `;
+}
+
 // serve schedule page endpoint
 app.get("/schedules", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "schedules.html"));
@@ -94,12 +343,176 @@ app.get("/details", (req, res) => {
 
 // serve payment page endpoint
 app.get("/payment", verifyRole(["Player"]), (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "payment.html"));
+    const registrationId = req.query.registrationId;
+
+    if (!req.session.userId) {
+        return res.redirect('/login?redirect=/payment');
+    }
+
+    if (!registrationId) {
+        return res.redirect('/');
+    }
+
+    // Check if this payment is for a valid registration by this user
+    db.execute(`
+        SELECT r.Status, p.PaymentID 
+        FROM Registrations r
+        LEFT JOIN Payments p ON p.UserID = r.UserID AND p.TournamentID = r.TournamentID
+        WHERE r.UserID = ? AND p.PaymentID = ? AND r.Status = 'Verified'
+    `, [req.session.userId, registrationId], (err, results) => {
+        if (err) {
+            console.error("Database error:", err);
+            return res.redirect('/');
+        }
+
+        if (results.length === 0) {
+            // Either the registration doesn't exist, doesn't belong to this user,
+            // or the user is not a verified student
+            return res.redirect('/');
+        }
+
+        // User is authorized to access the payment page
+        res.sendFile(path.join(__dirname, "public", "payment.html"));
+    });
 });
+
+app.get('/payment-success', verifyRole(["Player"]), (req, res) => {
+    const paymentIntentId = req.query.payment_intent;
+    const registrationId = req.query.registration_id;
+
+    if (!req.session.userId) {
+        return res.redirect('/login');
+    }
+
+    if (!paymentIntentId || !registrationId) {
+        return res.redirect('/');
+    }
+
+    // Verify this payment is legitimate and belongs to this user
+    // Also check if the success page has already been viewed
+    db.execute(`
+      SELECT p.Status, p.PaymentID, p.SuccessPageViewed, r.Status AS RegistrationStatus, 
+             t.Name AS TournamentName, tm.Name AS TeamName
+      FROM Payments p
+      JOIN Registrations r ON r.UserID = p.UserID AND r.TournamentID = p.TournamentID
+      JOIN Teams tm ON p.TeamID = tm.TeamID
+      JOIN Tournaments t ON p.TournamentID = t.TournamentID
+      WHERE p.UserID = ? AND p.PaymentID = ? AND p.Status = 'Completed'
+      AND r.Status = 'Verified'
+    `, [req.session.userId, registrationId], (err, results) => {
+        if (err) {
+            console.error("Database error:", err);
+            return res.redirect('/');
+        }
+
+        if (results.length === 0) {
+            // Either the payment doesn't exist, doesn't belong to this user,
+            // or hasn't been completed
+            return res.redirect('/');
+        }
+
+        // Check if the success page has already been viewed
+        if (results[0].SuccessPageViewed) {
+            console.log("Payment success page already viewed for payment ID:", registrationId);
+            return res.redirect('/schedules'); // Redirect to schedules or another appropriate page
+        }
+
+        // Mark this payment as viewed in the success page to prevent multiple views
+        db.execute(`
+        UPDATE Payments 
+        SET SuccessPageViewed = TRUE 
+        WHERE PaymentID = ? AND UserID = ?
+      `, [registrationId, req.session.userId], (updateErr) => {
+            if (updateErr) {
+                console.error("Error updating payment record:", updateErr);
+            }
+
+            // Render a dynamic success page with transaction details
+            // This is more secure than serving a static HTML file
+            res.send(`
+          <!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tournament Signup Success - A New World</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;700&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap JS (Optional) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/styles.css">
+    
+    <style>
+        body {
+            height: 100vw !important;
+        }
+        .container {
+            margin-top: 4rem !important;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <a href="/" class="navbar-logo">Aardvark Games</a>
+        <div class="navbar-links">
+            <a href="/colleges" class="nav-link" draggable="false">Colleges</a>
+            <a href="/teams" class="nav-link" draggable="false">Teams</a>
+            <a href="/brackets" class="nav-link" draggable="false">Brackets</a>
+            <a href="/schedules" class="nav-link" draggable="false">Schedules</a>
+            <a href="/news" class="nav-link" draggable="false">News</a>
+            <a href="/about" class="nav-link" draggable="false">About Us</a>
+            <a href="/signup" class="nav-link" draggable="false">Account</a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container text-center py-5">
+        <h1 class="mb-4">Payment Successful!</h1>
+        <p class="lead mb-4">Thank you for your payment. Your registration has been completed successfully.</p>
+        <img src="/media/img/payment-success.png" alt="Payment Success" class="img-fluid mb-4"
+            style="max-width: 250px;">
+        <p>We look forward to seeing you participate in the tournament!</p>
+
+        <!-- Button to redirect to home -->
+        <a href="/" class="btn btn-primary mt-3">Return to Home</a>
+    </main>
+
+    <!-- External Scripts -->
+    <script src="/js/handleacc.js" defer></script>
+</body>
+
+</html>
+        `);
+        });
+    });
+});
+
+
 
 // serve news page endpoint
 app.get("/news", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "news.html"));
+});
+
+// serve tournament register page endpoint
+app.get("/tournament-register", (req, res) => {
+    // Check if user is logged in
+    if (!req.session.userId) {
+        // Not logged in, redirect to login page with return URL
+        return res.redirect('/login?redirect=/tournament-register');
+    } else {
+        res.sendFile(path.join(__dirname, "public", "tournament-register.html"));
+    }
 });
 
 // serve login page endpoint
@@ -130,7 +543,7 @@ app.get("/reports", (req, res) => {
 });
 
 // session check endpoint
-app.get("/check-session", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
+app.get("/check-session", (req, res) => {
     return res.json({
         loggedIn: !!req.session.userId,
         role: req.session.role || null
@@ -701,59 +1114,6 @@ app.post('/teams/:teamId/update', async function (req, res) {
     }
 });
 
-// serve teams page endpoint
-app.get('/teams', async (req, res) => {
-    try {
-        const searchQuery = req.query.q || '';
-        const searchBy = req.query.by || 'all';
-
-        const [teams] = await db.promise().execute(`
-            SELECT 
-                t.TeamID, 
-                t.Name, 
-                t.ImageURL AS TeamImage,
-                u.Name AS UniversityName,
-                u.ImageURL AS UniversityImage
-            FROM Teams t
-            LEFT JOIN University u ON t.UniversityID = u.UniversityID
-            ${searchQuery ? `WHERE ${searchBy === 'name' ? 't.Name' : 'u.Name'} LIKE ?` : ''}
-            ORDER BY t.Name
-        `, searchQuery ? [`%${searchQuery}%`] : []);
-
-        const teamsHtml = teams.map(team => `
-            <div class="col-md-4 mb-4">
-                <div class="card h-100 shadow d-flex flex-row">
-                    <!-- Team Image -->
-                    ${team.TeamImage ? `
-                        <div class="card-img-container p-3">
-                            <img src="${team.TeamImage || "/media/img/placeholder-250x250.png"}" class="card-img-left" alt="${team.Name}">
-                        </div>
-                    ` : `
-                        <div class="card-img-container p-3">
-                            <img src="/media/img/placeholder-250x250.png" class="card-img-left" alt="${team.Name}">
-                        </div>`}
-
-                    <!-- Team Info -->
-                    <div class="card-body d-flex flex-column justify-content-center">
-                        <h5 class="card-title">${team.Name}</h5>
-                        <p class="text-muted mb-3">From ${team.UniversityName}</p>
-                        <a href="/teams/${encodeURIComponent(team.Name)}" class="btn btn-primary mt-auto">View Team</a>
-                    </div>
-                </div>
-            </div>
-        `).join('');
-
-        const html = (await fs.promises.readFile('public/teams.html', 'utf8'))
-            .replace('{{TEAMS_LIST}}', teamsHtml)
-            .replace('{{SEARCH_QUERY}}', searchQuery);
-
-        res.send(html);
-    } catch (error) {
-        console.error('Error:', error);
-        res.status(500).send('Server error');
-    }
-});
-
 
 // ======================== TOURNAMENT MANAGEMENT ========================
 
@@ -950,6 +1310,31 @@ app.get('/user-info', (req, res) => {
         res.status(401).json({ message: 'Not authenticated' });
     }
 });
+
+// Get user info for tournament endpoint
+app.get("/user-info-tournament", (req, res) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ error: "Not logged in" });
+    }
+
+    db.execute(`
+        SELECT UserID, Name 
+        FROM Users
+        WHERE UserID = ?
+    `, [req.session.userId], (err, results) => {
+        if (err) {
+            console.error("Database error:", err);
+            return res.status(500).json({ error: "Database error" });
+        }
+
+        if (results.length === 0) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        res.json(results[0]);
+    });
+});
+
 
 // get all or search users endpoint
 app.get("/users", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
@@ -1246,40 +1631,81 @@ app.get("/player/:userId", async (req, res) => {
     }
 });
 
-// create payment intent endpoint
-app.post('/create-payment-intent', verifyRole(["Player"]), async (req, res) => {
-    try {
-        const userId = req.session.userId;
+app.post('/create-payment-intent', async (req, res) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ error: 'Not authenticated' });
+    }
 
-        const player = await db.execute(
-            'SELECT PayedFee FROM Players WHERE UserID = ?',
-            [userId]
+    const { registrationId } = req.body;
+
+    if (!registrationId) {
+        return res.status(400).json({ error: 'Registration ID is required' });
+    }
+
+    try {
+        // First get the registration details
+        const [registrationDetails] = await db.promise().execute(
+            `SELECT TournamentID, TeamID FROM Registrations 
+             WHERE RegistrationID = ? AND UserID = ? AND Status = 'Verified'`,
+            [registrationId, req.session.userId]
         );
 
-        if (!player || player.length === 0) {
-            return res.status(404).json({ error: "Player account not found" });
-        }
-        if (player.payedFee === 1) {
-            return res.status(400).json({ error: "Payment already completed" });
+        if (registrationDetails.length === 0) {
+            return res.status(404).json({ error: 'Registration not found or not verified' });
         }
 
-        // create payment intent
+        // Then get or create a payment record
+        const [paymentDetails] = await db.promise().execute(
+            `SELECT PaymentID, Amount FROM Payments 
+             WHERE UserID = ? AND TeamID = ? AND TournamentID = ? AND Status = 'Pending'`,
+            [req.session.userId, registrationDetails[0].TeamID, registrationDetails[0].TournamentID]
+        );
+
+        let amount;
+        let paymentId;
+
+        if (paymentDetails.length === 0) {
+            // No payment record exists yet, create one
+            const tournamentFee = 10.00; // Default fee, could be fetched from tournament settings
+
+            const [insertResult] = await db.promise().execute(
+                `INSERT INTO Payments (UserID, TeamID, TournamentID, Amount, Status) 
+                 VALUES (?, ?, ?, ?, 'Pending')`,
+                [req.session.userId, registrationDetails[0].TeamID, registrationDetails[0].TournamentID, tournamentFee]
+            );
+
+            amount = tournamentFee;
+            paymentId = insertResult.insertId;
+        } else {
+            // Payment record exists
+            amount = paymentDetails[0].Amount;
+            paymentId = paymentDetails[0].PaymentID;
+        }
+
+        // Create a PaymentIntent with the order amount and currency
         const paymentIntent = await stripe.paymentIntents.create({
-            amount: 1000,
+            amount: amount * 100, // Convert to cents for Stripe
             currency: 'usd',
-            payment_method_types: ['card'],
-            metadata: { userId }
+            metadata: {
+                userId: req.session.userId,
+                registrationId: registrationId,
+                paymentId: paymentId
+            }
         });
 
-        res.json({ clientSecret: paymentIntent.client_secret });
-
+        res.json({
+            clientSecret: paymentIntent.client_secret,
+            paymentId: paymentId
+        });
     } catch (error) {
-        console.error('Payment Intent Error:', error);
-        res.status(500).json({ error: "Payment system error - contact support" });
+        console.error('Error creating payment intent:', error);
+        res.status(500).json({ error: 'Failed to create payment intent' });
     }
 });
 
-// payment confirmation endpoint
+
+
+/*// payment confirmation endpoint
 app.post('/confirm-payment', verifyRole(["Player"]), async (req, res) => {
     try {
         const { paymentIntentId } = req.body;
@@ -1300,55 +1726,326 @@ app.post('/confirm-payment', verifyRole(["Player"]), async (req, res) => {
         console.error('Payment confirmation error:', error);
         res.status(500).json({ error: 'Payment verification failed' });
     }
+});*/
+
+// Route to serve Stripe publishable key
+app.get('/stripe-key', (req, res) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    res.json({ publishableKey: process.env.STRIPE_PUBLISHABLE_KEY });
 });
 
-// payment success endpoint
-app.get('/payment-success', verifyRole(["Player"]), async (req, res) => {
+app.post('/confirm-payment', async (req, res) => {
     try {
-        const [player] = await db.promise().query(
-            'SELECT PayedFee FROM Players WHERE UserID = ?',
-            [req.session.userId]
-        );
-        console.log(player[0].PayedFee);
+        const { paymentIntentId } = req.body;
 
-        // check for boolean TRUE (1 in MySQL)
-        if (player[0].PayedFee !== 1) {
-            return res.redirect('/payment');
+        if (!req.session.userId) {
+            return res.status(401).json({ error: 'Not authenticated' });
         }
 
-        res.sendFile(path.join(__dirname, 'public', 'payment-success.html'));
+        const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+        if (paymentIntent.status !== 'succeeded') {
+            return res.status(400).json({ error: 'Payment not completed' });
+        }
+
+        // Get the payment ID from the metadata
+        const paymentId = paymentIntent.metadata.paymentId;
+        const registrationId = paymentIntent.metadata.registrationId;
+
+        if (!paymentId) {
+            return res.status(400).json({ error: 'Payment ID not found in metadata' });
+        }
+
+        // Begin transaction to ensure all updates are atomic
+        await db.promise().beginTransaction();
+
+        try {
+            // Update player's PayedFee status
+            await db.promise().execute(
+                'UPDATE Players SET PayedFee = TRUE WHERE UserID = ?',
+                [req.session.userId]
+            );
+
+            // Update payment status in the Payments table
+            await db.promise().execute(
+                "UPDATE Payments SET Status = 'Completed' WHERE PaymentID = ? AND UserID = ?",
+                [paymentId, req.session.userId]
+            );
+
+            // Commit the transaction
+            await db.promise().commit();
+
+            res.json({
+                success: true,
+                paymentIntentId: paymentIntentId,
+                registrationId: registrationId,
+                paymentId: paymentId
+            });
+        } catch (error) {
+            // Rollback in case of error
+            await db.promise().rollback();
+            throw error;
+        }
     } catch (error) {
-        console.error('Payment verification error:', error);
-        res.redirect('/');
+        console.error('Payment confirmation error:', error);
+        res.status(500).json({ error: 'Payment verification failed' });
     }
 });
 
-// tournament signup endpoint  ||  NEEDS TO BE UPDATED!
-app.post('/tournament-signup', verifyRole(["Player"]), async (req, res) => {
-    const { tournamentId } = req.body;
+// Get payment details endpoint
+app.get("/payment-details", (req, res) => {
+    const registrationId = req.query.registrationId;
+
+    if (!req.session.userId) {
+        return res.status(401).json({ error: "Not logged in" });
+    }
+
+    if (!registrationId) {
+        return res.status(400).json({ error: "Registration ID is required" });
+    }
+
+    db.execute(`
+        SELECT p.PaymentID, p.Amount, p.Status,
+               t.TeamID, t.Name AS TeamName,
+               tour.TournamentID, tour.Name AS TournamentName
+        FROM Payments p
+        JOIN Teams t ON p.TeamID = t.TeamID
+        JOIN Tournaments tour ON p.TournamentID = tour.TournamentID
+        WHERE p.PaymentID = ? AND p.UserID = ?
+    `, [registrationId, req.session.userId], (err, results) => {
+        if (err) {
+            console.error("Database error:", err);
+            return res.status(500).json({ error: "Database error" });
+        }
+
+        if (results.length === 0) {
+            return res.status(404).json({ error: "Payment not found" });
+        }
+
+        res.json(results[0]);
+    });
+});
+
+// Get active tournaments endpoint
+app.get("/tournaments", (req, res) => {
+    db.execute(`
+        SELECT TournamentID, Name, Description, StartDate, EndDate, Location, Status
+        FROM Tournaments
+        WHERE Status IN ('Upcoming', 'Ongoing')
+        ORDER BY StartDate
+    `, (err, results) => {
+        if (err) {
+            console.error("Database error:", err);
+            return res.status(500).json({ error: "Database error" });
+        }
+
+        res.json(results);
+    });
+});
+
+// Tournament signup endpoint
+app.post("/tournament-signup", (req, res) => {
     const userId = req.session.userId;
+    const { tournamentId, teamId, newTeamName, collegeId, message } = req.body;
 
-    try {
-        const userResult = await db.promise().query('SELECT TeamID FROM Players WHERE UserID = ?', [userId]);
-        if (userResult[0].length === 0 || !userResult[0][0].TeamID) {
-            return res.status(400).json({ success: false, message: "You must be part of a team to sign up for a tournament." });
-        }
-
-        const teamId = userResult[0][0].TeamID;
-
-        const registrationResult = await db.promise().query('SELECT * FROM Registrations WHERE UserID = ? AND TournamentID = ?', [userId, tournamentId]);
-        if (registrationResult[0].length > 0) {
-            return res.status(400).json({ success: false, message: "You have already signed up for this tournament." });
-        }
-
-        await db.promise().query('INSERT INTO Registrations (UserID, TournamentID, TeamID, PaymentStatus) VALUES (?, ?, ?, ?)', [userId, tournamentId, teamId, 'Pending']);
-
-        res.json({ success: true, message: "Registration successful. Please proceed to payment." });
-    } catch (error) {
-        console.error('Error during tournament signup:', error);
-        res.status(500).json({ success: false, message: "An error occurred during signup. Please try again." });
+    if (!userId) {
+        return res.status(401).json({ message: "You must be logged in to register for tournaments." });
     }
+
+    if (!tournamentId) {
+        return res.status(400).json({ message: "Tournament selection is required" });
+    }
+
+    if (!teamId && !newTeamName) {
+        return res.status(400).json({ message: "Either team selection or new team name is required" });
+    }
+
+    // Begin transaction
+    db.beginTransaction(async (err) => {
+        if (err) {
+            return res.status(500).json({ message: "Database error. Please try again later." });
+        }
+
+        try {
+            // Check if user already has a registration for this tournament
+            const [existingRegistration] = await db.promise().execute(
+                "SELECT RegistrationID FROM Registrations WHERE UserID = ? AND TournamentID = ?",
+                [userId, tournamentId]
+            );
+
+            if (existingRegistration.length > 0) {
+                await db.promise().rollback();
+                return res.status(400).json({
+                    message: "You have already registered for this tournament. Please check your registration status."
+                });
+            }
+
+            // Get user info to check role
+            const [userResults] = await db.promise().execute(
+                "SELECT Role FROM Users WHERE UserID = ?",
+                [userId]
+            );
+
+            if (userResults.length === 0) {
+                await db.promise().rollback();
+                return res.status(404).json({ message: "User not found" });
+            }
+
+            const userRole = userResults[0].Role;
+
+            // If user is not a Player, convert them to Player
+            if (userRole === "User") {
+                await db.promise().execute(
+                    "UPDATE Users SET Role = 'Player' WHERE UserID = ?",
+                    [userId]
+                );
+            } else if (userRole !== "Player") {
+                await db.promise().rollback();
+                return res.status(403).json({
+                    message: "Only Users and Players can register for tournaments."
+                });
+            }
+
+            // Get player info or create a new player record
+            const [playerResults] = await db.promise().execute(
+                "SELECT PlayerID, TeamID, ValidStudent FROM Players WHERE UserID = ?",
+                [userId]
+            );
+
+            let playerId, isValidStudent;
+
+            if (playerResults.length === 0) {
+                // Create player record if not exists
+                const [insertResult] = await db.promise().execute(
+                    "INSERT INTO Players (UserID, Role, ValidStudent) VALUES (?, 'Member', FALSE)",
+                    [userId]
+                );
+                playerId = insertResult.insertId;
+                isValidStudent = false;
+            } else {
+                playerId = playerResults[0].PlayerID;
+                isValidStudent = playerResults[0].ValidStudent;
+
+                // Check if player is already in a team for this tournament
+                if (playerResults[0].TeamID) {
+                    const [existingReg] = await db.promise().execute(
+                        `SELECT p.PaymentID FROM Payments p 
+                         WHERE p.UserID = ? AND p.TournamentID = ? AND p.Status = 'Completed'`,
+                        [userId, tournamentId]
+                    );
+
+                    if (existingReg.length > 0) {
+                        await db.promise().rollback();
+                        return res.status(400).json({
+                            message: "You are already registered for this tournament"
+                        });
+                    }
+                }
+            }
+
+            // Handle team creation or selection
+            let finalTeamId;
+
+            if (newTeamName) {
+                // Create new team
+                const [teamResult] = await db.promise().execute(
+                    "INSERT INTO Teams (Name, UniversityID, Description) VALUES (?, ?, ?)",
+                    [newTeamName, collegeId, `Team created for tournament registration on ${new Date().toISOString().split('T')[0]}`]
+                );
+
+                finalTeamId = teamResult.insertId;
+
+                // Update player as team leader
+                await db.promise().execute(
+                    "UPDATE Players SET TeamID = ?, Role = 'Leader' WHERE PlayerID = ?",
+                    [finalTeamId, playerId]
+                );
+            } else {
+                finalTeamId = teamId;
+
+                // Update player's team if different
+                if (!playerResults[0].TeamID || playerResults[0].TeamID != teamId) {
+                    await db.promise().execute(
+                        "UPDATE Players SET TeamID = ?, Role = 'Member' WHERE PlayerID = ?",
+                        [teamId, playerId]
+                    );
+                }
+            }
+
+            // Add to registrations table with appropriate status
+            const regStatus = isValidStudent ? 'Verified' : 'Pending';
+
+            const [regResult] = await db.promise().execute(
+                `INSERT INTO Registrations (UserID, TournamentID, TeamID, NewTeamName, Message, Status) 
+                 VALUES (?, ?, ?, ?, ?, ?)`,
+                [userId, tournamentId, finalTeamId, newTeamName, message, regStatus]
+            );
+
+            // If student is not validated, return now
+            if (!isValidStudent) {
+                await db.promise().commit();
+
+                return res.json({
+                    success: true,
+                    pendingVerification: true,
+                    message: "Your registration is pending verification of your student status."
+                });
+            }
+
+            // For validated students, create payment record
+            const tournamentFee = 10.00; // Default fee, could be fetched from tournament settings
+
+            const [paymentResult] = await db.promise().execute(
+                `INSERT INTO Payments (UserID, TeamID, TournamentID, Amount, Status) 
+                 VALUES (?, ?, ?, ?, 'Pending')`,
+                [userId, finalTeamId, tournamentId, tournamentFee]
+            );
+
+            // Commit transaction
+            await db.promise().commit();
+
+            // Return success with payment ID for redirect
+            res.json({
+                success: true,
+                message: "Registration initiated successfully",
+                registrationId: paymentResult.insertId
+            });
+
+        } catch (error) {
+            await db.promise().rollback();
+            console.error("Error in tournament registration:", error);
+            res.status(500).json({
+                message: "An error occurred during registration. Please try again."
+            });
+        }
+    });
 });
+
+// Get teams for a college endpoint
+app.get("/teams-for-college-tournament", (req, res) => {
+    const collegeId = req.query.collegeId;
+
+    if (!collegeId) {
+        return res.status(400).json({ error: "College ID is required" });
+    }
+
+    db.execute(`
+        SELECT TeamID, Name, Description
+        FROM Teams
+        WHERE UniversityID = ?
+    `, [collegeId], (err, results) => {
+        if (err) {
+            console.error("Database error:", err);
+            return res.status(500).json({ error: "Database error" });
+        }
+
+        res.json(results);
+    });
+});
+
 
 // fetch all news articles endpoint
 app.get('/news-articles', async (req, res) => {
@@ -1434,142 +2131,6 @@ app.get("/api/teams", (req, res) => {
         res.json(results);
     });
 });
-
-// brackets page endpoint
-app.get('/brackets', async (req, res) => {
-    try {
-        // fetch all tournaments for the dropdown
-        const [tournaments] = await db.promise().execute(`SELECT TournamentID, Name FROM Tournaments ORDER BY Name`);
-
-        // check if tournament ID 1 exists in the list
-        const defaultTournament = tournaments.find(t => t.TournamentID === 1) || tournaments[0];
-        const selectedTournamentName = req.query.tournament || defaultTournament.Name;
-
-        // find the tournament ID based on the name
-        const selectedTournament = tournaments.find(t => t.Name === selectedTournamentName) || defaultTournament;
-        const tournamentId = selectedTournament.TournamentID;
-
-        // generate tournament dropdown HTML with Bootstrap styling
-        const tournamentDropdownHtml = `
-            <div class="form-group mb-4">
-                <select id="tournament-select" class="form-select" style="max-width: 300px; border-radius: 8px; border: 1px solid #134c5b;" onchange="changeTournament(this.value)">
-                    ${tournaments.map(t => `
-                        <option value="${t.Name}" ${t.Name === selectedTournamentName ? 'selected' : ''}>
-                            ${t.Name}
-                        </option>
-                    `).join('')}
-                </select>
-            </div>
-        `;
-
-        // fetch matches for the selected tournament
-        const [matches] = await db.promise().execute(`
-            SELECT 
-                m.MatchID, m.RoundNumber, m.MatchDate,
-                m.Team1ID, m.Team2ID, m.ScoreTeam1, m.ScoreTeam2, m.WinnerID,
-                t1.Name AS Team1Name, t2.Name AS Team2Name, 
-                wt.Name AS WinnerName
-            FROM Matches m
-            LEFT JOIN Teams t1 ON m.Team1ID = t1.TeamID
-            LEFT JOIN Teams t2 ON m.Team2ID = t2.TeamID
-            LEFT JOIN Teams wt ON m.WinnerID = wt.TeamID
-            WHERE m.TournamentID = ? AND m.RoundNumber BETWEEN 3 AND 4
-            ORDER BY m.RoundNumber, m.MatchDate
-        `, [tournamentId]);
-
-        // organize matches by round
-        const semifinalMatches = matches.filter(m => m.RoundNumber === 3);
-        const finalMatch = matches.find(m => m.RoundNumber === 4);
-
-        // generate HTML for semifinals
-        const semifinalHtml = semifinalMatches.map((m, index) =>
-            generateSemifinalCardHTML(m, index === 0 ? 'left' : 'right')
-        ).join('');
-
-        // generate placeholders for missing semifinal matches
-        const semifinalPlaceholders = Array.from({ length: Math.max(0, 2 - semifinalMatches.length) })
-            .map((_, index) => generateSemifinalCardHTML(null, semifinalMatches.length === 1 ? 'right' : (index === 0 ? 'left' : 'right')))
-            .join('');
-
-        // generate HTML for final match
-        const finalHtml = generateFinalCardHTML(finalMatch);
-
-        // read template file and replace placeholders
-        const templatePath = path.join(__dirname, 'public', 'brackets.html');
-        const template = await fs.promises.readFile(templatePath, 'utf8');
-
-        const html = template
-            .replace('{{TOURNAMENT_DROPDOWN}}', tournamentDropdownHtml)
-            .replace('{{SEMIFINAL_MATCHES}}', semifinalHtml)
-            .replace('{{SEMIFINAL_PLACEHOLDERS}}', semifinalPlaceholders)
-            .replace('{{FINAL_MATCH}}', finalHtml);
-
-        res.send(html);
-    } catch (error) {
-        console.error('Error:', error);
-        res.status(500).send('Server error');
-    }
-});
-
-/// helper function to generate semifinal match card HTML
-function generateSemifinalCardHTML(match, position) {
-    if (!match) return `
-        <div class="semifinal-card ${position}-semifinal">
-            <h4 class="card-title">Semifinal</h4>
-            <div class="match-card text-center">
-                <p class="text-muted">Match not scheduled</p>
-            </div>
-            <div class="connector ${position}-connector"></div>
-        </div>
-    `;
-
-    return `
-        <div class="semifinal-card ${position}-semifinal">
-            <h4 class="card-title">Semifinal</h4>
-            <div class="match-card">
-                <div class="team-row">
-                    <span class="team-name ${match.WinnerID === match.Team1ID ? 'winner' : ''}">${match.Team1Name || 'TBD'}</span>
-                    <span class="vs-text">vs</span>
-                    <span class="team-name ${match.WinnerID === match.Team2ID ? 'winner' : ''}">${match.Team2Name || 'TBD'}</span>
-                </div>
-                <div class="score-row">
-                    <span class="team-score">${match.ScoreTeam1 || 0}</span>
-                    <span class="vs-text">vs</span>
-                    <span class="team-score">${match.ScoreTeam2 || 0}</span>
-                </div>
-                <div class="match-date">${new Date(match.MatchDate).toLocaleDateString()}</div>
-            </div>
-            <div class="connector ${position}-connector"></div>
-        </div>
-    `;
-}
-
-// helper function to generate final match card HTML
-function generateFinalCardHTML(match) {
-    if (!match) return `
-        <h3 class="final-title">Grand Final</h3>
-        <div class="match-card text-center">
-            <p class="text-muted">Match not scheduled</p>
-        </div>
-    `;
-
-    return `
-        <h3 class="final-title">Grand Final</h3>
-        <div class="match-card">
-            <div class="team-row">
-                <span class="team-name ${match.WinnerID === match.Team1ID ? 'winner' : ''}">${match.Team1Name || 'TBD'}</span>
-                <span class="vs-text">vs</span>
-                <span class="team-name ${match.WinnerID === match.Team2ID ? 'winner' : ''}">${match.Team2Name || 'TBD'}</span>
-            </div>
-            <div class="score-row">
-                <span class="team-score">${match.ScoreTeam1 || 0}</span>
-                <span class="vs-text">vs</span>
-                <span class="team-score">${match.ScoreTeam2 || 0}</span>
-            </div>
-            <div class="match-date">${new Date(match.MatchDate).toLocaleDateString()}</div>
-        </div>
-    `;
-}
 
 // college signup report endpoint
 app.get('/api/reports/college-signups', (req, res) => {

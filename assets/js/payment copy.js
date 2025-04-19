@@ -106,7 +106,5 @@ function initStripePayment() {
     }
 }
 
-// Keep existing user verification logic
-// Add to existing code:
 document.getElementById('card-element').style.padding = '10px';
 document.getElementById('submit-payment').classList.add('mx-auto', 'd-block', 'mt-3');

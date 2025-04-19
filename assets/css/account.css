@@ -27,15 +27,6 @@ html, section {
     width: 100%;
   }
   
-  /* Horizontal Rule - Fixed to extend full width */
-  hr {
-    width: 100%;
-    border: none;
-    height: 2px;
-    background-color: #fff;
-    margin: 0 0 2rem 0;
-  }
-  
   /* Table Containers */
   .user-table-container,
   .college-table-container,

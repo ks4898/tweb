@@ -52,17 +52,17 @@ document.addEventListener("DOMContentLoaded", function () {
         const message = document.getElementById("message").value;
 
         if (!collegeId) {
-            showErrorModal("Please select a college.");
+            alert("Please select a college.");
             return;
         }
 
         if (!tournamentId) {
-            showErrorModal("Please select a tournament.");
+            alert("Please select a tournament.");
             return;
         }
 
         if (!teamSelection) {
-            showErrorModal("Please select a team or create a new one.");
+            alert("Please select a team or create a new one.");
             return;
         }
 
@@ -70,7 +70,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (teamSelection === "new-team") {
             newTeamName = document.getElementById("team-create").value.trim();
             if (!newTeamName) {
-                showErrorModal("Please enter a valid team name.");
+                alert("Please enter a valid team name.");
                 return;
             }
         }
@@ -114,7 +114,6 @@ async function initializePage() {
         // If there's an error, it's likely due to authentication issues
         // The server-side redirect should handle this, but as a fallback:
         console.error("Error initializing page:", error);
-        showErrorModal(error);
         /*window.location.href = '/login?redirect=/tournament-register';*/
     }
 }
@@ -200,90 +199,52 @@ async function loadTeamsForCollege(collegeId) {
         });
     } catch (error) {
         console.error("Error loading teams:", error);
-        showErrorModal("Couldn't load teams.");
     }
 }
 
 // Function to submit registration
 async function submitRegistration(formData) {
     try {
-        const response = await fetch('/tournament-signup', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(formData)
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (data.success) {
-            if (data.pendingVerification) {
-                // Show the modal instead of alert
-                const pendingModal = new bootstrap.Modal(document.getElementById('pendingVerificationModal'));
-                pendingModal.show();
-
-                // Add event listener for the OK button
-                document.getElementById('pendingVerificationOkBtn').addEventListener('click', function () {
-                    pendingModal.hide();
-                    window.location.href = '/';
-                });
-
-                // Also redirect when the modal is hidden (e.g., if user clicks outside or the X button)
-                document.getElementById('pendingVerificationModal').addEventListener('hidden.bs.modal', function () {
-                    window.location.href = '/';
-                });
-            } else {
-                // Redirect to payment page with registration ID
-                window.location.href = `/payment?registrationId=${data.registrationId}`;
-            }
+      const response = await fetch('/tournament-signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        if (data.pendingVerification) {
+          // Show the modal instead of alert
+          const pendingModal = new bootstrap.Modal(document.getElementById('pendingVerificationModal'));
+          pendingModal.show();
+          
+          // Add event listener for the OK button
+          document.getElementById('pendingVerificationOkBtn').addEventListener('click', function() {
+            pendingModal.hide();
+            window.location.href = '/';
+          });
+          
+          // Also redirect when the modal is hidden (e.g., if user clicks outside or the X button)
+          document.getElementById('pendingVerificationModal').addEventListener('hidden.bs.modal', function() {
+            window.location.href = '/';
+          });
         } else {
-            showErrorModal(data.message || "Registration failed. Please try again.");
+          // Redirect to payment page with registration ID
+          window.location.href = `/payment?registrationId=${data.registrationId}`;
         }
+      } else {
+        alert(data.message || "Registration failed. Please try again.");
+      }
     } catch (error) {
-        console.error("Error submitting registration:", error);
-        showErrorModal("Error submitting registration. Please try again later.");
+      console.error("Error submitting registration:", error);
+      alert("Error submitting registration. Please try again later.");
     }
-}
-
-// Utility function to show error modal
-function showErrorModal(message, callback) {
-    const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
-    document.getElementById('errorModalBody').textContent = message;
-
-    if (callback) {
-        document.getElementById('errorModal').addEventListener('hidden.bs.modal', callback, { once: true });
-    }
-
-    errorModal.show();
-}
-
-// Utility function to show success modal
-function showSuccessModal(message, callback) {
-    const successModal = new bootstrap.Modal(document.getElementById('successModal'));
-    document.getElementById('successModalBody').textContent = message;
-
-    if (callback) {
-        document.getElementById('successModal').addEventListener('hidden.bs.modal', callback, { once: true });
-        document.getElementById('successModalBtn').addEventListener('click', callback, { once: true });
-    }
-
-    successModal.show();
-}
-
-// Utility function to show general message modal
-function showMessageModal(title, message, callback) {
-    const messageModal = new bootstrap.Modal(document.getElementById('messageModal'));
-    document.getElementById('messageModalLabel').textContent = title;
-    document.getElementById('messageModalBody').textContent = message;
-
-    if (callback) {
-        document.getElementById('messageModal').addEventListener('hidden.bs.modal', callback, { once: true });
-    }
-
-    messageModal.show();
-}  
+  }
+  
