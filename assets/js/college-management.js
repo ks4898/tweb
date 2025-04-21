@@ -109,6 +109,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const description = document.getElementById('description').value;
             const logoURL = document.getElementById('logoURL').value;
             const pictureURL = document.getElementById('pictureURL').value;
+            const hasPage = true;
 
             if (!collegeName || !location || !founded || !description || !logoURL || !pictureURL) {
                 alert('Please fill in all fields.');
@@ -119,7 +120,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 const response = await fetch(`/edit-college/${collegeId}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: collegeName, location: location, founded: founded, description: description, logoURL: logoURL, pictureURL: pictureURL })
+                    body: JSON.stringify({ name: collegeName, location: location, founded: founded, description: description, logoURL: logoURL, pictureURL: pictureURL, hasPage: hasPage })
                 });
 
                 if (!response.ok) {
@@ -145,57 +146,6 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
     });
-
-    /*document.querySelectorAll('.editCollegeBtn').forEach(button => {
-        button.addEventListener('click', async function() {
-            const collegeId = button.dataset.collegeId;
-            try {
-                const response = await fetch(`/university?collegeId=${collegeId}`);
-                if (!response.ok) {
-                    throw new Error('Failed to fetch college details');
-                }
-                const college = await response.json();
-                document.getElementById('editCollegeName').value = college.Name;
-                document.getElementById('editLocation').value = college.Location;
-                document.getElementById('editFounded').value = college.Founded;
-                document.getElementById('editDescription').value = college.Description;
-                document.getElementById('editLogoURL').value = college.Emblem;
-                document.getElementById('editPictureURL').value = college.ImageURL;
-                const editCollegeModal = new bootstrap.Modal(document.getElementById('editCollegeModal'));
-                editCollegeModal.show();
-            } catch (error) {
-                console.error('Error fetching college:', error);
-            }
-        });
-    });
-    
-    document.getElementById('saveCollegeBtn').addEventListener('click', async function() {
-        const collegeId = document.getElementById('collegeModal').dataset.collegeId;
-        const collegeName = document.getElementById('collegeName').value;
-        const location = document.getElementById('editLocation').value;
-        const founded = document.getElementById('editFounded').value;
-        const description = document.getElementById('editDescription').value;
-        const logoURL = document.getElementById('editLogoURL').value;
-        const pictureURL = document.getElementById('editPictureURL').value;
-        
-        try {
-            const response = await fetch(`/edit-college/${collegeId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: collegeName, location: location, founded: founded, description: description, logoURL: logoURL, pictureURL: pictureURL })
-            });
-            
-            if (!response.ok) {
-                throw new Error('Failed to edit college');
-            }
-            
-            const data = await response.json();
-            console.log(data);
-            fetch('/universities').then(response => response.json()).then(data => renderColleges(data));
-        } catch (error) {
-            console.error('Error editing college:', error);
-        }
-    });*/
 
     document.getElementById('deleteCollegeBtn').addEventListener('click', async function () {
         console.log("here");

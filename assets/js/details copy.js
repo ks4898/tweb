@@ -297,7 +297,7 @@ function renderCollegeDetails(collegeData, teams) {
                 noPlayersMsg.textContent = "This team currently has no members.";
                 noPlayersMsg.style.color = "#F1FDFF";
                 noPlayersMsg.style.textAlign = "center";
-                noPlayersMsg.style.fontSize = "1em";
+                noPlayersMsg.style.fontSize = "1.2em";
                 noPlayersMsg.style.width = "100%";
                 noPlayersMsg.style.margin = "20px 0";
                 

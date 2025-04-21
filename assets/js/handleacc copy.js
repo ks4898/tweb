@@ -47,7 +47,7 @@ document.addEventListener("DOMContentLoaded", function() {
           if (['Admin', 'SuperAdmin', 'CollegeRep'].includes(role)) {
               fragment.appendChild(createLink('/account', 'Management'));
           }
-          /*fragment.appendChild(createLink('#', 'Log Out', 'logoutButton'));*/
+          fragment.appendChild(createLink('#', 'Log Out', 'logoutButton'));
       } else {
           fragment.appendChild(createLink('/signup', 'Account', null, 'account-style'));
       }

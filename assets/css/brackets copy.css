@@ -169,9 +169,9 @@ body {
     content: '';
     position: absolute;
     width: 2px;
-    height: 90px; /* Increased height for better coverage */
+    height: 100px; /* Increased height for better coverage */
     background-color: #134c5b;
-    top: 250px; /* Fixed position from top based on your layout */
+    top: 230px; /* Fixed position from top based on your layout */
     left: 50%;
     transform: translateX(-50%);
     z-index: 1;

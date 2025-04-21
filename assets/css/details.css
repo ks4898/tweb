@@ -116,7 +116,7 @@ hr {
 
 .college-image {
   max-width: 80%;
-  height: auto;
+  min-height: 70%;
   border-radius: 15px;
 }
 
@@ -195,20 +195,26 @@ hr {
   flex-direction: column;
   align-items: center;
   margin: 0 10px 30px;
-  width: calc(20% - 20px); /* Ensures 5 items per row */
-  min-width: 160px; /* Slightly reduced from 180px */
-  max-width: 220px; /* Maximum width for consistency */
+  width: calc(20% - 20px);
+  /* Ensures 5 items per row */
+  min-width: 160px;
+  /* Slightly reduced from 180px */
+  max-width: 220px;
+  /* Maximum width for consistency */
 }
 
 .player-card img {
   width: 100%;
-  aspect-ratio: 1 / 1; /* Forces SQUARE aspect ratio */
-  object-fit: cover; /* CHANGED from 'contain' to 'cover' */
+  aspect-ratio: 1 / 1;
+  /* Forces SQUARE aspect ratio */
+  object-fit: cover;
+  /* CHANGED from 'contain' to 'cover' */
   border-radius: 25px;
   box-shadow: rgba(0, 0, 0, 0.4) 0px 2px 4px,
-              rgba(0, 0, 0, 0.3) 0px 7px 13px -3px,
-              rgba(0, 0, 0, 0.2) 0px -3px 0px inset;
+    rgba(0, 0, 0, 0.3) 0px 7px 13px -3px,
+    rgba(0, 0, 0, 0.2) 0px -3px 0px inset;
 }
+
 .player-card p {
   font-weight: 700;
   font-size: 18px;
@@ -278,6 +284,7 @@ p>a:visited {
   }
 
   .college-header {
+    padding-top: 2rem;
     font-size: 40px;
     line-height: normal;
   }
@@ -321,7 +328,7 @@ p>a:visited {
   .player-card {
     width: calc(50% - 20px);
   }
-  
+
   .player-card img {
     aspect-ratio: 1 / 1;
   }
@@ -340,16 +347,27 @@ p>a:visited {
 @media (max-width: 480px) {
   .college-header {
     flex-direction: column;
+    object-fit: contain;
     align-items: center;
+    justify-content: center;
+    gap: 1rem;
   }
 
   .college-emblem {
-    margin-left: 0;
-    margin-top: 15px;
+    margin-bottom: 1rem;
+    width: 100%;
+    object-fit: contain;
+    align-self: center !important;
+  }
+
+  p.text-center {
+    font-size: 1em !important;
+    object-fit: contain;
   }
 
   .player-card {
-    width: calc(100% - 20px); /* 1 per row */
+    width: calc(100% - 20px);
+    /* 1 per row */
     max-width: 250px;
   }
 

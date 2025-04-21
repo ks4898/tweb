@@ -207,6 +207,8 @@ p.mb-0 {
     padding: 0 40px;
     height: 60px;
     flex-wrap: wrap;
+    contain: layout; /* Prevent layout shifts */
+    transform: translateZ(0); /* GPU acceleration */
 }
 
 .navbar-logo {
@@ -223,6 +225,7 @@ p.mb-0 {
     gap: 25px;
     height: 100%;
     text-shadow: 0.5px 1px black;
+    contain: content; /* Isolate link container */
 }
 
 .nav-link {
@@ -231,11 +234,12 @@ p.mb-0 {
     text-decoration: none;
     text-shadow: 2px 2px 2px black;
     font-size: 1.1rem;
-    transition: all 0.2s ease;
     display: flex;
     align-items: center;
     height: 100%;
     padding: 0 12px;
+    transition: none !important; /* Remove all transitions */
+    will-change: auto !important;
 }
 
 .nav-link[draggable="false"]:active,
@@ -257,12 +261,14 @@ p.mb-0 {
 }
 
 .nav-link.active {
-    background-color: #119DA4 !important;
-    color: #003f4f !important;
-    padding: 10px 12px !important;
+    /*padding: 10px 12px !important;*/
     font-weight: bold;
     text-decoration: none;
     text-shadow: none;
+    animation: none !important;
+    background-color: #119DA4 !important;
+    color: #003f4f !important;
+    transform: translateZ(0); /* Force GPU layer */
 }
 
 .nav-link.account-style {
@@ -394,6 +400,7 @@ input[type="password"]::-ms-clear {
         width: 100%;
         gap: 10px;
         margin-top: 15px;
+        transition: none !important;
     }
     
     .nav-link {

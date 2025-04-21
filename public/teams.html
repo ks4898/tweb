@@ -95,6 +95,9 @@
             aspect-ratio: 1/1;
             background-color: rgba(19, 80, 91, 0.1);
         }
+        @media (max-width: 768px) {
+            
+        }
     </style>
 </head>
 
@@ -134,7 +137,7 @@
                     <button type="submit" class="btn btn-primary w-100">Search</button>
                 </div>
                 <div class="col-md-1">
-                    <button type="submit" class="btn btn-primary w-100">Clear</button>
+                    <button type="button" class="btn btn-primary w-100" onclick="clearSearch()">Clear</button>
                 </div>
             </div>
         </form>
@@ -185,6 +188,18 @@
                 }, 1000);
             }
         });
+        function clearSearch() {
+                // Clear search input
+                const searchInput = document.querySelector('input[name="q"]');
+                searchInput.value = '';
+
+                // Reset select to 'all'
+                const searchBy = document.querySelector('select[name="by"]');
+                searchBy.value = 'all';
+
+                // Submit the form to refresh results
+                document.querySelector('form').submit();
+            }
     </script>
 </body>
 

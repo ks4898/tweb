@@ -197,6 +197,7 @@ async function fetchTeams() {
             throw new Error('Failed to fetch teams: ' + response.statusText);
         }
         const teams = await response.json();
+        console.log(teams);
         renderTeams(teams);
     } catch (error) {
         console.error('Error fetching teams:', error);
@@ -213,8 +214,8 @@ function renderTeams(teams) {
         row.innerHTML = `
             <td>${team.TeamID}</td>
             <td>${team.Name.length > 16 ? team.Name.substring(0, 16) + '...' : team.Name}</td>
-            <td>${team.UniversityID}</td>
-            <td>${team.UniversityName.length > 42 ? team.UniversityName.substring(0, 42) + '...' : team.UniversityName}</td>
+            <td>${(team.UniversityID) || 'N/A'}</td>
+            <td>${(team.UniversityName.length > 42 ? team.UniversityName.substring(0, 42) + '...' : team.UniversityName) || 'N/A'}</td>
             <td>${new Date(team.CreatedDate).toLocaleDateString()}</td>
         `;
         row.addEventListener('click', function () {

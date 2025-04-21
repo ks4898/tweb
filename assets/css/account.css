@@ -1,183 +1,220 @@
-html, section {
-    background-color: #041C20 !important;
-  }
-  
-  /* General Styles */
-  body {
-    font-family: 'Kanit', sans-serif;
-    background-color: #041C20;
-    color: #fff;
-  }
-  
-  /* Container */
-  .container {
-    max-width: 1200px;
-    margin: 0 auto;
-    width: 100%;
-    padding: 0 15px;
-  }
-  
-  /* Admin Box - Fixed spacing between Welcome and Role */
-  #admin-box {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-top: 1rem;
-    padding-bottom: 1rem;
-    width: 100%;
-  }
-  
-  /* Table Containers */
-  .user-table-container,
-  .college-table-container,
-  .team-table-container,
-  .news-table-container {
-    overflow-y: auto;
-    max-height: 300px;
-    margin-top: 20px;
-    border: 1px solid #333;
-    border-radius: 5px;
-    background-color: #1f2d34;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  
-  /* Tables */
-  .user-table,
-  .college-table,
-  .team-table,
-  .news-table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-  
-  .user-table th, 
-  .user-table td,
-  .college-table th,
-  .college-table td,
-  .team-table th,
-  .team-table td,
-  .news-table th,
-  .news-table td {
-    padding: 12px;
-    text-align: left;
-    border-bottom: 1px solid #333;
-  }
-  
-  /* Table Headers - Improved visibility */
-  .user-table th,
-  .college-table th,
-  .team-table th,
-  .news-table th {
-    background-color: #119DA4;
-    color: white;
-    font-weight: bold;
-  }
-  
-  .user-table tbody tr:hover,
-  .college-table tbody tr:hover,
-  .team-table tbody tr:hover,
-  .news-table tbody tr:hover {
-    background-color: #3a4e5c;
-    cursor: pointer;
-  }
-  
-  /* Selected Row Styling - Improved */
-  .selected {
-    background-color: #9EF01A !important;
-    color: #041C20 !important;
-    font-weight: bold;
-    cursor: pointer;
-  }
-  
-  /* Search Bar - Fixed visibility */
-  .search-container {
-    margin-top: 20px;
-    text-align: center;
-  }
-  
-  .search-container input {
-    width: 50%;
-    padding: 10px;
-    background-color: #fff;
-    border: 1px solid #333;
-    color: black;
-    opacity: 1;
-  }
-  
-  /* Section Styling */
-  h1 {
-    color: #9EF01A;
-  }
-  
-  #user-management {
-    padding-top: 0.5rem;
-    padding-bottom: 4rem;
-    border-bottom-style: ridge;
-    border-bottom-width: 15px;
-    border-color: #003f4f;
-  }
-  
-  #college-management {
-    padding-top: 1rem;
-    padding-bottom: 4rem;
-    border-bottom-style: ridge;
-    border-bottom-width: 15px;
-    border-color: #003f4f;
-  }
-  
-  #team-management {
-    padding-top: 1rem;
-    padding-bottom: 4rem;
-    border-bottom-style: ridge;
-    border-bottom-width: 15px;
-    border-color: #003f4f;
-  }
-  
-  #news-management {
-    padding-top: 1rem;
-    padding-bottom: 4rem;
-    border-bottom-style: ridge;
-    border-bottom-width: 15px;
-    border-color: #003f4f;
-  }
+html,
+section {
+  background-color: #041C20 !important;
+}
 
-  .modal-content {
-    background-color: #1f2d34;
-    color: #fff;
-    border-radius: 8px;
+/* General Styles */
+body {
+  font-family: 'Kanit', sans-serif;
+  background-color: #041C20;
+  color: #fff;
+}
+
+/* Container */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 0 15px;
+}
+
+/* Admin Box - Fixed spacing between Welcome and Role */
+#admin-box {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  flex-wrap: wrap;
+  gap: 4rem;
+}
+
+.table-responsive {
+  max-height: 538px !important;
+}
+
+/* Table Containers */
+.user-table-container,
+.college-table-container,
+.team-table-container,
+.news-table-container {
+  max-height: none !important;
+  overflow: visible !important;
+  border: none !important;
+}
+
+/* Tables */
+.user-table,
+.college-table,
+.team-table,
+.news-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.user-table th,
+.user-table td,
+.college-table th,
+.college-table td,
+.team-table th,
+.team-table td,
+.news-table th,
+.news-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #333;
+}
+
+/* Table Headers - Improved visibility */
+.user-table th,
+.college-table th,
+.team-table th,
+.news-table th {
+  background-color: #119DA4;
+  color: white;
+  font-weight: bold;
+}
+
+.user-table tbody tr:hover,
+.college-table tbody tr:hover,
+.team-table tbody tr:hover,
+.news-table tbody tr:hover {
+  background-color: #3a4e5c;
+  cursor: pointer;
+}
+
+/* Selected Row Styling - Improved */
+.selected {
+  background-color: #9EF01A !important;
+  color: #041C20 !important;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* Search Bar - Fixed visibility */
+.search-container {
+  margin: 20px auto;
+  max-width: 600px;
+}
+
+.search-container input {
+  width: 50%;
+  padding: 10px;
+  background-color: #fff;
+  border: 1px solid #333;
+  color: black;
+  opacity: 1;
+}
+
+/* Section Styling */
+h1 {
+  color: #9EF01A;
+}
+
+#user-management {
+  padding-bottom: 4rem;
+  border-bottom-style: ridge;
+  border-bottom-width: 15px;
+  border-color: #003f4f;
+}
+
+#college-management {
+  padding-top: 1rem;
+  padding-bottom: 4rem;
+  border-bottom-style: ridge;
+  border-bottom-width: 15px;
+  border-color: #003f4f;
+}
+
+#team-management {
+  padding-top: 1rem;
+  padding-bottom: 4rem;
+  border-bottom-style: ridge;
+  border-bottom-width: 15px;
+  border-color: #003f4f;
+}
+
+#news-management {
+  padding-top: 1rem;
+  padding-bottom: 4rem;
+  border-bottom-style: ridge;
+  border-bottom-width: 15px;
+  border-color: #003f4f;
+}
+
+#brackets-management {
+  padding-top: 1rem;
+  padding-bottom: 4rem;
+  border-bottom-style: ridge;
+  border-bottom-width: 15px;
+  border-color: #003f4f;
+}
+
+.modal-content {
+  background-color: #1f2d34;
+  color: #fff;
+  border-radius: 8px;
 }
 
 .modal-header {
-    border-bottom: 1px solid #333;
+  border-bottom: 1px solid #333;
 }
 
 .modal-title {
-    color: #9EF01A;
+  color: #9EF01A;
 }
 
 .modal-body {
-    padding: 20px;
+  padding: 20px;
 }
-  
-  /* Responsive Styles */
-  @media (max-width: 768px) {
-    .search-container input {
-      width: 80%;
-    }
-    
-    .user-table-container,
-    .college-table-container,
-    .team-table-container,
-    .news-table-container {
-      max-height: 200px;
-    }
+
+/* Add to existing CSS */
+#editBracketSelectSemiFinal {
+  transition: opacity 0.3s ease;
+}
+
+#editBracketSelectSemiFinal:disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+
+/* Responsive Styles */
+
+@media (max-width: 1400px) {
+  #user-management {
+    margin-top: 2rem;
+  }
+}
+
+@media (max-width: 815px) {
+  #admin-box {
+    flex-direction: column;
+    gap: 1rem;
   }
   
-  @media (max-width: 1100px) {
-    #admin-box {
-      flex-direction: column;
-      align-items: center;
-      gap: 0.5rem;
-    }
-  }  
+}
+
+@media (max-width: 768px) {
+  #admin-box {
+    margin-top: 2rem;
+  }
+
+  .search-container input {
+    width: 80%;
+    margin-bottom: 10px;
+  }
+
+  .btn-group {
+    width: fit-content;
+  }
+
+  .btn {
+    width: auto;
+  }
+
+  .table-responsive {
+    max-height: 200px;
+  }
+
+}

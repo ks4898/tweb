@@ -148,6 +148,30 @@ app.get('/teams', async (req, res) => {
         const searchQuery = req.query.q || '';
         const searchBy = req.query.by || 'all';
 
+        let whereClause = '';
+        let params = [];
+
+        if (searchQuery) {
+            switch (searchBy) {
+                case 'name':
+                    whereClause = 'WHERE t.Name LIKE ?';
+                    params.push(`%${searchQuery}%`);
+                    break;
+
+                case 'college':
+                    // Only show teams with matching university (exclude unaffiliated)
+                    whereClause = 'WHERE u.Name LIKE ?';
+                    params.push(`%${searchQuery}%`);
+                    break;
+
+                case 'all':
+                    // Show teams where name OR university matches (unaffiliated only via name)
+                    whereClause = 'WHERE (t.Name LIKE ? OR u.Name LIKE ?)';
+                    params.push(`%${searchQuery}%`, `%${searchQuery}%`);
+                    break;
+            }
+        }
+
         const [teams] = await db.promise().execute(`
             SELECT 
                 t.TeamID, 
@@ -157,9 +181,9 @@ app.get('/teams', async (req, res) => {
                 u.ImageURL AS UniversityImage
             FROM Teams t
             LEFT JOIN University u ON t.UniversityID = u.UniversityID
-            ${searchQuery ? `WHERE ${searchBy === 'name' ? 't.Name' : 'u.Name'} LIKE ?` : ''}
+            ${whereClause}
             ORDER BY t.Name
-        `, searchQuery ? [`%${searchQuery}%`] : []);
+        `, params);
 
         const teamsHtml = teams.map(team => `
             <div class="col-md-4 mb-4">
@@ -177,7 +201,7 @@ app.get('/teams', async (req, res) => {
                     <!-- Team Info -->
                     <div class="card-body d-flex flex-column justify-content-center">
                         <h5 class="card-title">${team.Name}</h5>
-                        <p class="text-muted mb-3">From ${team.UniversityName}</p>
+                        <p class="text-muted mb-3">From ${team.UniversityName || ' New World'}</p>
                         <a href="/teams/${encodeURIComponent(team.Name)}" class="btn btn-primary mt-auto">View Team</a>
                     </div>
                 </div>
@@ -222,24 +246,24 @@ app.get('/brackets', async (req, res) => {
             </div>
         `;
 
-        // fetch matches for the selected tournament
+        // fetch matches
         const [matches] = await db.promise().execute(`
-            SELECT 
-                m.MatchID, m.RoundNumber, m.MatchDate,
-                m.Team1ID, m.Team2ID, m.ScoreTeam1, m.ScoreTeam2, m.WinnerID,
-                t1.Name AS Team1Name, t2.Name AS Team2Name, 
-                wt.Name AS WinnerName
-            FROM Matches m
-            LEFT JOIN Teams t1 ON m.Team1ID = t1.TeamID
-            LEFT JOIN Teams t2 ON m.Team2ID = t2.TeamID
-            LEFT JOIN Teams wt ON m.WinnerID = wt.TeamID
-            WHERE m.TournamentID = ? AND m.RoundNumber BETWEEN 3 AND 4
-            ORDER BY m.RoundNumber, m.MatchDate
-        `, [tournamentId]);
+    SELECT 
+        m.MatchID, m.RoundNumber, m.MatchDate,
+        m.Team1ID, m.Team2ID, m.ScoreTeam1, m.ScoreTeam2, m.WinnerID,
+        t1.Name AS Team1Name, t2.Name AS Team2Name, 
+        wt.Name AS WinnerName
+    FROM Matches m
+    LEFT JOIN Teams t1 ON m.Team1ID = t1.TeamID
+    LEFT JOIN Teams t2 ON m.Team2ID = t2.TeamID
+    LEFT JOIN Teams wt ON m.WinnerID = wt.TeamID
+    WHERE m.TournamentID = ? AND m.RoundNumber BETWEEN 2 AND 3
+    ORDER BY m.RoundNumber DESC, m.MatchDate
+`, [tournamentId]);
 
-        // organize matches by round
-        const semifinalMatches = matches.filter(m => m.RoundNumber === 3);
-        const finalMatch = matches.find(m => m.RoundNumber === 4);
+        // Update round filtering logic
+        const semifinalMatches = matches.filter(m => m.RoundNumber === 2);
+        const finalMatch = matches.find(m => m.RoundNumber === 3);
 
         // generate HTML for semifinals
         const semifinalHtml = semifinalMatches.map((m, index) =>
@@ -737,11 +761,11 @@ app.post("/add-college", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
 
 
 // edit college endpoint
-app.put("/edit-college/:collegeId", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
-    const { name, location, founded, description, logoURL, pictureURL } = req.body;
+app.put("/edit-college/:collegeId", verifyRole(["CollegeRep","SuperAdmin", "Admin"]), (req, res) => {
+    const { name, location, founded, description, logoURL, pictureURL, hasPage } = req.body;
     const collegeId = req.params.collegeId;
 
-    db.execute("UPDATE University SET Name = ?, Location = ?, Founded = ?, Emblem = ?, ImageURL = ?, Description = ? WHERE UniversityID = ?", [name, location, founded, logoURL, pictureURL, description, collegeId], (err, result) => {
+    db.execute("UPDATE University SET Name = ?, Location = ?, Founded = ?, Emblem = ?, ImageURL = ?, Description = ?, HasPage = ? WHERE UniversityID = ?", [name, location, founded, logoURL, pictureURL, description, hasPage, collegeId], (err, result) => {
         if (err) return res.status(500).json({ message: "Database error. Please try again later." });
 
         res.json({ message: "College updated successfully!" });
@@ -761,9 +785,15 @@ app.delete("/delete-college/:collegeId", verifyRole(["SuperAdmin", "Admin"]), (r
 // fetch all teams endpoint
 app.get("/api/teams", (req, res) => {
     db.execute(`
-        SELECT t.TeamID, t.Name, t.UniversityID, u.Name AS UniversityName, t.CreatedDate
+        SELECT 
+            t.TeamID, 
+            t.Name,
+            t.UniversityID,
+            COALESCE(u.Name, 'N/A') AS UniversityName,
+            t.CreatedDate
         FROM Teams t
-        JOIN University u ON t.UniversityID = u.UniversityID
+        LEFT JOIN University u 
+            ON t.UniversityID = u.UniversityID
     `, (err, results) => {
         if (err) {
             console.error(err);
@@ -965,10 +995,9 @@ app.get('/teams/:teamName', async (req, res) => {
             WHERE t.Name = ?
         `, [teamName]);
 
-        if (!team[0]) res.redirect("/teams"); //res.status(404).send('Team not found');
+        if (!team[0]) res.redirect("/teams");
 
         let isMember = false;
-
         // check membership only if user is logged in
         if (userId) {
             [isMember] = await db.promise().execute(`
@@ -990,7 +1019,7 @@ app.get('/teams/:teamName', async (req, res) => {
 
         // check if the team has members and create appropriate content
         let teamMembersHTML;
-        if (players.length === 0) {
+        if (players[0] == "" || players.length === 0) {
             teamMembersHTML = `
                 <li class="list-group-item text-center">
                     <p class="mb-0 text-muted">This team currently has no members.</p>
@@ -1008,9 +1037,9 @@ app.get('/teams/:teamName', async (req, res) => {
         // build template
         const html = (await fs.promises.readFile('public/team.html', 'utf8'))
             .replace(/{{TEAM_NAME}}/g, team[0].Name)
-            .replace(/{{TEAM_IMAGE}}/g, team[0].ImageURL || team[0].UniversityEmblem)
+            .replace(/{{TEAM_IMAGE}}/g, team[0].ImageURL || team[0].UniversityEmblem || '/media/img/placeholder-250x250.png')
             .replace(/{{TEAM_DESCRIPTION}}/g, team[0].Description || 'No description available.')
-            .replace(/{{UNIVERSITY_NAME}}/g, team[0].UniversityName)
+            .replace(/{{UNIVERSITY_NAME}}/g, team[0].UniversityName || 'New World')
             .replace(/{{UNIVERSITY_IMAGE}}/g, team[0].UniversityImage || '/media/img/new-world.jpg')
             .replace('{{EDIT_BUTTON}}', isMember.length ? `
                 <div class="mt-0 text-end p-1">
@@ -2200,6 +2229,183 @@ app.get('/api/reports/tournament-status', (req, res) => {
         res.json(results);
     });
 });
+
+// Get single match details
+app.get('/match/:id', async (req, res) => {
+    try {
+        const [match] = await db.promise().execute(`
+            SELECT m.*, t1.Name AS Team1Name, t2.Name AS Team2Name
+            FROM Matches m
+            LEFT JOIN Teams t1 ON m.Team1ID = t1.TeamID
+            LEFT JOIN Teams t2 ON m.Team2ID = t2.TeamID
+            WHERE m.MatchID = ?
+        `, [req.params.id]);
+
+        res.json(match[0]);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// update match endpoint
+app.put('/match/:id', verifyRole(['Admin', 'SuperAdmin']), async (req, res) => {
+    try {
+        const { ScoreTeam1, ScoreTeam2, WinnerID, MatchDate } = req.body;
+
+        await db.promise().execute(`
+            UPDATE Matches 
+            SET ScoreTeam1 = ?, ScoreTeam2 = ?, WinnerID = ?, MatchDate = ?
+            WHERE MatchID = ?
+        `, [ScoreTeam1, ScoreTeam2, WinnerID, MatchDate, req.params.id]);
+
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get matches with round filter
+/*app.get('/matches', async (req, res) => {
+    try {
+        const { tournamentId, rounds } = req.query;
+        const roundNumbers = rounds ? rounds.split(',').map(Number) : [2, 3];
+
+        const [matches] = await db.promise().execute(`
+                SELECT m.*, t1.Name AS Team1Name, t2.Name AS Team2Name
+                FROM Matches m
+                LEFT JOIN Teams t1 ON m.Team1ID = t1.TeamID
+                LEFT JOIN Teams t2 ON m.Team2ID = t2.TeamID
+                WHERE m.TournamentID = ? AND m.RoundNumber IN (?)
+                ORDER BY m.RoundNumber, m.MatchDate
+            `, [tournamentId, roundNumbers]);
+
+        res.json(matches);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});*/
+
+app.get('/matches', async (req, res) => {
+    try {
+        const { tournamentId, rounds } = req.query;
+        const roundNumbers = rounds ? rounds.split(',').map(Number) : [2, 3];
+
+        // Create dynamic placeholders for IN clause
+        const placeholders = roundNumbers.map(() => '?').join(',');
+
+        const [matches] = await db.promise().execute(`
+            SELECT m.*, t1.Name AS Team1Name, t2.Name AS Team2Name
+            FROM Matches m
+            LEFT JOIN Teams t1 ON m.Team1ID = t1.TeamID
+            LEFT JOIN Teams t2 ON m.Team2ID = t2.TeamID
+            WHERE m.TournamentID = ? 
+            AND m.RoundNumber IN (${placeholders})
+            ORDER BY m.RoundNumber, m.MatchDate
+        `, [tournamentId, ...roundNumbers]); // Spread operator for multiple values
+
+        res.json(matches);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+
+// Create new match endpoint
+app.post('/matches', verifyRole(['Admin', 'SuperAdmin']), async (req, res) => {
+    try {
+        const { TournamentID, RoundNumber, Team1ID, Team2ID, MatchDate, ScoreTeam1, ScoreTeam2, WinnerID, Status } = req.body;
+
+        const [result] = await db.promise().execute(`
+            INSERT INTO Matches 
+            (TournamentID, RoundNumber, Team1ID, Team2ID, MatchDate, ScoreTeam1, ScoreTeam2, WinnerID, Status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [TournamentID, RoundNumber, Team1ID, Team2ID, MatchDate, ScoreTeam1, ScoreTeam2, WinnerID, Status]);
+
+        res.json({ success: true, matchId: result.insertId });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// get single tournament by ID endpoint
+app.get('/tournament/:id', (req, res) => {
+    const tournamentId = req.params.id;
+
+    db.execute(
+        `SELECT * FROM Tournaments 
+         WHERE TournamentID = ?`,
+        [tournamentId],
+        (err, results) => {
+            if (err) {
+                console.error('Database error:', err);
+                return res.status(500).json({ error: 'Failed to fetch tournament' });
+            }
+            if (results.length === 0) {
+                return res.status(404).json({ error: 'Tournament not found' });
+            }
+            res.json(results[0]);
+        }
+    );
+});
+
+// Delete all bracket matches for tournament
+app.delete('/tournament/:id/brackets', verifyRole(['Admin', 'SuperAdmin']), async (req, res) => {
+    try {
+        await db.promise().execute(`
+            DELETE FROM Matches 
+            WHERE TournamentID = ? AND RoundNumber IN (2, 3)
+        `, [req.params.id]);
+
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Exact team search endpoint
+app.get('/team/exact', async (req, res) => {
+    try {
+        const [team] = await db.promise().execute(
+            'SELECT TeamID FROM Teams WHERE Name = ? LIMIT 1',
+            [req.query.name]
+        );
+        res.json(team[0] || null);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Create team
+app.post('/teams', verifyRole(['Admin', 'SuperAdmin']), async (req, res) => {
+    try {
+        const { Name } = req.body;
+        const [result] = await db.promise().execute(
+            'INSERT INTO Teams (Name) VALUES (?)',
+            [Name]
+        );
+        res.json({ TeamID: result.insertId });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get matches by round
+app.get('/matches', async (req, res) => {
+    try {
+        const { tournamentId, rounds } = req.query;
+        const [matches] = await db.promise().execute(
+            `SELECT * FROM Matches 
+            WHERE TournamentID = ? AND RoundNumber = ?
+            ORDER BY MatchDate`,
+            [tournamentId, rounds]
+        );
+        res.json(matches);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+
 
 app.use((req, res, next) => {
     res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));

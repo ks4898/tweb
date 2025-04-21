@@ -241,6 +241,8 @@ INSERT INTO Matches (TournamentID, Team1ID, Team2ID, MatchDate, RoundNumber, Sco
 (2, 3, 6, '2025-06-16 15:30:00', 1, 0, 0, NULL, 'Planned'),
 (2, 1, 4, '2025-06-17 13:00:00', 1, 0, 0, NULL, 'Planned');
 
+SELECT * FROM Matches;
+
 -- Sample payments
 /*INSERT INTO Payments (TeamID, TournamentID, Amount, Status, PaymentMethod, TransactionID) VALUES
 (1, 1, 50.00, 'Completed', 'CreditCard', 'txn_1234567890'),

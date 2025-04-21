@@ -184,11 +184,11 @@ html {
 
     .date-range input[type="date"] {
         max-width: 100%;
-        width: 100%;
+        width: auto;
     }
 
     .date-range .btn-primary {
         margin-left: 0;
-        width: 100%;
+        width: auto;
     }
 }
