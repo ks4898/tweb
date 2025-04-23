@@ -9,6 +9,12 @@ const errorHandler = require('./assets/js/errorhandler'); // error handling
 const Stripe = require('stripe');
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 const fs = require('fs');
+const multer = require('multer');
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, 'public/uploads/'),
+    filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
+});
+const upload = multer({ storage });
 
 const VALID_ROLES = ["User", "Player", "CollegeRep", "Moderator", "Admin", "SuperAdmin"]; // list of all valid roles
 
@@ -67,7 +73,13 @@ function preventDirectAccess(req, res, next) {
         /^\/player($|\?|\/)/,
         /^\/api\/reports\/college-signups($|\?|\/)/,
         /^\/api\/reports\/tournament-status($|\?|\/)/,
-        /^\/news-articles($|\?|\/)/
+        /^\/news-articles($|\?|\/)/,
+        /^\/matches($|\?|\/)/,
+        /^\/match($|\?|\/)/,
+        /^\/tournament($|\?|\/)/,
+        /^\/api\/tournaments($|\?|\/)/,
+        /^\/api\/matches($|\?|\/)/,
+        /^\/tournaments($|\?|\/)/
     ];
 
     // check if this path matches any protected pattern
@@ -113,7 +125,14 @@ app.use(session({
     }
 }));
 
-// ======================== SERVE PAGES & SESSION CHECKING ========================
+// ======================== QUICK UPLOAD, SERVE PAGES & SESSION CHECKING ========================
+
+// quick upload
+app.post('/quick-upload', upload.single('file'), (req, res) => {
+    res.json({
+        filePath: `/uploads/${req.file.filename}`
+    });
+});
 
 // serve home page endpoint
 app.get("/", (req, res) => {
@@ -128,12 +147,17 @@ app.get("/about", (req, res) => {
 });
 
 // serve reports page endpoint
-app.get("/reports", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
+app.get("/reports", verifyRole(["SuperAdmin", "Admin", "CollegeRep", "Moderator"]), (req, res) => {
     res.sendFile(path.join(__dirname, "public", "reports.html"));
 });
 
-// serve account page endpoint  |  maybe use same route to transfer to profile page if not staff?
-app.get("/account", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
+// serve reports page endpoint
+app.get("/analytics", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "analytics.html"));
+});
+
+// serve account page endpoint 
+app.get("/account", verifyRole(["SuperAdmin", "Admin", "Moderator", "CollegeRep"]), (req, res) => {
     res.sendFile(path.join(__dirname, "public", "account.html"));
 });
 
@@ -365,19 +389,27 @@ app.get("/details", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "details.html"));
 });
 
+// serve profile page endpoint
+app.get('/profile', verifyRole(["User", "Player", "Moderator", "CollegeRep", "Admin", "SuperAdmin"]), (req, res) => {
+    if (!req.session.userId) return res.redirect('/login');
+
+    res.sendFile(path.join(__dirname, "public", "profile.html"));
+});
+
+
 // serve payment page endpoint
 app.get("/payment", verifyRole(["Player"]), (req, res) => {
     const registrationId = req.query.registrationId;
 
     if (!req.session.userId) {
-        return res.redirect('/login?redirect=/payment');
+        return res.redirect('/login');
     }
 
     if (!registrationId) {
         return res.redirect('/');
     }
 
-    // Check if this payment is for a valid registration by this user
+    // check if this payment is for a valid registration by this user
     db.execute(`
         SELECT r.Status, p.PaymentID 
         FROM Registrations r
@@ -390,16 +422,17 @@ app.get("/payment", verifyRole(["Player"]), (req, res) => {
         }
 
         if (results.length === 0) {
-            // Either the registration doesn't exist, doesn't belong to this user,
+            // either the registration doesn't exist, doesn't belong to this user,
             // or the user is not a verified student
             return res.redirect('/');
         }
 
-        // User is authorized to access the payment page
+        // user is authorized to access the payment page
         res.sendFile(path.join(__dirname, "public", "payment.html"));
     });
 });
 
+// serve successful tournament sign up endpoint
 app.get('/payment-success', verifyRole(["Player"]), (req, res) => {
     const paymentIntentId = req.query.payment_intent;
     const registrationId = req.query.registration_id;
@@ -430,18 +463,18 @@ app.get('/payment-success', verifyRole(["Player"]), (req, res) => {
         }
 
         if (results.length === 0) {
-            // Either the payment doesn't exist, doesn't belong to this user,
+            // either the payment doesn't exist, doesn't belong to this user,
             // or hasn't been completed
             return res.redirect('/');
         }
 
-        // Check if the success page has already been viewed
+        // check if the success page has already been viewed
         if (results[0].SuccessPageViewed) {
             console.log("Payment success page already viewed for payment ID:", registrationId);
             return res.redirect('/schedules'); // Redirect to schedules or another appropriate page
         }
 
-        // Mark this payment as viewed in the success page to prevent multiple views
+        // mark this payment as viewed in the success page to prevent multiple views
         db.execute(`
         UPDATE Payments 
         SET SuccessPageViewed = TRUE 
@@ -451,8 +484,8 @@ app.get('/payment-success', verifyRole(["Player"]), (req, res) => {
                 console.error("Error updating payment record:", updateErr);
             }
 
-            // Render a dynamic success page with transaction details
-            // This is more secure than serving a static HTML file
+            // render a dynamic success page with transaction details
+            // more secure than serving a static HTML file
             res.send(`
           <!DOCTYPE html>
 <html lang="en">
@@ -530,10 +563,10 @@ app.get("/news", (req, res) => {
 
 // serve tournament register page endpoint
 app.get("/tournament-register", (req, res) => {
-    // Check if user is logged in
+    // check if user is logged in
     if (!req.session.userId) {
-        // Not logged in, redirect to login page with return URL
-        return res.redirect('/login?redirect=/tournament-register');
+        // not logged in, redirect to login
+        return res.redirect('/login');
     } else {
         res.sendFile(path.join(__dirname, "public", "tournament-register.html"));
     }
@@ -559,11 +592,6 @@ app.get("/signup", (req, res) => {
         }
     }
     res.sendFile(path.join(__dirname, "public", "signup.html")); // not logged in, redirect to sign up page
-});
-
-// serve reports page endpoint
-app.get("/reports", (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "reports.html"));
 });
 
 // session check endpoint
@@ -697,7 +725,7 @@ app.get("/universities", (req, res) => {
 });
 
 // get all or search colleges endpoint
-app.get("/fetchColleges", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
+app.get("/fetchColleges", (req, res) => {
     const searchTerm = req.query.search;
     let query = "SELECT UniversityID, Name, Location, Founded, Description, Emblem, ImageURL FROM University";
     let params = [];
@@ -715,7 +743,7 @@ app.get("/fetchColleges", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
 });
 
 // fetch college by id or name endpoint
-app.get("/university", (req, res) => {
+app.get("/university", verifyRole(["Admin", "SuperAdmin", "Moderator", "CollegeRep"]), (req, res) => {
     const { name, id } = req.query;
 
     if (!name && !id) {
@@ -751,7 +779,7 @@ function handleResponse(err, results, res) {
 }
 
 // add college endpoint
-app.post("/add-college", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
+app.post("/add-college", verifyRole(["SuperAdmin", "Admin", "CollegeRep"]), (req, res) => {
     const { name, location, founded, description, logoURL, pictureURL } = req.body;
     db.execute("INSERT INTO University (Name, Location, Founded, Emblem, ImageURL, Description) VALUES (?, ?, ?, ?, ?, ?)", [name, location, founded, logoURL, pictureURL, description], (err, result) => {
         if (err) return res.status(500).json({ message: "Database error. Please try again later." });
@@ -761,7 +789,7 @@ app.post("/add-college", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
 
 
 // edit college endpoint
-app.put("/edit-college/:collegeId", verifyRole(["CollegeRep","SuperAdmin", "Admin"]), (req, res) => {
+app.put("/edit-college/:collegeId", verifyRole(["SuperAdmin", "Admin", "CollegeRep"]), (req, res) => {
     const { name, location, founded, description, logoURL, pictureURL, hasPage } = req.body;
     const collegeId = req.params.collegeId;
 
@@ -773,7 +801,7 @@ app.put("/edit-college/:collegeId", verifyRole(["CollegeRep","SuperAdmin", "Admi
 });
 
 // delete college endpoint
-app.delete("/delete-college/:collegeId", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
+app.delete("/delete-college/:collegeId", verifyRole(["SuperAdmin", "Admin", "CollegeRep"]), (req, res) => {
     const collegeId = req.params.collegeId;
     db.execute("DELETE FROM University WHERE UniversityID = ?", [collegeId], (err, result) => {
         if (err) return res.status(500).json({ message: "Database error. Please try again later." });
@@ -824,7 +852,7 @@ app.get("/teams-for-college", (req, res) => {
 });
 
 // add team endpoint
-app.post("/add-team", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
+app.post("/add-team", verifyRole(["SuperAdmin", "Admin", "CollegeRep"]), (req, res) => {
     const { name, universityId } = req.body;
     const desc = "";
     // add validation logging
@@ -875,7 +903,7 @@ app.post("/add-team", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
 });
 
 // edit team endpoint
-app.put("/edit-team/:teamId", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
+app.put("/edit-team/:teamId", verifyRole(["SuperAdmin", "Admin", "CollegeRep"]), (req, res) => {
     const { name, universityId, newLeaderId, memberToDeleteId } = req.body;
     const teamId = req.params.teamId;
 
@@ -913,7 +941,7 @@ app.put("/edit-team/:teamId", verifyRole(["SuperAdmin", "Admin"]), (req, res) =>
 });
 
 // delete team endpoint
-app.delete("/delete-team/:teamId", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
+app.delete("/delete-team/:teamId", verifyRole(["SuperAdmin", "Admin", "CollegeRep"]), (req, res) => {
     const teamId = req.params.teamId;
     db.execute("DELETE FROM Teams WHERE TeamID = ?", [teamId], (err, result) => {
         if (err) return res.status(500).json({ message: "Database error. Please try again later." });
@@ -1146,25 +1174,6 @@ app.post('/teams/:teamId/update', async function (req, res) {
 
 // ======================== TOURNAMENT MANAGEMENT ========================
 
-// sign up for a tournament endpoint  || NEEDS UPDATE !
-app.post("/signup-tournament", (req, res) => {
-    const { tournamentId, teamId } = req.body;
-    const userId = req.session.userId;
-
-    db.execute("SELECT TeamID FROM Users WHERE UserID = ?", [userId], (err, results) => {
-        if (err) return res.status(500).json({ message: "Database error. Please try again later." });
-
-        if (results[0]?.TeamID && !teamId) {
-            return res.status(400).json({ message: "You are in a team and must sign up as a team. Please retry." });
-        }
-
-        db.execute("INSERT INTO Registrations (UserID, TournamentID, TeamID) VALUES (?, ?, ?)", [userId, tournamentId, teamId || null], (err, result) => {
-            if (err) return res.status(500).json({ message: "Database error. Please try again later." });
-
-            res.status(201).json({ message: "Successfully signed up for the tournament! Good luck!" });
-        });
-    });
-});
 
 // cancel tournament sign up endpoint (only for the creator of the team)
 app.delete("/cancel-tournament-signup/:tournamentId", (req, res) => {
@@ -1207,7 +1216,7 @@ app.delete("/cancel-tournament-signup/:tournamentId", (req, res) => {
     );
 });
 
-// leave a team endpoint  ||  NEEDS TO CHECK IF LEADER AND IF LEADER CAN BE ASSIGNED, AND DELETE TEAM IF LAST MEMBER !
+// leave a team endpoint  ||  DEPRECATED !!
 app.delete("/leave-team", verifyRole(["Player"]), (req, res) => {
     const userId = req.session.userId;
 
@@ -1218,20 +1227,9 @@ app.delete("/leave-team", verifyRole(["Player"]), (req, res) => {
     });
 });
 
-// create a tournament endpoint
-app.post("/add-tournament", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
-    const { name, startDate, location } = req.body;
-
-    db.execute("INSERT INTO Tournaments (TournamentName, StartDate, Location) VALUES (?, ?, ?)", [name, startDate, location], (err, result) => {
-        if (err) return res.status(500).json({ message: "Database error." });
-
-        res.status(201).json({ message: "Tournament created successfully!" });
-    });
-});
-
 // ======================== TOURNAMENT EXECUTION MANAGEMENT ========================
 
-// fetch schedules route endpoint  || NEEDS UPDATE !
+// fetch schedules route endpoint  || DEPRECATED !!
 app.get("/schedules", (req, res) => {
     const limit = req.query.limit || 6; // default limit
     const offset = req.query.offset || 1; // default offset
@@ -1286,7 +1284,7 @@ app.post("/post-results", verifyRole(["SuperAdmin", "Admin"]), async (req, res) 
 });
 
 
-// ======================== REPORT GENERATION ========================  ||  NEEDS UPDATE !
+// ======================== REPORT GENERATION ========================  ||  REMOVED
 
 app.get("/generate-report", verifyRole(["SuperAdmin", "Admin"]), async (req, res) => {
     db.execute(
@@ -1399,7 +1397,7 @@ app.get("/user/:userId", verifyRole(["SuperAdmin", "Admin"]), async (req, res) =
         }
         res.json(user[0]);
     } catch (error) {
-        console.error("Error fetching user:", error);
+        console.error("Error fetching user:", error); /user/
         res.status(500).json({ message: "Internal server error" });
     }
 });
@@ -1732,31 +1730,6 @@ app.post('/create-payment-intent', async (req, res) => {
     }
 });
 
-
-
-/*// payment confirmation endpoint
-app.post('/confirm-payment', verifyRole(["Player"]), async (req, res) => {
-    try {
-        const { paymentIntentId } = req.body;
-        const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-
-        if (paymentIntent.status !== 'succeeded') {
-            return res.status(400).json({ error: 'Payment not completed' });
-        }
-
-        // ue TRUE for boolean column
-        await db.execute(
-            'UPDATE Players SET PayedFee = TRUE WHERE UserID = ?',
-            [paymentIntent.metadata.userId]
-        );
-
-        res.json({ success: true });
-    } catch (error) {
-        console.error('Payment confirmation error:', error);
-        res.status(500).json({ error: 'Payment verification failed' });
-    }
-});*/
-
 // Route to serve Stripe publishable key
 app.get('/stripe-key', (req, res) => {
     if (!req.session.userId) {
@@ -1875,7 +1848,29 @@ app.get("/tournaments", (req, res) => {
     });
 });
 
-// Tournament signup endpoint
+// fetch all tournaments
+app.get('/api/tournaments/brackets', async (req, res) => {
+    try {
+        const searchTerm = req.query.q || '';
+        let query = `SELECT * FROM Tournaments`;
+        let params = [];
+
+        if (searchTerm) {
+            query += ' WHERE Name LIKE ?';
+            params.push(`%${searchTerm}%`);
+        }
+
+        query += ' ORDER BY StartDate DESC';
+
+        const [tournaments] = await db.promise().execute(query, params);
+        res.json(tournaments);
+    } catch (error) {
+        console.error('Error fetching tournaments:', error);
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
+
 app.post("/tournament-signup", (req, res) => {
     const userId = req.session.userId;
     const { tournamentId, teamId, newTeamName, collegeId, message } = req.body;
@@ -2040,7 +2035,7 @@ app.post("/tournament-signup", (req, res) => {
             res.json({
                 success: true,
                 message: "Registration initiated successfully",
-                registrationId: paymentResult.insertId
+                registrationId: regResult.insertId
             });
 
         } catch (error) {
@@ -2089,7 +2084,7 @@ app.get('/news-articles', async (req, res) => {
 });
 
 // create a news article endpoint
-app.post('/create-news', verifyRole(['Admin', 'SuperAdmin']), async (req, res) => {
+app.post('/create-news', verifyRole(['SuperAdmin', 'Admin', 'Moderator']), async (req, res) => {
     const { Author, Title, ImageURL, Content } = req.body;
     try {
         const [result] = await db.promise().execute(
@@ -2104,7 +2099,7 @@ app.post('/create-news', verifyRole(['Admin', 'SuperAdmin']), async (req, res) =
 });
 
 // update a news article endpoint
-app.put('/update-news/:PostID', verifyRole(['Admin', 'SuperAdmin']), async (req, res) => {
+app.put('/update-news/:PostID', verifyRole(['SuperAdmin', 'Admin', 'Moderator']), async (req, res) => {
     const { PostID } = req.params;
     const { Title, ImageURL, Content } = req.body;
     try {
@@ -2120,7 +2115,7 @@ app.put('/update-news/:PostID', verifyRole(['Admin', 'SuperAdmin']), async (req,
 });
 
 // delete a news article endpoint
-app.delete('/delete-news/:PostID', verifyRole(['Admin', 'SuperAdmin']), async (req, res) => {
+app.delete('/delete-news/:PostID', verifyRole(['SuperAdmin', 'Admin', 'Moderator']), async (req, res) => {
     const { PostID } = req.params;
     try {
         await db.promise().execute('DELETE FROM Posts WHERE PostID = ?', [PostID]);
@@ -2129,24 +2124,6 @@ app.delete('/delete-news/:PostID', verifyRole(['Admin', 'SuperAdmin']), async (r
         console.error('Error deleting news article:', error);
         res.status(500).json({ message: 'Error deleting news article' });
     }
-});
-
-// create match endpoint
-app.post("/api/matches", (req, res) => {
-    const { tournamentID, team1ID, team2ID, matchDate, scoreTeam1, scoreTeam2 } = req.body;
-
-    const query = `
-        INSERT INTO Matches (TournamentID, Team1ID, Team2ID, MatchDate, ScoreTeam1, ScoreTeam2)
-        VALUES (?, ?, ?, ?, ?, ?)
-    `;
-
-    db.query(query, [tournamentID, team1ID, team2ID, matchDate, scoreTeam1, scoreTeam2], (err, result) => {
-        if (err) {
-            console.error("Error inserting match:", err);
-            return res.status(500).json({ error: "Database error" });
-        }
-        res.status(200).json({ message: "Match inserted", matchID: result.insertId });
-    });
 });
 
 // fetch teams by name endpoint
@@ -2163,74 +2140,107 @@ app.get("/api/teams", (req, res) => {
 
 // college signup report endpoint
 app.get('/api/reports/college-signups', (req, res) => {
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, sort } = req.query;
 
-    // create a query with proper date handling
+    const validSortColumns = {
+        date: 'u.DateAdded',
+        name: 'u.Name',
+        country: 'u.Location',
+        teams: 'teamCount',
+        members: 'memberCount',
+        moderator: 'hasModerator',
+        page: 'u.HasPage'
+    };
+
     const query = `
-      SELECT 
-        DATE(u.DateAdded) AS DateAdded,
-        u.Name AS collegeName,
-        u.Location AS country,
-        COUNT(DISTINCT t.TeamID) AS teamCount,
-        COUNT(DISTINCT p.PlayerID) AS memberCount,
-        EXISTS(SELECT 1 FROM CollegeModerators WHERE UniversityID = u.UniversityID) AS hasModerator,
-        u.HasPage
-      FROM University u
-      LEFT JOIN Teams t ON u.UniversityID = t.UniversityID
-      LEFT JOIN Players p ON t.TeamID = p.TeamID
-      WHERE (? IS NULL OR ? = '' OR DATE(u.DateAdded) >= DATE(?))
-        AND (? IS NULL OR ? = '' OR DATE(u.DateAdded) <= DATE(?))
-      GROUP BY u.UniversityID
-      ORDER BY u.DateAdded DESC
+        SELECT 
+            DATE(u.DateAdded) AS DateAdded,
+            u.Name AS collegeName,
+            u.Location AS country,
+            COUNT(DISTINCT t.TeamID) AS teamCount,
+            COUNT(DISTINCT p.PlayerID) AS memberCount,
+            EXISTS(SELECT 1 FROM CollegeReps WHERE UniversityID = u.UniversityID) AS hasModerator,
+            u.HasPage
+        FROM University u
+        LEFT JOIN Teams t ON u.UniversityID = t.UniversityID
+        LEFT JOIN Players p ON t.TeamID = p.TeamID
+        WHERE 
+            (DATE(u.DateAdded) >= ? OR ? IS NULL) AND
+            (DATE(u.DateAdded) <= ? OR ? IS NULL)
+        GROUP BY u.UniversityID
+        ORDER BY ${validSortColumns[sort] || 'u.DateAdded'} DESC
     `;
 
-    // use parameters twice to handle the OR conditions
+    // pass parameters twice for each placeholder
     db.execute(query, [
-        startDate, startDate, startDate,
-        endDate, endDate, endDate
+        startDate || null, startDate || null,
+        endDate || null, endDate || null
     ], (err, results) => {
-        if (err) {
-            console.error('Database error:', err);
-            return res.status(500).json({ error: err.message });
-        }
-        res.json(results);
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(results.map(row => ({
+            ...row,
+            hasModerator: Boolean(row.hasModerator),
+            HasPage: Boolean(row.HasPage),
+            country: row.country.includes(',') ?
+                row.country.split(',').pop().trim() :
+                row.country
+        })));
     });
 });
 
 // tournament status report endpoint
 app.get('/api/reports/tournament-status', (req, res) => {
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, sort } = req.query;
+
+    const validSortColumns = {
+        date: 't.NextRoundDate',
+        name: 'u.Name',
+        country: 'u.Location',
+        planned: 'plannedMatches',
+        completed: 'completedMatches',
+        eliminations: 't.EliminationsComplete'
+    };
 
     const query = `
-      SELECT 
+    SELECT 
+        t.TournamentID,
+        t.Name AS tournamentName,
         t.NextRoundDate,
-        u.Name AS collegeName,
-        u.Location AS country,
-        SUM(CASE WHEN m.Status = 'Planned' THEN 1 ELSE 0 END) AS plannedMatches,
-        SUM(CASE WHEN m.Status = 'Completed' THEN 1 ELSE 0 END) AS completedMatches,
+        COALESCE(u.Name, 'No College') AS collegeName,
+        COALESCE(
+            CASE 
+                WHEN u.Location LIKE '%,%' THEN SUBSTRING_INDEX(u.Location, ',', -1) 
+                ELSE u.Location 
+            END, 
+            'N/A'
+        ) AS country,
+        COUNT(CASE WHEN m.Status = 'Planned' THEN 1 END) AS plannedMatches,
+        COUNT(CASE WHEN m.Status = 'Completed' THEN 1 END) AS completedMatches,
         t.EliminationsComplete
-      FROM Tournaments t
-      LEFT JOIN University u ON t.UniversityID = u.UniversityID
-      LEFT JOIN Matches m ON t.TournamentID = m.TournamentID
-      WHERE (? IS NULL OR ? = '' OR DATE(t.NextRoundDate) >= DATE(?))
-        AND (? IS NULL OR ? = '' OR DATE(t.NextRoundDate) <= DATE(?))
-      GROUP BY t.TournamentID
-      ORDER BY t.NextRoundDate DESC
-    `;
+    FROM Tournaments t
+    LEFT JOIN University u ON t.UniversityID = u.UniversityID
+    LEFT JOIN Matches m ON t.TournamentID = m.TournamentID
+    WHERE 
+        (t.NextRoundDate >= ? OR ? IS NULL) AND
+        (t.NextRoundDate <= ? OR ? IS NULL)
+    GROUP BY t.TournamentID
+    ORDER BY ${validSortColumns[sort] || 't.NextRoundDate'} DESC
+`;
+
 
     db.execute(query, [
-        startDate, startDate, startDate,
-        endDate, endDate, endDate
+        startDate || null, startDate || null,
+        endDate || null, endDate || null
     ], (err, results) => {
-        if (err) {
-            console.error('Database error:', err);
-            return res.status(500).json({ error: err.message });
-        }
-        res.json(results);
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(results.map(row => ({
+            ...row,
+            EliminationsComplete: Boolean(row.EliminationsComplete)
+        })));
     });
 });
 
-// Get single match details
+// get single match details endpoint
 app.get('/match/:id', async (req, res) => {
     try {
         const [match] = await db.promise().execute(`
@@ -2264,33 +2274,12 @@ app.put('/match/:id', verifyRole(['Admin', 'SuperAdmin']), async (req, res) => {
     }
 });
 
-// Get matches with round filter
-/*app.get('/matches', async (req, res) => {
-    try {
-        const { tournamentId, rounds } = req.query;
-        const roundNumbers = rounds ? rounds.split(',').map(Number) : [2, 3];
-
-        const [matches] = await db.promise().execute(`
-                SELECT m.*, t1.Name AS Team1Name, t2.Name AS Team2Name
-                FROM Matches m
-                LEFT JOIN Teams t1 ON m.Team1ID = t1.TeamID
-                LEFT JOIN Teams t2 ON m.Team2ID = t2.TeamID
-                WHERE m.TournamentID = ? AND m.RoundNumber IN (?)
-                ORDER BY m.RoundNumber, m.MatchDate
-            `, [tournamentId, roundNumbers]);
-
-        res.json(matches);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});*/
-
 app.get('/matches', async (req, res) => {
     try {
         const { tournamentId, rounds } = req.query;
         const roundNumbers = rounds ? rounds.split(',').map(Number) : [2, 3];
 
-        // Create dynamic placeholders for IN clause
+        // dynamic placeholders for IN clause
         const placeholders = roundNumbers.map(() => '?').join(',');
 
         const [matches] = await db.promise().execute(`
@@ -2301,14 +2290,13 @@ app.get('/matches', async (req, res) => {
             WHERE m.TournamentID = ? 
             AND m.RoundNumber IN (${placeholders})
             ORDER BY m.RoundNumber, m.MatchDate
-        `, [tournamentId, ...roundNumbers]); // Spread operator for multiple values
+        `, [tournamentId, ...roundNumbers]); // spread operator for multiple values
 
         res.json(matches);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
-
 
 // Create new match endpoint
 app.post('/matches', verifyRole(['Admin', 'SuperAdmin']), async (req, res) => {
@@ -2348,7 +2336,7 @@ app.get('/tournament/:id', (req, res) => {
     );
 });
 
-// Delete all bracket matches for tournament
+// delete all bracket matches for tournament endpoint
 app.delete('/tournament/:id/brackets', verifyRole(['Admin', 'SuperAdmin']), async (req, res) => {
     try {
         await db.promise().execute(`
@@ -2405,6 +2393,485 @@ app.get('/matches', async (req, res) => {
     }
 });
 
+// get profile data
+app.get('/profile/data', async (req, res) => {
+    try {
+        const [user] = await db.promise().query(`
+            SELECT u.*, p.ImageURL 
+            FROM Users u
+            LEFT JOIN Players p ON u.UserID = p.UserID
+            WHERE u.UserID = ?
+        `, [req.session.userId]);
+
+        res.json({
+            email: user[0].Email,
+            role: user[0].Role,
+            image: user[0].ImageURL
+        });
+    } catch (error) {
+        console.error('Profile data error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// update profile endpoint
+app.post('/profile', upload.single('profileImage'), async (req, res) => {
+    try {
+        const { email, currentPassword, newPassword } = req.body;
+        const userId = req.session.userId;
+        const role = req.session.role;
+
+        // Check required fields
+        if (!email || !currentPassword) {
+            return res.status(400).json({ error: 'Email and current password are required' });
+        }
+
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({ error: 'Invalid email format' });
+        }
+
+        // Validate new password if provided
+        if (newPassword) {
+            const passwordRegex = /^(?=.*[a-zA-Z]).{6,}$/;
+            if (!passwordRegex.test(newPassword)) {
+                return res.status(400).json({
+                    error: 'Password must have 6 characters and contain at least one letter'
+                });
+            }
+        }
+
+        // Verify current password
+        const [user] = await db.promise().query(
+            'SELECT * FROM Users WHERE UserID = ?',
+            [userId]
+        );
+
+        if (!bcrypt.compareSync(currentPassword, user[0].Password)) {
+            return res.status(400).json({ error: 'Invalid current password' });
+        }
+
+        // Prepare updates
+        const updates = {};
+        const playerUpdates = {};
+
+        // Email update check
+        if (email !== user[0].Email) {
+            const [existing] = await db.promise().query(
+                'SELECT UserID FROM Users WHERE Email = ? AND UserID != ?',
+                [email, userId]
+            );
+            if (existing.length > 0) {
+                return res.status(400).json({ error: 'Email already exists' });
+            }
+            updates.Email = email;
+        }
+
+        // Password update check
+        if (newPassword) {
+            if (bcrypt.compareSync(newPassword, user[0].Password)) {
+                return res.status(400).json({ error: 'New password must be different' });
+            }
+            updates.Password = bcrypt.hashSync(newPassword, 10);
+        }
+
+        // Handle image upload for Players
+        if (role === 'Player' && req.file) {
+            const imagePath = '/uploads/' + req.file.filename;
+
+            // Get previous image path
+            const [previousData] = await db.promise().query(`
+                SELECT p.ImageURL 
+                FROM Players p
+                WHERE p.UserID = ?
+            `, [userId]);
+
+            // Delete old image file
+            if (previousData[0]?.ImageURL) {
+                const oldImagePath = path.join(__dirname, 'public', previousData[0].ImageURL);
+                if (fs.existsSync(oldImagePath)) {
+                    fs.unlinkSync(oldImagePath);
+                }
+            }
+            playerUpdates.ImageURL = imagePath;
+        }
+
+        // Update Users table
+        if (Object.keys(updates).length > 0) {
+            await db.promise().query(
+                'UPDATE Users SET ? WHERE UserID = ?',
+                [updates, userId]
+            );
+        }
+
+        // Update Players table if needed
+        if (role === 'Player' && Object.keys(playerUpdates).length > 0) {
+            await db.promise().query(
+                'UPDATE Players SET ? WHERE UserID = ?',
+                [playerUpdates, userId]
+            );
+        }
+
+        res.json({
+            success: true,
+            newEmail: updates.Email || user[0].Email,
+            newImage: updates.ProfileImage || user[0].ProfileImage
+        });
+    } catch (error) {
+        console.error('Profile update error:', error);
+        res.status(500).json({ error: 'Error updating profile' });
+    }
+});
+
+// fetch matches with status filter endpoint
+app.get('/api/matches', async (req, res) => {
+    try {
+        const statusFilter = req.query.status ? req.query.status.split(',') : ['Planned', 'Cancelled'];
+        const searchTerm = req.query.q || '';
+
+        const query = `
+            SELECT m.*, t.Name AS TournamentName, 
+                   t1.Name AS Team1Name, t2.Name AS Team2Name
+            FROM Matches m
+            LEFT JOIN Tournaments t ON m.TournamentID = t.TournamentID
+            LEFT JOIN Teams t1 ON m.Team1ID = t1.TeamID
+            LEFT JOIN Teams t2 ON m.Team2ID = t2.TeamID
+            WHERE m.Status IN (?)
+            ${searchTerm ? `AND (t1.Name LIKE ? OR t2.Name LIKE ? OR t.Name LIKE ?)` : ''}
+            ORDER BY m.MatchDate DESC
+        `;
+
+        const params = searchTerm ?
+            [statusFilter, `%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`] :
+            [statusFilter];
+
+        const [matches] = await db.promise().query(query, params);
+        res.json(matches);
+    } catch (error) {
+        console.error('Error fetching matches:', error);
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
+// fetch planned matches endpoint
+app.get('/api/matches/planned', async (req, res) => {
+    try {
+        const [matches] = await db.promise().execute(`
+            SELECT m.*, t.Name AS TournamentName,
+                   t1.Name AS Team1Name, t2.Name AS Team2Name
+            FROM Matches m
+            LEFT JOIN Tournaments t ON m.TournamentID = t.TournamentID
+            LEFT JOIN Teams t1 ON m.Team1ID = t1.TeamID
+            LEFT JOIN Teams t2 ON m.Team2ID = t2.TeamID
+            WHERE m.Status = 'Planned'
+            ORDER BY m.MatchDate ASC
+        `);
+        res.json(matches);
+    } catch (error) {
+        console.error('Error fetching planned matches:', error);
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
+// fetch a single match endpoint
+app.get('/api/matches/:id', async (req, res) => {
+    try {
+        const [match] = await db.promise().query(`
+            SELECT * FROM Matches WHERE MatchID = ?
+        `, [req.params.id]);
+
+        if (match.length === 0) return res.status(404).json({ error: 'Match not found' });
+        res.json(match[0]);
+    } catch (error) {
+        console.error('Error fetching match:', error);
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
+// insert a single match endpoint
+app.post('/api/matches', verifyRole(["SuperAdmin", "Admin"]), async (req, res) => {
+    try {
+        const { TournamentID, Team1ID, Team2ID, MatchDate, RoundNumber, Status } = req.body;
+
+        const [result] = await db.promise().query(`
+            INSERT INTO Matches SET ?
+        `, {
+            TournamentID,
+            Team1ID,
+            Team2ID,
+            MatchDate,
+            RoundNumber,
+            Status: 'Planned'
+        });
+
+        res.json({ id: result.insertId });
+    } catch (error) {
+        console.error('Error creating match:', error);
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
+// update a single match endpoint
+app.put('/api/matches/:id', verifyRole(["SuperAdmin", "Admin"]), async (req, res) => {
+    try {
+        const { Team1ID, Team2ID, MatchDate, RoundNumber, ScoreTeam1, ScoreTeam2, WinnerID } = req.body;
+
+        await db.promise().query(`
+            UPDATE Matches SET ?
+            WHERE MatchID = ?
+        `, [{
+            Team1ID,
+            Team2ID,
+            MatchDate,
+            RoundNumber,
+            ScoreTeam1: ScoreTeam1 || 0,
+            ScoreTeam2: ScoreTeam2 || 0,
+            WinnerID: WinnerID || null,
+            Status: 'Planned'
+        }, req.params.id]);
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error updating match:', error);
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
+// delete a single match endpoint
+app.delete('/api/matches/:id', verifyRole(["SuperAdmin", "Admin"]), async (req, res) => {
+    try {
+        await db.promise().query(`DELETE FROM Matches WHERE MatchID = ?`, [req.params.id]);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error deleting match:', error);
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
+// get all tournament endpoint
+app.get('/api/tournaments', async (req, res) => {
+    try {
+        const searchTerm = req.query.q || '';
+        const query = `
+            SELECT * FROM Tournaments
+            WHERE Name LIKE ?
+            ORDER BY StartDate DESC
+        `;
+        const [tournaments] = await db.promise().execute(query, [`%${searchTerm}%`]);
+        res.json(tournaments);
+    } catch (error) {
+        console.error('Error fetching tournaments:', error);
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
+// get a tournament endpoint
+app.get('/api/tournaments/:id', async (req, res) => {
+    try {
+        const [tournament] = await db.promise().execute(
+            'SELECT * FROM Tournaments WHERE TournamentID = ?',
+            [req.params.id]
+        );
+        if (tournament.length === 0) return res.status(404).json({ error: 'Tournament not found' });
+        res.json(tournament[0]);
+    } catch (error) {
+        console.error('Error fetching tournament:', error);
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
+// create a tournament endpoint
+app.post('/api/tournaments', verifyRole(["SuperAdmin", "Admin"]), async (req, res) => {
+    try {
+        const {
+            Name,
+            Description,
+            UniversityID,
+            StartDate,
+            EndDate,
+            NextRoundDate,
+            Location,
+            Status,
+            EliminationsComplete
+        } = req.body;
+
+        const [result] = await db.promise().execute(`
+            INSERT INTO Tournaments 
+            (Name, Description, UniversityID, StartDate, EndDate, NextRoundDate, Location, Status, EliminationsComplete)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+            Name,
+            Description || null,
+            UniversityID || null,
+            StartDate,
+            EndDate,
+            NextRoundDate || null,
+            Location,
+            Status,
+            EliminationsComplete
+        ]);
+
+        res.json({ id: result.insertId });
+    } catch (error) {
+        console.error('Error creating tournament:', error);
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
+// update a tournament endpoint
+app.put('/api/tournaments/:id', verifyRole(["SuperAdmin", "Admin"]), async (req, res) => {
+    try {
+        const {
+            Name,
+            Description,
+            UniversityID,
+            StartDate,
+            EndDate,
+            NextRoundDate,
+            Location,
+            Status,
+            EliminationsComplete
+        } = req.body;
+
+        await db.promise().execute(`
+            UPDATE Tournaments 
+            SET 
+                Name = ?,
+                Description = ?,
+                UniversityID = ?,
+                StartDate = ?,
+                EndDate = ?,
+                NextRoundDate = ?,
+                Location = ?,
+                Status = ?,
+                EliminationsComplete = ?
+            WHERE TournamentID = ?
+        `, [
+            Name,
+            Description || null,
+            UniversityID || null,
+            StartDate,
+            EndDate,
+            NextRoundDate || null,
+            Location,
+            Status,
+            EliminationsComplete,
+            req.params.id
+        ]);
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error updating tournament:', error);
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
+// delete a tournament endpoint
+app.delete('/api/tournaments/:id', verifyRole(["SuperAdmin", "Admin"]), async (req, res) => {
+    try {
+        await db.promise().execute(
+            'DELETE FROM Tournaments WHERE TournamentID = ?',
+            [req.params.id]
+        );
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error deleting tournament:', error);
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
+// fetch registrations with search endpoint
+app.get('/api/registrations', async (req, res) => {
+    try {
+        const searchTerm = req.query.q || '';
+        const query = `
+            SELECT r.*, u.Name AS UserName 
+            FROM Registrations r
+            JOIN Users u ON r.UserID = u.UserID
+            WHERE u.Name LIKE ?
+            ORDER BY r.RegistrationDate DESC
+        `;
+        const [results] = await db.promise().execute(query, [`%${searchTerm}%`]);
+        res.json(results);
+    } catch (error) {
+        console.error('Error fetching registrations:', error);
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
+// fetch a single registration endpoint
+app.get('/api/registrations/:id', async (req, res) => {
+    try {
+        const [results] = await db.promise().execute(
+            'SELECT * FROM Registrations WHERE RegistrationID = ?',
+            [req.params.id]
+        );
+        if (results.length === 0) return res.status(404).json({ error: 'Registration not found' });
+        res.json(results[0]);
+    } catch (error) {
+        console.error('Error fetching registration:', error);
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
+// update a registration endpoint
+app.put('/api/registrations/:id', verifyRole(["SuperAdmin", "Admin", "Moderator"]), async (req, res) => {
+    try {
+        const { TournamentID, TeamID, Status } = req.body;
+        await db.promise().execute(
+            'UPDATE Registrations SET TournamentID = ?, TeamID = ?, Status = ? WHERE RegistrationID = ?',
+            [TournamentID, TeamID, Status, req.params.id]
+        );
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error updating registration:', error);
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
+// verify student endpoint
+app.post('/api/registrations/:id/verify', verifyRole(["SuperAdmin", "Admin", "Moderator"]), async (req, res) => {
+    try {
+        const [registration] = await db.promise().execute(
+            'SELECT UserID FROM Registrations WHERE RegistrationID = ?',
+            [req.params.id]
+        );
+
+        if (registration.length === 0) return res.status(404).json({ error: 'Registration not found' });
+
+        // Update player validation
+        await db.promise().execute(
+            'UPDATE Players SET ValidStudent = TRUE WHERE UserID = ?',
+            [registration[0].UserID]
+        );
+
+        // Update registration status
+        await db.promise().execute(
+            'UPDATE Registrations SET Status = "Verified" WHERE RegistrationID = ?',
+            [req.params.id]
+        );
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error verifying player:', error);
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
+// delete a registration endpoint
+app.delete('/api/registrations/:id', verifyRole(["SuperAdmin", "Admin", "Moderator"]), async (req, res) => {
+    try {
+        await db.promise().execute(
+            'DELETE FROM Registrations WHERE RegistrationID = ?',
+            [req.params.id]
+        );
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error deleting registration:', error);
+        res.status(500).json({ error: 'Database error' });
+    }
+});
 
 
 app.use((req, res, next) => {
@@ -2416,7 +2883,3 @@ app.use((req, res, next) => {
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
 });
-
-/*app.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}`);
-});*/

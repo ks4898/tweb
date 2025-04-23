@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A New World - Profile</title>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;700&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/profile.css">
+</head>
+
+<body>
+    <nav class="navbar">
+        <a href="/" class="navbar-logo">Aardvark Games</a>
+        <div class="navbar-links">
+            <a href="/colleges" class="nav-link" draggable="false">Colleges</a>
+            <a href="/teams" class="nav-link" draggable="false">Teams</a>
+            <a href="/brackets" class="nav-link" draggable="false">Brackets</a>
+            <a href="/schedules" class="nav-link" draggable="false">Schedules</a>
+            <a href="/news" class="nav-link" draggable="false">News</a>
+            <a href="/about" class="nav-link" draggable="false">About Us</a>
+            <a href="/signup" class="nav-link" draggable="false">Account</a>
+        </div>
+    </nav>
+
+    <section class="profile-section section-dark">
+        <div class="container d-flex justify-content-center align-items-center mt-5">
+            <div class="profile-box p-4 d-flex flex-column flex-md-row align-items-center gap-4">
+                <div class="profile-img-wrapper">
+                    <img src="/media/img/profile-placeholder.png" alt="Profile Image" class="profile-img"
+                        id="profileImage">
+                </div>
+                <div class="profile-info text-white">
+                    <!-- These get dynamically filled in via JS -->
+                    <p><strong>Email:</strong> <span id="emailPresent"></span></p>
+                    <p><strong>Password:</strong> ********</p>
+                    <p><strong>Role:</strong> <span id="rolePresent"></span></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="container d-flex flex-row justify-content-center align-items-center mt-4 gap-4">
+            <div class="text-center">
+                <button type="button" class="btn-link" data-bs-toggle="modal" data-bs-target="#editUserModal">
+                    Edit Profile
+                </button>
+            </div>
+
+            <div class="text-center">
+                <button type="button" class="btn-link" onclick="logout()">
+                    Log Out
+                </button>
+            </div>
+        </div>
+
+    </section>
+
+    <!-- Edit User Modal -->
+    <div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editUserModalLabel">Edit Profile</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <form id="editUserForm">
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" name="email" class="form-control" placeholder=""required>
+                            Type the same email if you do not wish to change it
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Current Password</label>
+                            <input type="password" name="currentPassword" class="form-control" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">New Password (optional)</label>
+                            <input type="password" name="newPassword" class="form-control">
+                        </div>
+
+                        <div class="mb-3" id="imageUploadSection" style="display: none;">
+                            <label class="form-label">Update Image</label>
+                            <div class="input-group">
+                                <input type="file" id="imageUpload" name="profileImage" hidden accept="image/*">
+                                <button type="button" class="btn btn-primary"
+                                    onclick="document.getElementById('imageUpload').click()">
+                                    Choose File
+                                </button>
+                                <input type="text" name="fileNameDisplay" class="form-control" id="fileNameDisplay" readonly>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" form="editUserForm" class="btn btn-primary" id="editUserButton">Save
+                        Changes</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="successModalLabel">Success</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="successModalBody">
+                    Profile has been updated successfully!
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="successModalOkBtn" onclick="refresh()">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Modal -->
+    <div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="errorModalLabel">Error</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="errorModalBody">
+                    Failed to update profile. Please try again or contact Aardvark Staff for help.
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS (Optional) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script src="/js/handleacc.js" defer></script>
+
+    <script>
+
+        function logout() {
+            window.location.href = "/logout";
+        }
+
+        function refresh() {
+            window.location.href = '/profile';
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const profileData = await fetch('/profile/data').then(res => res.json());
+
+            // Update profile info
+            document.querySelector('#emailPresent').textContent = profileData.email;
+            document.querySelector('#rolePresent').textContent = profileData.role;
+
+            // Handle Player-specific features
+            if (profileData.role === 'Player') {
+                // Show image upload section
+                document.getElementById('imageUploadSection').style.display = 'block';
+
+                // Update profile image
+                if (profileData.image) {
+                    document.getElementById('profileImage').src = profileData.image;
+                }
+            }
+
+            // File selection handler
+            document.getElementById('imageUpload').addEventListener('change', function (e) {
+                document.getElementById('fileNameDisplay').value = this.files[0]?.name || '';
+            });
+
+            // Handle form submission
+            document.getElementById('editUserForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const formData = new FormData(e.target);
+
+                try {
+                    const response = await fetch('/profile', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+                    if (result.success) {
+                        if (result.newEmail) {
+                            document.querySelector('#emailPresent').textContent = result.newEmail;
+                        }
+                        if (result.newImage) {
+                            document.querySelector('#profileImage').src = result.newImage;
+                        }
+                        const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                        successModal.show();
+                    }
+                } catch (error) {
+                    console.error('Update error:', error);
+                    const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+                    errorModal.show();
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

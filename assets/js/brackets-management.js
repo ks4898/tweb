@@ -9,6 +9,11 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById('deleteBracketModal')
     );
 
+    document.getElementById('searchTournamentsBtn').addEventListener('click', function() {
+        const searchTerm = document.getElementById('searchTournaments').value.trim();
+        fetchTournaments(searchTerm);
+    });
+
     // Initialize tournaments table
     fetchTournaments();
 
@@ -259,12 +264,14 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     // Fetch tournaments for table
-    async function fetchTournaments() {
+    async function fetchTournaments(searchTerm = '') {
         try {
-            const tournaments = await fetch('/tournaments').then(res => res.json());
+            const url = `/api/tournaments/brackets${searchTerm ? `?q=${encodeURIComponent(searchTerm)}` : ''}`;
+            const tournaments = await fetch(url).then(res => res.json());
             renderTournaments(tournaments);
         } catch (error) {
             console.error('Error fetching tournaments:', error);
+            alert('Failed to load tournaments');
         }
     }
 

@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     fetchColleges();
 
-    const searchButton = document.getElementById('searchCollegesButton');
+    const searchButton = document.getElementById('searchCollegesBtn');
     if (searchButton) {
         searchButton.addEventListener('click', function () {
             const searchTerm = document.getElementById('searchCollege').value.trim();
@@ -129,7 +129,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 const data = await response.json();
                 console.log(data);
-                alert('College added successfully!');
+                alert('College updated successfully!');
 
                 const collegeModal = document.getElementById('collegeModal');
                 const instance = bootstrap.Modal.getInstance(collegeModal);

@@ -178,6 +178,9 @@ h1 {
   pointer-events: none;
 }
 
+button {
+  min-width: 60px !important;
+}
 
 /* Responsive Styles */
 

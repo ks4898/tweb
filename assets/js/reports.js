@@ -2,7 +2,7 @@ class ReportManager {
     constructor() {
         this.collegeSort = { column: 'date', direction: 'desc' };
         this.tournamentSort = { column: 'date', direction: 'desc' };
-        this.today = new Date().toISOString().split('T')[0]; // Get current date in YYYY-MM-DD format
+        this.today = new Date().toISOString().split('T')[0];
         this.createToastContainer();
         this.initDatePickers();
         this.initSorting();
@@ -19,31 +19,45 @@ class ReportManager {
     }
 
     initDatePickers() {
-        // Set default to current date
         const collegeStart = document.getElementById('collegeStartDate');
         const collegeEnd = document.getElementById('collegeEndDate');
         const tournamentStart = document.getElementById('tournamentStartDate');
         const tournamentEnd = document.getElementById('tournamentEndDate');
 
-        // Set max attribute to prevent future date selection
         collegeStart.max = this.today;
         collegeEnd.max = this.today;
         tournamentStart.max = this.today;
         tournamentEnd.max = this.today;
 
-        // Set default values to current date
         collegeStart.value = this.today;
         collegeEnd.value = this.today;
         tournamentStart.value = this.today;
         tournamentEnd.value = this.today;
     }
 
+    initSorting() {
+        document.querySelectorAll('[data-sort]').forEach(header => {
+            header.addEventListener('click', (e) => {
+                const tableType = e.target.closest('table').id.includes('College') ? 'college' : 'tournament';
+                const column = e.target.dataset.sort;
+
+                if (this[`${tableType}Sort`].column === column) {
+                    this[`${tableType}Sort`].direction =
+                        this[`${tableType}Sort`].direction === 'asc' ? 'desc' : 'asc';
+                } else {
+                    this[`${tableType}Sort`].column = column;
+                    this[`${tableType}Sort`].direction = 'asc';
+                }
+
+                this[`load${tableType.charAt(0).toUpperCase() + tableType.slice(1)}Report`]();
+            });
+        });
+    }
+
     initEventListeners() {
-        // Connect Apply buttons to report loading methods
         document.getElementById('collegeApplyBtn').addEventListener('click', () => this.loadCollegeReport());
         document.getElementById('tournamentApplyBtn').addEventListener('click', () => this.loadTournamentReport());
 
-        // Add event listeners to prevent end date being before start date
         document.getElementById('collegeStartDate').addEventListener('change', (e) => {
             document.getElementById('collegeEndDate').min = e.target.value;
         });
@@ -66,8 +80,9 @@ class ReportManager {
             this.showLoader('collegeReportBody');
 
             const params = new URLSearchParams({
-                startDate: startDate,
-                endDate: endDate
+                startDate: startDate || '',
+                endDate: endDate || '',
+                sort: this.collegeSort.column
             });
 
             const response = await fetch(`/api/reports/college-signups?${params}`);
@@ -77,19 +92,13 @@ class ReportManager {
 
             this.populateTable({
                 bodyId: 'collegeReportBody',
-                data: this.sortData(data, this.collegeSort, {
-                    date: 'DateAdded',
-                    name: 'collegeName',
-                    country: 'country',
-                    teams: 'teamCount',
-                    members: 'memberCount',
-                    moderator: 'hasModerator',
-                    page: 'HasPage'
-                }),
+                data: data,
                 columns: row => [
                     new Date(row.DateAdded).toLocaleDateString(),
                     row.collegeName,
-                    row.country.includes(',') ? row.country.split(',')[1].trim() : row.country,
+                    row.country.includes(',') ?
+                        row.country.split(',').pop().trim() :
+                        row.country,
                     row.teamCount,
                     row.memberCount,
                     this.renderBadge(row.hasModerator),
@@ -101,6 +110,7 @@ class ReportManager {
                     members: data.reduce((sum, row) => sum + row.memberCount, 0)
                 }
             });
+
         } catch (error) {
             console.error('College report error:', error);
             this.showError('Failed to load college report');
@@ -120,8 +130,9 @@ class ReportManager {
             this.showLoader('tournamentReportBody');
 
             const params = new URLSearchParams({
-                startDate: startDate,
-                endDate: endDate
+                startDate: startDate || '',
+                endDate: endDate || '',
+                sort: this.tournamentSort.column
             });
 
             const response = await fetch(`/api/reports/tournament-status?${params}`);
@@ -131,18 +142,12 @@ class ReportManager {
 
             this.populateTable({
                 bodyId: 'tournamentReportBody',
-                data: this.sortData(data, this.tournamentSort, {
-                    date: 'NextRoundDate',
-                    name: 'collegeName',
-                    country: 'country',
-                    planned: 'plannedMatches',
-                    completed: 'completedMatches',
-                    eliminations: 'EliminationsComplete'
-                }),
+                data: data,
                 columns: row => [
-                    new Date(row.NextRoundDate).toLocaleDateString(),
-                    row.collegeName || 'N/A',
-                    (row.country && row.country.includes(',')) ? row.country.split(',')[1].trim() : (row.country || 'N/A'),
+                    row.NextRoundDate ?
+                        new Date(row.NextRoundDate).toLocaleDateString() : 'No Date',
+                    row.collegeName,
+                    row.country?.trim() || 'N/A',
                     row.plannedMatches,
                     row.completedMatches,
                     this.renderBadge(row.EliminationsComplete)
@@ -153,35 +158,21 @@ class ReportManager {
                     completed: data.reduce((sum, row) => sum + row.completedMatches, 0)
                 }
             });
+
         } catch (error) {
             console.error('Tournament report error:', error);
             this.showError('Failed to load tournament report');
         }
     }
 
-    showLoader(tableId) {
-        const tbody = document.getElementById(tableId);
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></td></tr>`;
-    }
-
     populateTable({ bodyId, data, columns, totals }) {
         const tbody = document.getElementById(bodyId);
-        tbody.innerHTML = '';
+        tbody.innerHTML = data.map(row => `
+            <tr>
+                ${columns(row).map(cell => `<td>${cell}</td>`).join('')}
+            </tr>
+        `).join('');
 
-        if (data.length === 0) {
-            const emptyRow = document.createElement('tr');
-            emptyRow.innerHTML = `<td colspan="7" class="text-center">No data found for selected date range</td>`;
-            tbody.appendChild(emptyRow);
-        } else {
-            data.forEach(row => {
-                const tr = document.createElement('tr');
-                const columnValues = columns(row);
-                tr.innerHTML = columnValues.map(col => `<td>${col}</td>`).join('');
-                tbody.appendChild(tr);
-            });
-        }
-
-        // Update totals
         if (bodyId === 'collegeReportBody') {
             document.getElementById('totalColleges').textContent = totals.colleges;
             document.getElementById('totalTeams').textContent = totals.teams;
@@ -194,77 +185,50 @@ class ReportManager {
     }
 
     renderBadge(value) {
-        return value ?
-            `<span class="badge bg-success">Yes</span>` :
-            `<span class="badge bg-danger">No</span>`;
+        if (typeof value === 'number') {
+            return value === 1 ?
+                '<span class="badge bg-success">Yes</span>' :
+                '<span class="badge bg-danger">No</span>';
+        }
+        return typeof value === 'boolean' ?
+            `<span class="badge ${value ? 'bg-success' : 'bg-danger'}">
+                ${value ? 'Yes' : 'No'}
+            </span>` :
+            `<span class="badge bg-secondary">N/A</span>`;
     }
 
-    sortData(data, config, columnMap) {
-        return [...data].sort((a, b) => {
-            const key = columnMap[config.column];
-            const valA = a[key];
-            const valB = b[key];
-            const modifier = config.direction === 'asc' ? 1 : -1;
 
-            if (typeof valA === 'string' && typeof valB === 'string') {
-                return valA.localeCompare(valB) * modifier;
-            }
-
-            return (valA - valB) * modifier;
-        });
-    }
-
-    initSorting() {
-        document.querySelectorAll('th.sortable').forEach(header => {
-            header.addEventListener('click', (e) => {
-                const tableId = e.target.closest('table').querySelector('tbody').id;
-                const column = e.target.dataset.sort;
-
-                if (tableId === 'collegeReportBody') {
-                    this.collegeSort.direction = this.collegeSort.column === column
-                        ? (this.collegeSort.direction === 'asc' ? 'desc' : 'asc')
-                        : 'asc';
-                    this.collegeSort.column = column;
-                    this.loadCollegeReport();
-                } else {
-                    this.tournamentSort.direction = this.tournamentSort.column === column
-                        ? (this.tournamentSort.direction === 'asc' ? 'desc' : 'asc')
-                        : 'asc';
-                    this.tournamentSort.column = column;
-                    this.loadTournamentReport();
-                }
-
-                // Update sorting indicators
-                e.target.closest('thead').querySelectorAll('th.sortable')
-                    .forEach(h => h.classList.remove('asc', 'desc'));
-
-                e.target.classList.add(this.collegeSort.direction);
-            });
-        });
-    }
-
-    loadReports() {
-        this.loadCollegeReport();
-        this.loadTournamentReport();
+    showLoader(tableId) {
+        const tbody = document.getElementById(tableId);
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </td>
+            </tr>`;
     }
 
     showError(message) {
         const toast = document.createElement('div');
         toast.className = 'toast align-items-center text-white bg-danger border-0';
         toast.innerHTML = `
-          <div class="d-flex">
-            <div class="toast-body">${message}</div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-          </div>
-        `;
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>`;
 
         document.querySelector('.toast-container').appendChild(toast);
-        new bootstrap.Toast(toast, { autohide: true, delay: 5000 }).show();
+        new bootstrap.Toast(toast).show();
         setTimeout(() => toast.remove(), 5000);
+    }
+
+    loadReports() {
+        this.loadCollegeReport();
+        this.loadTournamentReport();
     }
 }
 
-// Initialize when DOM loaded
-document.addEventListener('DOMContentLoaded', () => {
-    window.reportManager = new ReportManager();
-});  
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', () => new ReportManager());

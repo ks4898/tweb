@@ -42,13 +42,18 @@ html {
     z-index: 1;
 }
 
-/* Fix for table container - make it fit content */
+/* Fix for table container - make it fit content
 .table-responsive {
     border-radius: 8px;
     border: 1px solid #13505B;
     margin-bottom: 2rem;
     display: flex;
     flex-direction: column;
+} */
+
+.table-responsive {
+    padding-right: 15px;
+    /* Match scrollbar width */
 }
 
 /* Make tables fill their container completely */
@@ -175,6 +180,41 @@ html {
     bottom: auto !important;
     right: auto !important;
 }
+
+.user-table th {
+    vertical-align: middle;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.user-table td {
+    vertical-align: middle;
+    text-align: center;
+}
+
+table.user-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+table.user-table th,
+table.user-table td {
+    padding: 12px 15px;
+    text-align: center;
+    vertical-align: middle;
+    border-bottom: 1px solid #dee2e6;
+}
+
+table.user-table thead th {
+    background: #2c3e50;
+    color: white;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+
 
 /* Responsive adjustments */
 @media (max-width: 768px) {

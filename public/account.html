@@ -31,25 +31,44 @@
 
         <ul class="nav justify-content-center mt-4 mb-3 p-1 flex-wrap">
             <li class="nav-item">
-                <a class="nav-link fs-5 px-3 py-2" href="#user-management" style="color: rgb(196, 216, 219) !important;">User Management</a>
+                <a class="nav-link fs-5 px-3 py-2" href="#user-management"
+                    style="color: rgb(196, 216, 219) !important;">User</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link fs-5 px-3 py-2" href="#college-management" style="color: rgb(196, 216, 219) !important;">College Management</a>
+                <a class="nav-link fs-5 px-3 py-2" href="#college-management"
+                    style="color: rgb(196, 216, 219) !important;">College</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link fs-5 px-3 py-2" href="#team-management" style="color: rgb(196, 216, 219) !important;">Team Management</a>
+                <a class="nav-link fs-5 px-3 py-2" href="#team-management"
+                    style="color: rgb(196, 216, 219) !important;">Team</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link fs-5 px-3 py-2" href="#news-management" style="color: rgb(196, 216, 219) !important;">News Management</a>
+                <a class="nav-link fs-5 px-3 py-2" href="#news-management"
+                    style="color: rgb(196, 216, 219) !important;">News</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link fs-5 px-3 py-2" href="#brackets-management" style="color: rgb(196, 216, 219) !important;">Brackets Management</a>
+                <a class="nav-link fs-5 px-3 py-2" href="#brackets-management"
+                    style="color: rgb(196, 216, 219) !important;">Brackets</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link fs-5 px-3 py-2" href="/reports" style="color: rgb(196, 216, 219) !important;">Reports</a>
+                <a class="nav-link fs-5 px-3 py-2" href="#schedules-management"
+                    style="color: rgb(196, 216, 219) !important;">Schedules</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link fs-5 px-3 py-2" href="/analytics" style="color: rgb(196, 216, 219) !important;">Analytics</a>
+                <a class="nav-link fs-5 px-3 py-2" href="#tournament-management"
+                    style="color: rgb(196, 216, 219) !important;">Tournament</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link fs-5 px-3 py-2" href="/reports"
+                    style="color: rgb(196, 216, 219) !important;">Reports</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link fs-5 px-3 py-2" href="/analytics"
+                    style="color: rgb(196, 216, 219) !important;">Analytics</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link fs-5 px-3 py-2" href="#quick-image"
+                    style="color: rgb(196, 216, 219) !important;">Upload Image</a>
             </li>
         </ul>
 
@@ -100,8 +119,9 @@
             <div class="row mb-3">
                 <div class="col-lg-8 col-xl-6 mx-auto">
                     <div class="input-group">
-                        <input type="text" id="searchCollege" class="form-control" placeholder="Search colleges...">
-                        <button id="searchCollegesButton" class="btn btn-primary">Search</button>
+                        <input type="text" id="searchCollege" class="form-control"
+                            placeholder="Search colleges (to clear, delete everything and press Search)...">
+                        <button id="searchCollegesBtn" class="btn btn-primary">Search</button>
                     </div>
                 </div>
             </div>
@@ -109,7 +129,7 @@
             <div class="row mb-3">
                 <div class="col-12 text-center">
                     <button id="addCollegeBtn" class="btn btn-primary me-2 mb-2">Add College</button>
-                    <button id="editCollegeBtn" class="btn btn-primary me-2 mb-2">Edit College</button>
+                    <button id="editCollegeBtn" class="btn btn-warning me-2 mb-2">Edit College</button>
                     <button id="deleteCollegeBtn" class="btn btn-delete mb-2">Delete College</button>
                 </div>
             </div>
@@ -139,7 +159,8 @@
             <div class="row mb-3">
                 <div class="col-lg-8 col-xl-6 mx-auto">
                     <div class="input-group">
-                        <input type="text" id="searchTeam" class="form-control" placeholder="Search teams...">
+                        <input type="text" id="searchTeam" class="form-control"
+                            placeholder="Search teams (to clear, delete everything and press Search)...">
                         <button id="searchTeamsBtn" class="btn btn-primary">Search</button>
                     </div>
                 </div>
@@ -148,7 +169,7 @@
             <div class="row mb-3">
                 <div class="col-12 text-center">
                     <button id="addTeamBtn" class="btn btn-primary me-2 mb-2">Add Team</button>
-                    <button id="editTeamBtn" class="btn btn-primary me-2 mb-2">Edit Team</button>
+                    <button id="editTeamBtn" class="btn btn-warning me-2 mb-2">Edit Team</button>
                     <button id="deleteTeamBtn" class="btn btn-delete mb-2">Delete Team</button>
                 </div>
             </div>
@@ -159,8 +180,8 @@
                         <tr>
                             <th>ID</th>
                             <th>Team Name</th>
-                            <th>University ID</th>
-                            <th>University Name</th>
+                            <th>College ID</th>
+                            <th>College Name</th>
                             <th>Create Date</th>
                         </tr>
                     </thead>
@@ -176,7 +197,8 @@
             <div class="row mb-3">
                 <div class="col-lg-8 col-xl-6 mx-auto">
                     <div class="input-group">
-                        <input type="text" id="searchArticle" class="form-control" placeholder="Search articles...">
+                        <input type="text" id="searchArticle" class="form-control"
+                            placeholder="Search articles by name (to clear, delete everything and press Search)...">
                         <button id="searchArticlesBtn" class="btn btn-primary">Search</button>
                     </div>
                 </div>
@@ -185,7 +207,7 @@
             <div class="row mb-3">
                 <div class="col-12 text-center">
                     <button id="addArticleBtn" class="btn btn-primary me-2 mb-2">Add Article</button>
-                    <button id="editArticleBtn" class="btn btn-primary me-2 mb-2">Edit Article</button>
+                    <button id="editArticleBtn" class="btn btn-warning me-2 mb-2">Edit Article</button>
                     <button id="deleteArticleBtn" class="btn btn-delete mb-2">Delete Article</button>
                 </div>
             </div>
@@ -216,7 +238,7 @@
                 <div class="col-lg-8 col-xl-6 mx-auto">
                     <div class="input-group">
                         <input type="text" id="searchTournaments" class="form-control"
-                            placeholder="Search tournaments...">
+                            placeholder="Search by tournaments (to clear, delete everything and press Search)...">
                         <button id="searchTournamentsBtn" class="btn btn-primary">Search</button>
                     </div>
                 </div>
@@ -224,7 +246,7 @@
 
             <div class="row mb-3">
                 <div class="col-12 text-center">
-                    <button id="editBracketBtn" class="btn btn-primary me-2 mb-2">Edit Bracket</button>
+                    <button id="editBracketBtn" class="btn btn-warning me-2 mb-2">Edit Bracket</button>
                     <button id="deleteBracketBtn" class="btn btn-delete mb-2">Reset Bracket</button>
                 </div>
             </div>
@@ -238,6 +260,168 @@
                         </tr>
                     </thead>
                     <tbody id="bracketsTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Schedules Management Section -->
+        <section id="schedules-management" class="mb-5">
+            <h1 class="text-center mb-4">Schedules Management</h1>
+
+            <div class="row mb-3">
+                <div class="col-lg-8 col-xl-6 mx-auto">
+                    <div class="input-group">
+                        <input type="text" id="searchMatches" class="form-control"
+                            placeholder="Search matches by teams (to clear, delete everything and press Search)...">
+                        <button id="searchMatchesBtn" class="btn btn-primary">Search</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-12 text-center">
+                    <button id="addMatchBtn" class="btn btn-primary me-2 mb-2">Add Match</button>
+                    <button id="editMatchBtn" class="btn btn-warning me-2 mb-2">Edit Match</button>
+                    <button id="deleteMatchBtn" class="btn btn-delete mb-2">Delete Match</button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table user-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Tournament</th>
+                            <th>Team 1</th>
+                            <th>Team 2</th>
+                            <th>Match Date</th>
+                            <th>Round</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="matchesTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Tournament Management Section -->
+        <section id="tournament-management" class="mb-5">
+            <h1 class="text-center mb-4">Tournament Management</h1>
+
+            <div class="row mb-3">
+                <div class="col-lg-8 col-xl-6 mx-auto">
+                    <div class="input-group">
+                        <input type="text" id="searchTournament" class="form-control"
+                            placeholder="Search tournament by name (to clear, delete everything and press Search)...">
+                        <button id="searchTournamentBtn" class="btn btn-primary">Search</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-12 text-center">
+                    <button id="addTournamentBtn" class="btn btn-primary me-2 mb-2">Add Tournament</button>
+                    <button id="editTournamentBtn" class="btn btn-warning me-2 mb-2">Edit Tournament</button>
+                    <button id="deleteTournamentBtn" class="btn btn-delete mb-2">Delete Tournament</button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table user-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Host College ID</th>
+                            <th>Name</th>
+                            <th>Description</th>
+                            <th>Start Date</th>
+                            <th>End Date Date</th>
+                            <th>Next Round Date</th>
+                            <th>Location</th>
+                            <th>Status</th>
+                            <th>Eliminations Complete</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tournamentTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Registrations Management Section -->
+        <section id="registrations-management" class="mb-5">
+            <h1 class="text-center mb-4">Registrations Management</h1>
+
+            <div class="row mb-3">
+                <div class="col-lg-8 col-xl-6 mx-auto">
+                    <div class="input-group">
+                        <input type="text" id="searchRegistration" class="form-control"
+                            placeholder="Search registrations by user name (to clear, delete everything and press Search)...">
+                        <button id="searchRegistrationBtn" class="btn btn-primary">Search</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-12 text-center">
+                    <button id="viewRegistrationBtn" class="btn btn-primary me-2 mb-2">View Registration</button>
+                    <button id="editRegistrationBtn" class="btn btn-warning me-2 mb-2">Edit Registration</button>
+                    <button id="deleteRegistrationBtn" class="btn btn-delete mb-2">Delete Registration</button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table user-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>User ID</th>
+                            <th>Tournament ID</th>
+                            <th>Team ID</th>
+                            <th>Created Team Name</th>
+                            <th>Message</th>
+                            <th>Status</th>
+                            <th>RegistrationDate</th>
+                        </tr>
+                    </thead>
+                    <tbody id="registrationsTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Payments Section -->
+        <section id="payments" class="mb-5">
+            <h1 class="text-center mb-4">Payments</h1>
+
+            <div class="row mb-3">
+                <div class="col-lg-8 col-xl-6 mx-auto">
+                    <div class="input-group">
+                        <input type="text" id="searchPayment" class="form-control"
+                            placeholder="Search payments by user name (to clear, delete everything and press Search)...">
+                        <button id="searchPaymentBtn" class="btn btn-primary">Search</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-12 text-center">
+                    <button id="viewPaymentBtn" class="btn btn-primary me-2 mb-2">View Payment Data</button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table user-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>User ID</th>
+                            <th>Tournament ID</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>SuccessPageViewed</th>
+                            <th>PaymentDate</th>
+                        </tr>
+                    </thead>
+                    <tbody id="paymentsTableBody"></tbody>
                 </table>
             </div>
         </section>
@@ -281,19 +465,18 @@
                             </div>
                             <div id="playerFields" style="display: none;" class="mb-3">
                                 <div class="mb-3">
-                                    <label for="imageURL" class="form-label">Image URL:</label>
+                                    <label for="imageURL" class="form-label">Image URL</label>
                                     <input type="text" id="imageURL" name="imageURL" class="form-control">
                                 </div>
                                 <div class="mb-3">
-                                    <label for="validStudent" class="form-label">Valid Student:</label>
+                                    <label for="validStudent" class="form-label">Valid Student ?</label>
                                     <select id="validStudent" name="validStudent" class="form-select">
-                                        <option value="1">Yes</option>
                                         <option value="0">No</option>
+                                        <option value="1">Yes</option>
                                     </select>
                                 </div>
                                 <div class="mb-3">
-                                    <label for="teamId" class="form-label">Team ID (can be found under Team Management
-                                        section):</label>
+                                    <label for="teamId" class="form-label">Team ID (find in Team Management)</label>
                                     <input type="number" id="teamId" name="teamId" class="form-control" min="1">
                                 </div>
                             </div>
@@ -320,29 +503,29 @@
                         <form id="editUserForm">
                             <input type="hidden" id="editUserId">
                             <div class="mb-3">
-                                <label for="editName" class="form-label">Full Name:</label>
+                                <label for="editName" class="form-label">Full Name</label>
                                 <input type="text" class="form-control" id="editName" required>
                             </div>
                             <div class="mb-3">
-                                <label for="editEmail" class="form-label">Email:</label>
+                                <label for="editEmail" class="form-label">Email</label>
                                 <input type="email" class="form-control" id="editEmail" required>
                             </div>
                             <div class="mb-3">
-                                <label for="editRole" class="form-label">Role:</label>
+                                <label for="editRole" class="form-label">Role</label>
                                 <select class="form-select" id="editRole" required>
                                     <!-- Roles will be populated dynamically -->
                                 </select>
                             </div>
                             <div id="editPlayerFields" class="mb-3" style="display: none;">
                                 <div class="mb-3">
-                                    <label for="editImageURL" class="form-label">Image URL:</label>
+                                    <label for="editImageURL" class="form-label">Image URL</label>
                                     <input type="text" class="form-control" id="editImageURL">
                                 </div>
                                 <div class="mb-3">
-                                    <label for="editValidStudent" class="form-label">Valid Student:</label>
+                                    <label for="editValidStudent" class="form-label">Valid Student?</label>
                                     <select class="form-select" id="editValidStudent">
-                                        <option value="1">Yes</option>
                                         <option value="0">No</option>
+                                        <option value="1">Yes</option>
                                     </select>
                                 </div>
                                 <div class="mb-3">
@@ -646,15 +829,15 @@
                                 </select>
                             </div>
                             <div class="mb-3">
-                                <label for="editBracketSelectSemiFinal" class="form-label">Select SemiFinal
+                                <label for="editBracketSelectSemiFinal" class="form-label">Select Semifinal
                                     Match</label>
                                 <select id="editBracketSelectSemiFinal" class="form-select" required>
-                                    <option value="0">First SemiFinal Match</option>
-                                    <option value="1">Second SemiFinal Match</option>
+                                    <option value="0">First Semifinal Match</option>
+                                    <option value="1">Second Semifinal Match</option>
                                 </select>
                             </div>
                             <div class="mb-3">
-                                <label for="editBracketFirstTeamName" class="form-label">First Team Name</label>
+                                <label for="editBracketFirstTeamName" class="form-label">Exact First Team Name</label>
                                 <input type="text" id="editBracketFirstTeamName" name="editBracketFirstTeamName"
                                     class="form-control" required>
                             </div>
@@ -664,7 +847,7 @@
                                     class="form-control" min="0" required>
                             </div>
                             <div class="mb-3">
-                                <label for="editBracketSecondTeamName" class="form-label">Second Team Name</label>
+                                <label for="editBracketSecondTeamName" class="form-label">Exact Second Team Name</label>
                                 <input type="text" id="editBracketSecondTeamName" name="editBracketSecondTeamName"
                                     class="form-control" required>
                             </div>
@@ -694,14 +877,13 @@
             </div>
         </div>
 
-
         <!-- Delete Bracket Modal -->
         <div class="modal fade" id="deleteBracketModal" tabindex="-1" aria-labelledby="deleteBracketModalLabel"
             aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="deleteBracketModalLabel">Are you sure you want to delete this
+                        <h5 class="modal-title" id="deleteBracketModalLabel">Are you sure you want to reset this
                             bracket?
                         </h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -718,30 +900,332 @@
         </div>
     </div>
 
+    <!-- Add/Edit Match Modal -->
+    <div class="modal fade" id="matchModal" tabindex="-1" aria-labelledby="matchModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="matchModalLabel">Add/Edit Match</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="matchForm">
+                        <div class="mb-3" id="tournamentSelectContainer">
+                            <label for="tournamentSelect" class="form-label">Tournament</label>
+                            <select class="form-select" id="tournamentSelect" required>
+                                <option value="">Select Tournament</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="matchTeam1ID" class="form-label">First Team ID (find in Team
+                                Management)</label>
+                            <input type="number" class="form-control" id="matchTeam1ID" min="1" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="matchFirstTeamScore" class="form-label">First Team Score (if applicable, leave 0
+                                for default)</label>
+                            <input type="number" id="matchFirstTeamScore" name="matchFirstTeamScore"
+                                class="form-control" min="0" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="matchTeam2ID" class="form-label">Second Team ID (find in Team
+                                Management)</label>
+                            <input type="number" class="form-control" id="matchTeam2ID" min="1" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="matchSecondTeamScore" class="form-label">Second Team Score (if applicable, leave
+                                0 for default)</label>
+                            <input type="number" id="matchSecondTeamScore" name="matchSecondTeamScore"
+                                class="form-control" min="0" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="matchSelectWinner" class="form-label">Select Winner Team (if applicable, select
+                                any for default)</label>
+                            <select id="matchSelectWinner" class="form-select" required>
+                                <option value="1">Team 1</option>
+                                <option value="2">Team 2</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="matchMatchDate" class="form-label">Match Date</label>
+                            <input type="datetime-local" id="matchMatchDate" class="form-control"
+                                placeholder="Select date and time" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="matchRoundNumber" class="form-label">Round (4 - Quarterfinals, 5 - Round of
+                                16)</label>
+                            <input type="number" id="matchRoundNumber" name="matchRoundNumber" class="form-control"
+                                min="4" max="5" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="saveMatchBtn">Save Match</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Match Modal -->
+    <div class="modal fade" id="deleteMatchModal" tabindex="-1" aria-labelledby="deleteMatchModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteMatchModalLabel">Confirm</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to delete this
+                    match?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteMatchBtn">Yes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Tournament Modal -->
+    <div class="modal fade" id="tournamentModal" tabindex="-1" aria-labelledby="tournamentModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="tournamentModalLabel">Add/Edit Tournament</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="tournamentForm">
+                        <div class="mb-3">
+                            <label for="tournamentName" class="form-label">Tournament Name</label>
+                            <input type="text" class="form-control" id="tournamentName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="tournamentDescription" class="form-label">Tournament Description
+                                (optional)</label>
+                            <input type="text" class="form-control" id="tournamentDescription" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="tournamentHostID" class="form-label">Host College ID (find in College
+                                Management)</label>
+                            <input type="number" id="tournamentHostID" name="tournamentHostID" class="form-control"
+                                min="1" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="tournamentStartDate" class="form-label">Tournament Start Date</label>
+                            <input type="datetime-local" id="tournamentStartDate" class="form-control"
+                                placeholder="Select date and time" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="tournamentEndDate" class="form-label">Tournament End Date (any date for
+                                default)</label>
+                            <input type="datetime-local" id="tournamentEndDate" class="form-control"
+                                placeholder="Select date and time" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="tournamentNextRoundDate" class="form-label">Next Round Date (optional)</label>
+                            <input type="datetime-local" id="tournamentNextRoundDate" class="form-control"
+                                placeholder="Select date and time">
+                        </div>
+                        <div class="mb-3">
+                            <label for="tournamentLocation" class="form-label">Tournament Location</label>
+                            <input type="text" class="form-control" id="tournamentLocation" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="tournamentSelectStatus" class="form-label">Select Tournament Status</label>
+                            <select id="tournamentSelectStatus" class="form-select" required>
+                                <option value="1">Upcoming</option>
+                                <option value="2">Ongoing</option>
+                                <option value="3">Completed</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="tournamentSelectEliminationsComplete" class="form-label">Eliminations Complete
+                                (optional)</label>
+                            <select id="tournamentSelectEliminationsComplete" class="form-select" required>
+                                <option value="0">No</option>
+                                <option value="1">Yes</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="saveTournamentBtn">Save Tournament</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Tournament Modal -->
+    <div class="modal fade" id="deleteTournamentModal" tabindex="-1" aria-labelledby="deleteTournamentModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteTournamentModalLabel">Confirm</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to delete this
+                    tournament?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteTournamentBtn">Yes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Registration Modal -->
+    <div class="modal fade" id="registrationModal" tabindex="-1" aria-labelledby="registrationModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="registrationModalLabel">Registration Data</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="registrationDataForm">
+                        <div class="mb-3">
+                            <label for="viewRegistrationID" class="form-label">Registration ID</label>
+                            <input type="text" class="form-control" id="viewRegistrationID" readonly aria-readonly="true">
+                        </div>
+                        <div class="mb-3">
+                            <label for="viewRegistrationUserID" class="form-label">User ID</label>
+                            <input type="text" class="form-control" id="viewRegistrationUserID" readonly aria-readonly="true">
+                        </div>
+                        <div class="mb-3">
+                            <label for="viewRegistrationTournamentID" class="form-label">Tournament ID</label>
+                            <input type="text" class="form-control" id="viewRegistrationTournamentID" readonly aria-readonly="true">
+                        </div>
+                        <div class="mb-3">
+                            <label for="viewRegistrationTeamID" class="form-label">Team ID</label>
+                            <input type="text" class="form-control" id="viewRegistrationTeamID" readonly aria-readonly="true">
+                        </div>
+                        <div class="mb-3">
+                            <label for="viewRegistrationNewTeamName" class="form-label">Created Team Name</label>
+                            <input type="text" class="form-control" id="viewRegistrationNewTeamName" readonly aria-readonly="true">
+                        </div>
+                        <div class="mb-3">
+                            <label for="viewRegistrationMessage" class="form-label">Message</label>
+                            <textarea class="form-control" id="viewRegistrationMessage" rows="5" readonly aria-readonly="true"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="viewRegistrationStatus" class="form-label">Status</label>
+                            <input type="text" class="form-control" id="viewRegistrationStatus" readonly aria-readonly="true">
+                        </div>
+                        <div class="mb-3">
+                            <label for="viewRegistrationDate" class="form-label">Date</label>
+                            <input type="datetime-local" id="viewRegistrationDate" class="form-control"
+                                placeholder="Registration Date" readonly aria-readonly="true">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Registration Modal -->
+    <div class="modal fade" id="editRegistrationModal" tabindex="-1" aria-labelledby="editRegistrationModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editRegistrationModalLabel">Edit Registration</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="registrationForm">
+                        <div class="mb-3">
+                            <label for="editRegistrationTournamentID" class="form-label">Tournament ID</label>
+                            <input type="number" class="form-control" id="editRegistrationTournamentID" name="editRegistrationTournamentID" min="1">
+                        </div>
+                        <div class="mb-3">
+                            <label for="editRegistrationTeamID" class="form-label">Team ID</label>
+                            <input type="number" class="form-control" id="editRegistrationTeamID" name="editRegistrationTeamID" min="1">
+                        </div>
+                        <div class="mb-3">
+                            <label for="editRegistrationStatus" class="form-label">Status</label>
+                            <select id="editRegistrationStatus" name="editRegistrationStatus" class="form-select">
+                                <option value="0">Pending</option>
+                                <option value="1">Verified</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="saveRegistrationBtn">Update Registration</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Registration Modal -->
+    <div class="modal fade" id="deleteRegistrationModal" tabindex="-1" aria-labelledby="deleteRegistrationModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteRegistrationModalLabel">Confirm</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to delete this
+                    registration record?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteRegistrationBtn">Yes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Upload Section -->
+    <div class="container mt-5" id="quick-image">
+        <h3>Quick Image Upload</h3>
+        <div class="input-group mb-3">
+            <input type="file" id="quickUploadFile" hidden accept="image/*">
+            <button class="btn btn-primary" type="button" onclick="document.getElementById('quickUploadFile').click()">
+                Choose Image
+            </button>
+            <input type="text" class="form-control" id="filePath" readonly>
+        </div>
+    </div>
+
     <!-- Bootstrap JS (Optional) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const MAX_ROWS = 10;
 
-            document.querySelectorAll('.user-table, .college-table, .team-table, .news-table').forEach(table => {
-                const tbody = table.querySelector('tbody');
-                if (!tbody) return;
+            document.getElementById('quickUploadFile').addEventListener('change', async function (e) {
+                const file = e.target.files[0];
+                if (!file) return;
 
-                const rows = tbody.querySelectorAll('tr');
+                const formData = new FormData();
+                formData.append('file', file);
 
-                // Hide rows beyond limit
-                for (let i = 0; i < rows.length; i++) {
-                    rows[i].style.display = i < MAX_ROWS ? '' : 'none';
-                }
-
-                // Add scroll container if needed
-                if (rows.length > MAX_ROWS) {
-                    const scrollWrapper = document.createElement('div');
-                    scrollWrapper.className = 'table-scroll-wrapper';
-                    table.parentNode.insertBefore(scrollWrapper, table);
-                    scrollWrapper.appendChild(table);
+                try {
+                    const response = await fetch('/quick-upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const result = await response.json();
+                    document.getElementById('filePath').value = result.filePath;
+                } catch (error) {
+                    console.error('Upload failed:', error);
+                    alert('File upload failed');
                 }
             });
 
@@ -769,6 +1253,9 @@
     <script src="/js/team-management.js" defer></script> <!-- Team Management -->
     <script src="/js/news-management.js" defer></script> <!-- News Management -->
     <script src="/js/brackets-management.js" defer></script> <!-- Brackets Management -->
+    <script src="/js/schedules-management.js" defer></script> <!-- Schedules Management -->
+    <script src="/js/tournament-management.js" defer></script> <!-- Tournament Management -->
+    <script src="/js/registrations-management.js" defer></script> <!-- Registrations Management -->
 </body>
 
 </html>

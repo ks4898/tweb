@@ -1,11 +1,10 @@
-// handleacc.js - Critical Fixes
 document.addEventListener("DOMContentLoaded", function() {
   // DOM references with structural isolation
   const navbar = document.querySelector(".navbar");
   const logo = document.querySelector(".navbar-logo");
   const linksContainer = document.querySelector(".navbar-links");
 
-  // Immediate synchronous active tab assignment
+  // immediate synchronous active tab assignment
   function setActiveTab() {
       const currentPath = window.location.pathname;
       const routeMap = {
@@ -19,7 +18,8 @@ document.addEventListener("DOMContentLoaded", function() {
           '/about': 'About Us',
           '/account': 'Management',
           '/management': 'Management',
-          '/signup': 'Account'
+          '/signup': 'Account',
+          '/profile': 'Profile'
       };
 
       linksContainer.querySelectorAll('.nav-link').forEach(link => {
@@ -31,28 +31,28 @@ document.addEventListener("DOMContentLoaded", function() {
       });
   }
 
-  // Atomic session handling
+  // atomic session handling
   function updateNavigation(loggedIn, role) {
       const fragment = document.createDocumentFragment();
       
-      // Preserve static links
+      // preserve static links
       linksContainer.querySelectorAll('.nav-link').forEach(link => {
           if (!['Management', 'Log Out', 'Account'].includes(link.textContent)) {
               fragment.appendChild(link.cloneNode(true));
           }
       });
 
-      // Add dynamic links
+      // add dynamic links
       if (loggedIn) {
           if (['Admin', 'SuperAdmin', 'CollegeRep'].includes(role)) {
               fragment.appendChild(createLink('/account', 'Management'));
           }
-          /*fragment.appendChild(createLink('#', 'Log Out', 'logoutButton'));*/
+          fragment.appendChild(createLink('/profile', 'Profile'));
       } else {
           fragment.appendChild(createLink('/signup', 'Account', null, 'account-style'));
       }
 
-      // Atomic DOM update with layout stabilization
+      // atomic DOM update with layout stabilization
       linksContainer.replaceChildren(fragment);
       setActiveTab();
   }
