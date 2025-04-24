@@ -693,7 +693,7 @@ app.get("/login", (req, res) => {
 app.get("/signup", (req, res) => {
     if (req.session.userId) { // logged in check
         // user is already logged in, redirect
-        if (req.session.role == "Admin" || req.session.role == "SuperAdmin") { // admins check
+        if (req.session.role === "Admin" || req.session.role === "SuperAdmin" || req.session.role === "CollegeRep" || req.session.role === "Moderator") { // admins check
             return res.redirect("account.html"); // redirect to role management for admins
         } else {
             return res.redirect("/"); // redirect to home page for other users
