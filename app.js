@@ -1532,21 +1532,6 @@ app.post("/add-user", verifyRole(["SuperAdmin", "Admin"]), async (req, res) => {
         return res.status(400).json({ message: "Password must have 6 characters and contain a letter" });
     }
 
-    // Check if email already exists
-    try {
-        const [existingUsers] = await db.promise().execute(
-            "SELECT UserID FROM Users WHERE Email = ?",
-            [email]
-        );
-
-        if (existingUsers[0].length > 0) {
-            return res.status(400).json({ message: "Email already in use" });
-        }
-    } catch (error) {
-        console.error("Email check error:", error);
-        return res.status(500).json({ message: "Error checking email availability" });
-    }
-
     const hashedPassword = await bcrypt.hash(password, 10); // hash password
 
     db.beginTransaction(async (err) => {

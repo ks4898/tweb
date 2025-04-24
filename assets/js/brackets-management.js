@@ -9,15 +9,15 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById('deleteBracketModal')
     );
 
-    document.getElementById('searchTournamentsBtn').addEventListener('click', function() {
+    document.getElementById('searchTournamentsBtn').addEventListener('click', function () {
         const searchTerm = document.getElementById('searchTournaments').value.trim();
         fetchTournaments(searchTerm);
     });
 
-    // Initialize tournaments table
+    // initialize tournaments table
     fetchTournaments();
 
-    // Tournament selection handler
+    // tournament selection handler
     document.getElementById('bracketsTableBody').addEventListener('click', function (e) {
         const row = e.target.closest('tr');
         if (!row) return;
@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", function () {
         currentTournamentId = row.dataset.tournamentId;
     });
 
-    // Edit Bracket button handler
+    // edit Bracket button handler
     document.getElementById('editBracketBtn').addEventListener('click', async () => {
         if (!currentTournamentId) {
             alert('Please select a tournament first');
@@ -37,18 +37,18 @@ document.addEventListener("DOMContentLoaded", function () {
             currentMatches = await fetch(`/matches?tournamentId=${currentTournamentId}&rounds=2,3`)
                 .then(res => res.json());
 
-            // Initialize form state
+            // initialize form state
             const bracketTypeSelect = document.getElementById('editBracketSelectBracket');
             bracketTypeSelect.innerHTML = `
                 <option value="2">Semifinal</option>
                 <option value="3">Final</option>
             `;
 
-            // Set default state
+            // set default state
             bracketTypeSelect.value = '2';
             document.getElementById('editBracketSelectSemiFinal').parentElement.style.display = 'block';
 
-            // Load first available match
+            // load first available match
             loadBracketData();
 
             editBracketModal.show();
@@ -58,17 +58,17 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    // Bracket type change handler
+    // bracket type change handler
     document.getElementById('editBracketSelectBracket').addEventListener('change', function () {
         document.getElementById('editBracketSelectSemiFinal').parentElement.style.display =
             this.value === '2' ? 'block' : 'none';
         loadBracketData();
     });
 
-    // Semifinal match change handler
+    // semifinal match change handler
     document.getElementById('editBracketSelectSemiFinal').addEventListener('change', loadBracketData);
 
-    // Load match data based on selections
+    // load match data based on selections
     function loadBracketData() {
         const bracketType = document.getElementById('editBracketSelectBracket').value;
         const semifinalIndex = document.getElementById('editBracketSelectSemiFinal').value;
@@ -91,7 +91,7 @@ document.addEventListener("DOMContentLoaded", function () {
     function populateFormFields(match) {
         const winnerSelect = document.getElementById('editBracketSelectWinner');
 
-        // Always reset options first
+        // always reset options first
         winnerSelect.innerHTML = `
             <option value="1">Team 1</option>
             <option value="2">Team 2</option>
@@ -105,7 +105,7 @@ document.addEventListener("DOMContentLoaded", function () {
             document.getElementById('editBracketMatchDate').value =
                 match.MatchDate ? new Date(match.MatchDate).toISOString().slice(0, 16) : '';
 
-            // Set winner selection
+            // set winner selection
             if (match.WinnerID === match.Team1ID) winnerSelect.value = '1';
             if (match.WinnerID === match.Team2ID) winnerSelect.value = '2';
         }
@@ -115,14 +115,14 @@ document.addEventListener("DOMContentLoaded", function () {
     function resetFormFields() {
         const winnerSelect = document.getElementById('editBracketSelectWinner');
 
-        // Clear all fields
+        // clear all fields
         document.getElementById('editBracketFirstTeamName').value = '';
         document.getElementById('editBracketFirstTeamScore').value = '';
         document.getElementById('editBracketSecondTeamName').value = '';
         document.getElementById('editBracketSecondTeamScore').value = '';
         document.getElementById('editBracketMatchDate').value = '';
 
-        // Initialize winner select with default options
+        // initialize winner select with default options
         winnerSelect.innerHTML = `
             <option value="1">Team 1</option>
             <option value="2">Team 2</option>
@@ -130,27 +130,27 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 
-    // Save bracket handler
+    // save bracket handler
     document.getElementById('saveBracketBtn').addEventListener('click', async () => {
         const bracketType = document.getElementById('editBracketSelectBracket').value;
         const semifinalIndex = document.getElementById('editBracketSelectSemiFinal').value;
 
         try {
-            // 1. Get team names from inputs
+            // get team names from inputs
             const team1Name = document.getElementById('editBracketFirstTeamName').value.trim();
             const team2Name = document.getElementById('editBracketSecondTeamName').value.trim();
 
-            // 2. Get/create teams with EXACT name matches
+            // get/create teams with EXACT name matches
             const [team1Id, team2Id] = await Promise.all([
                 getOrCreateTeamExact(team1Name),
                 getOrCreateTeamExact(team2Name)
             ]);
 
-            // 3. Determine winner ID based on dropdown value (1/2)
+            // determine winner ID based on dropdown value (1/2)
             const winnerValue = document.getElementById('editBracketSelectWinner').value;
             const winnerId = winnerValue === '1' ? team1Id : team2Id;
 
-            // 4. Prepare match data
+            // prepare match data
             const matchData = {
                 TournamentID: currentTournamentId,
                 Team1ID: team1Id,
@@ -163,25 +163,17 @@ document.addEventListener("DOMContentLoaded", function () {
                 Status: 'Completed'
             };
 
-            // 5. Handle existing matches properly
             let matchId;
-            const existingMatches = await fetch(
-                `/matches?tournamentId=${currentTournamentId}&rounds=${bracketType}`
-            ).then(res => res.json());
 
-            // For semifinals: max 2 matches
+            // get the current match being edited based on the form selections
             if (bracketType === '2') {
-                if (existingMatches.length >= 2) {
-                    // Update existing match at index
-                    matchId = existingMatches[semifinalIndex]?.MatchID;
-                } else {
-                    // Create new match if under limit
-                    matchId = null;
-                }
-            }
-            // For finals: max 1 match
-            else {
-                matchId = existingMatches[0]?.MatchID;
+                // for semifinals, get the specific match based on the semifinal index
+                const semifinals = currentMatches.filter(m => m.RoundNumber === 2);
+                matchId = semifinals[semifinalIndex]?.MatchID;
+            } else {
+                // for finals, get the final match
+                const final = currentMatches.find(m => m.RoundNumber === 3);
+                matchId = final?.MatchID;
             }
 
             // 6. API call
@@ -207,17 +199,17 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    // Strict team handling with exact name matching
+    // strict team handling with exact name matching
     async function getOrCreateTeamExact(teamName) {
         if (!teamName) throw new Error('Team name is required');
 
-        // Check existing team with exact name match
+        // check existing team with exact name match
         const existingTeam = await fetch(`/team/exact?name=${encodeURIComponent(teamName)}`)
             .then(res => res.json());
 
         if (existingTeam?.TeamID) return existingTeam.TeamID;
 
-        // Create new team if doesn't exist
+        // create new team if doesn't exist
         const newTeam = await fetch('/teams', {
             method: 'POST',
             headers: {
@@ -232,7 +224,7 @@ document.addEventListener("DOMContentLoaded", function () {
         return newTeam.TeamID;
     }
 
-    // Delete bracket handler
+    // delete bracket handler
     document.getElementById('deleteBracketBtn').addEventListener('click', async () => {
         if (!currentTournamentId) {
             alert('Please select a tournament first');
@@ -245,7 +237,7 @@ document.addEventListener("DOMContentLoaded", function () {
         deleteBracketModal.show();
     });
 
-    // Confirm delete handler
+    // confirm delete handler
     document.getElementById('confirmDeleteBracketBtn').addEventListener('click', async () => {
         try {
             const response = await fetch(`/tournament/${currentTournamentId}/brackets`, {
@@ -263,7 +255,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    // Fetch tournaments for table
+    // fetch tournaments for table
     async function fetchTournaments(searchTerm = '') {
         try {
             const url = `/api/tournaments/brackets${searchTerm ? `?q=${encodeURIComponent(searchTerm)}` : ''}`;
@@ -275,7 +267,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    // Render tournaments in table
+    // render tournaments in table
     function renderTournaments(tournaments) {
         const tbody = document.getElementById('bracketsTableBody');
         tbody.innerHTML = tournaments.map(t => `
