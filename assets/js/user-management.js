@@ -245,7 +245,7 @@ async function addUser(userData) {
         alert('User added successfully!');
     } catch (error) {
         console.error('Error adding user:', error);
-        alert('Failed to add user.');
+        alert('Failed to add user');
     }
 }
 

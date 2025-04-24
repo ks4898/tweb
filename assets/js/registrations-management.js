@@ -42,7 +42,7 @@ document.addEventListener("DOMContentLoaded", function() {
         tbody.innerHTML = registrations.map(reg => `
             <tr data-registration-id="${reg.RegistrationID}">
                 <td>${reg.RegistrationID}</td>
-                <td>${reg.UserID}</td>
+                <td>${reg.UserID} (${reg.UserName || 'Unknown'})</td>
                 <td>${reg.TournamentID || 'N/A'}</td>
                 <td>${reg.TeamID || 'N/A'}</td>
                 <td>${reg.NewTeamName || 'N/A'}</td>

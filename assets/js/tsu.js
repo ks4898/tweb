@@ -223,22 +223,26 @@ async function submitRegistration(formData) {
 
         if (data.success) {
             if (data.pendingVerification) {
-                // Show the modal instead of alert
+                // show the modal instead of alert
                 const pendingModal = new bootstrap.Modal(document.getElementById('pendingVerificationModal'));
                 pendingModal.show();
 
-                // Add event listener for the OK button
+                // add event listener for the OK button
                 document.getElementById('pendingVerificationOkBtn').addEventListener('click', function () {
                     pendingModal.hide();
-                    window.location.href = '/';
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 2000);
                 });
 
-                // Also redirect when the modal is hidden (e.g., if user clicks outside or the X button)
+                // also redirect when the modal is hidden (e.g., if user clicks outside or the X button)
                 document.getElementById('pendingVerificationModal').addEventListener('hidden.bs.modal', function () {
-                    window.location.href = '/';
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 2000);
                 });
             } else {
-                // Redirect to payment page with registration ID
+                // redirect to payment page with registration ID
                 window.location.href = `/payment?registrationId=${data.registrationId}`;
             }
         } else {
@@ -250,7 +254,7 @@ async function submitRegistration(formData) {
     }
 }
 
-// Utility function to show error modal
+// utility function to show error modal
 function showErrorModal(message, callback) {
     const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
     document.getElementById('errorModalBody').textContent = message;

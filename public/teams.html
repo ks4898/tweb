@@ -1,4 +1,3 @@
-<!-- public/teams-directory.html -->
 <!DOCTYPE html>
 <html lang="en">
 
@@ -12,88 +11,116 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/css/styles.css">
     <link rel="stylesheet" href="/css/team.css">
+
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
     <style>
-        h1.mb-4 {
-            color: rgb(19, 80, 91) !important;
-            font-size: 4em !important;
-            padding: 1rem !important;
+        body {
+            background-color: #f0f9fa;
         }
 
-        h5.card-title {
-            color: rgb(25, 105, 119) !important;
-            text-shadow: none;
-            font-weight: bold;
+        h1 {
+            color: #13505b;
+            margin-top: 2rem;
+            margin-bottom: 2rem;
+            font-size: 2.5rem;
         }
 
-        .text-muted {
-            text-align: left !important;
+        .search-container {
+            margin-bottom: 2rem;
         }
 
-        .btn {
-            background-color: rgb(25, 105, 119) !important;
-            border: 0 !important;
+        .btn-primary {
+            background-color: #13505b;
+            border-color: #13505b;
         }
 
-        select {
-            color: #5c6268 !important;
+        .btn-primary:hover {
+            background-color: #0c3c45;
+            border-color: #0c3c45;
         }
 
-        /*.row.row-cols-1.row-cols-md-3.g-4 {
-            padding-top: 1rem !important;
-        }*/
-
-        .card-img-top {
-            padding: 1rem !important;
-            object-fit: cover;
-            width: 200px;
-            height: 200px;
+        .btn-secondary {
+            background-color: #13505b;
+            border-color: #13505b;
         }
 
-        /* Container for the image on the left */
-        .card-img-container {
-            width: 40%;
-            /* Adjust width as needed */
+        .btn-secondary:hover {
+            background-color: #0c3c45;
+            border-color: #0c3c45;
+        }
+
+        /* Card styling */
+        .card {
+            border: none;
+            border-radius: 8px;
             overflow: hidden;
-            /* Ensure image doesn't overflow */
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
-        /* Image styling */
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-img-container {
+            width: 140px;
+            height: 140px;
+            min-width: 140px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
         .card-img-left {
             width: 100%;
-            /* Make image fill its container */
             height: 100%;
-            /* Ensure consistent height */
-            object-fit: cover;
-            /* Maintain aspect ratio while filling container */
+            object-fit: contain;
         }
 
-        /* Card body adjustments */
         .card-body {
-            width: 60%;
-            /* Adjust width as needed to complement the image */
-            padding: 1rem;
-            /* Add padding for spacing */
+            padding: 1.25rem;
         }
 
-        /* Button alignment */
-        .btn.btn-primary.mt-auto {
-            max-width: 150px;
-            /* Limit button width for consistent design */
+        .card-title {
+            color: #13505b;
+            font-weight: 400;
+            margin-bottom: 0.5rem;
         }
 
-        img {
-            opacity: 0;
-            transition: opacity 0.3s ease-in;
+        /* Responsive grid */
+        @media (max-width: 1199.98px) {
+            .col-md-4 {
+                width: 50%;
+            }
         }
 
-        img.loaded {
-            opacity: 1;
+        @media (max-width: 767.98px) {
+            .col-md-4 {
+                width: 100%;
+            }
+
+            .card {
+                flex-direction: column !important;
+            }
+
+            .card-img-container {
+                width: 100%;
+                height: 200px;
+                min-width: unset;
+                padding: 1rem !important;
+            }
+
+            .card-body {
+                text-align: center;
+            }
         }
 
-        /* Reserve space for images with aspect ratio */
-        .team-card img {
-            aspect-ratio: 1/1;
-            background-color: rgba(19, 80, 91, 0.1);
+        /* Search form responsiveness */
+        @media (max-width: 767.98px) {
+            .search-container .row>div {
+                margin-bottom: 0.5rem;
+            }
         }
     </style>
 </head>
@@ -113,34 +140,36 @@
         </div>
     </nav>
 
-    <div class="container py-5">
-        <h1 class="mb-4">Teams Directory</h1>
+    <div class="container py-4">
+        <h1 class="text-center">Teams Directory</h1>
 
         <!-- Search Form -->
         <form class="mb-4">
-            <div class="row g-4">
-                <div class="col-md-6">
-                    <input type="text" name="q" value="{{SEARCH_QUERY}}" class="form-control"
-                        placeholder="Search teams...">
-                </div>
-                <div class="col-md-3">
-                    <select class="form-select" name="by">
-                        <option value="all">All Teams & Colleges</option>
-                        <option value="name">By Team Name</option>
-                        <option value="college">By College</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary w-100">Search</button>
-                </div>
-                <div class="col-md-1">
-                    <button type="button" class="btn btn-primary w-100" onclick="clearSearch()">Clear</button>
+            <div class="search-container">
+                <div class="row g-2">
+                    <div class="col-12 col-md-5">
+                        <input type="text" name="q" value="{{SEARCH_QUERY}}" class="form-control"
+                            placeholder="Search teams...">
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <select class="form-select" name="by">
+                            <option value="all">All Teams & Colleges</option>
+                            <option value="name">By Team Name</option>
+                            <option value="college">By College</option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">Search</button>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <button type="button" class="btn btn-secondary w-100" onclick="clearSearch()">Clear</button>
+                    </div>
                 </div>
             </div>
         </form>
 
-        <!-- Team Cards -->
-        <div class="row row-cols-1 mt-2 row-cols-md-3 g-4">
+        <!-- Teams Grid -->
+        <div class="row">
             {{TEAMS_LIST}}
         </div>
     </div>
@@ -186,17 +215,17 @@
             }
         });
         function clearSearch() {
-                // Clear search input
-                const searchInput = document.querySelector('input[name="q"]');
-                searchInput.value = '';
+            // Clear search input
+            const searchInput = document.querySelector('input[name="q"]');
+            searchInput.value = '';
 
-                // Reset select to 'all'
-                const searchBy = document.querySelector('select[name="by"]');
-                searchBy.value = 'all';
+            // Reset select to 'all'
+            const searchBy = document.querySelector('select[name="by"]');
+            searchBy.value = 'all';
 
-                // Submit the form to refresh results
-                document.querySelector('form').submit();
-            }
+            // Submit the form to refresh results
+            document.querySelector('form').submit();
+        }
     </script>
 </body>
 

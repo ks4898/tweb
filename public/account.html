@@ -4,12 +4,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Account Management</title>
+    <title>Management Board</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/styles.css">
     <link rel="stylesheet" href="/css/account.css">
+
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
 </head>
 
 <body>
@@ -57,6 +61,14 @@
             <li class="nav-item">
                 <a class="nav-link fs-5 px-3 py-2" href="#tournament-management"
                     style="color: rgb(196, 216, 219) !important;">Tournament</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link fs-5 px-3 py-2" href="#registrations-management"
+                    style="color: rgb(196, 216, 219) !important;">Registrations</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link fs-5 px-3 py-2" href="#payments"
+                    style="color: rgb(196, 216, 219) !important;">Payments</a>
             </li>
             <li class="nav-item">
                 <a class="nav-link fs-5 px-3 py-2" href="/reports"
@@ -425,6 +437,19 @@
                 </table>
             </div>
         </section>
+
+        <!-- Image Upload Section -->
+        <div class="container mt-5" id="quick-image">
+            <h3>Quick Image Upload</h3>
+            <div class="input-group mb-3">
+                <input type="file" id="quickUploadFile" hidden accept="image/*">
+                <button class="btn btn-primary" type="button"
+                    onclick="document.getElementById('quickUploadFile').click()">
+                    Choose Image
+                </button>
+                <input type="text" class="form-control" id="filePath" readonly>
+            </div>
+        </div>
 
         <!-- Add User Modal -->
         <div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true">
@@ -1094,31 +1119,38 @@
                     <form id="registrationDataForm">
                         <div class="mb-3">
                             <label for="viewRegistrationID" class="form-label">Registration ID</label>
-                            <input type="text" class="form-control" id="viewRegistrationID" readonly aria-readonly="true">
+                            <input type="text" class="form-control" id="viewRegistrationID" readonly
+                                aria-readonly="true">
                         </div>
                         <div class="mb-3">
                             <label for="viewRegistrationUserID" class="form-label">User ID</label>
-                            <input type="text" class="form-control" id="viewRegistrationUserID" readonly aria-readonly="true">
+                            <input type="text" class="form-control" id="viewRegistrationUserID" readonly
+                                aria-readonly="true">
                         </div>
                         <div class="mb-3">
                             <label for="viewRegistrationTournamentID" class="form-label">Tournament ID</label>
-                            <input type="text" class="form-control" id="viewRegistrationTournamentID" readonly aria-readonly="true">
+                            <input type="text" class="form-control" id="viewRegistrationTournamentID" readonly
+                                aria-readonly="true">
                         </div>
                         <div class="mb-3">
                             <label for="viewRegistrationTeamID" class="form-label">Team ID</label>
-                            <input type="text" class="form-control" id="viewRegistrationTeamID" readonly aria-readonly="true">
+                            <input type="text" class="form-control" id="viewRegistrationTeamID" readonly
+                                aria-readonly="true">
                         </div>
                         <div class="mb-3">
                             <label for="viewRegistrationNewTeamName" class="form-label">Created Team Name</label>
-                            <input type="text" class="form-control" id="viewRegistrationNewTeamName" readonly aria-readonly="true">
+                            <input type="text" class="form-control" id="viewRegistrationNewTeamName" readonly
+                                aria-readonly="true">
                         </div>
                         <div class="mb-3">
                             <label for="viewRegistrationMessage" class="form-label">Message</label>
-                            <textarea class="form-control" id="viewRegistrationMessage" rows="5" readonly aria-readonly="true"></textarea>
+                            <textarea class="form-control" id="viewRegistrationMessage" rows="5" readonly
+                                aria-readonly="true"></textarea>
                         </div>
                         <div class="mb-3">
                             <label for="viewRegistrationStatus" class="form-label">Status</label>
-                            <input type="text" class="form-control" id="viewRegistrationStatus" readonly aria-readonly="true">
+                            <input type="text" class="form-control" id="viewRegistrationStatus" readonly
+                                aria-readonly="true">
                         </div>
                         <div class="mb-3">
                             <label for="viewRegistrationDate" class="form-label">Date</label>
@@ -1147,11 +1179,13 @@
                     <form id="registrationForm">
                         <div class="mb-3">
                             <label for="editRegistrationTournamentID" class="form-label">Tournament ID</label>
-                            <input type="number" class="form-control" id="editRegistrationTournamentID" name="editRegistrationTournamentID" min="1">
+                            <input type="number" class="form-control" id="editRegistrationTournamentID"
+                                name="editRegistrationTournamentID" min="1">
                         </div>
                         <div class="mb-3">
                             <label for="editRegistrationTeamID" class="form-label">Team ID</label>
-                            <input type="number" class="form-control" id="editRegistrationTeamID" name="editRegistrationTeamID" min="1">
+                            <input type="number" class="form-control" id="editRegistrationTeamID"
+                                name="editRegistrationTeamID" min="1">
                         </div>
                         <div class="mb-3">
                             <label for="editRegistrationStatus" class="form-label">Status</label>
@@ -1191,15 +1225,58 @@
         </div>
     </div>
 
-    <!-- Image Upload Section -->
-    <div class="container mt-5" id="quick-image">
-        <h3>Quick Image Upload</h3>
-        <div class="input-group mb-3">
-            <input type="file" id="quickUploadFile" hidden accept="image/*">
-            <button class="btn btn-primary" type="button" onclick="document.getElementById('quickUploadFile').click()">
-                Choose Image
-            </button>
-            <input type="text" class="form-control" id="filePath" readonly>
+    <!-- View Payments Modal -->
+    <div class="modal fade" id="paymentsModal" tabindex="-1" aria-labelledby="paymentsModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="paymentsModalLabel">Payment Data</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="paymentDataForm">
+                        <div class="mb-3">
+                            <label for="viewPaymentID" class="form-label">Payment ID</label>
+                            <input type="text" class="form-control" id="viewPaymentID" readonly
+                                aria-readonly="true">
+                        </div>
+                        <div class="mb-3">
+                            <label for="viewPaymentUserID" class="form-label">User ID</label>
+                            <input type="text" class="form-control" id="viewPaymentUserID" readonly
+                                aria-readonly="true">
+                        </div>
+                        <div class="mb-3">
+                            <label for="viewPaymentTournamentID" class="form-label">Tournament ID</label>
+                            <input type="text" class="form-control" id="viewPaymentTournamentID" readonly
+                                aria-readonly="true">
+                        </div>
+                        <div class="mb-3">
+                            <label for="viewPaymentTeamID" class="form-label">Team ID</label>
+                            <input type="text" class="form-control" id="viewPaymentTeamID" readonly
+                                aria-readonly="true">
+                        </div>
+                        <div class="mb-3">
+                            <label for="viewPaymentAmount" class="form-label">Amount</label>
+                            <input type="text" class="form-control" id="viewPaymentAmount" readonly
+                                aria-readonly="true">
+                        </div>
+                        <div class="mb-3">
+                            <label for="viewPaymentStatus" class="form-label">Status</label>
+                            <input type="text"class="form-control" id="viewPaymentStatus" readonly
+                                aria-readonly="true">
+                        </div>
+                        <div class="mb-3">
+                            <label for="viewPaymentDate" class="form-label">Payment Date (if paid)</label>
+                            <input type="text" class="form-control" id="viewPaymentDate" readonly
+                                aria-readonly="true">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1256,6 +1333,7 @@
     <script src="/js/schedules-management.js" defer></script> <!-- Schedules Management -->
     <script src="/js/tournament-management.js" defer></script> <!-- Tournament Management -->
     <script src="/js/registrations-management.js" defer></script> <!-- Registrations Management -->
+    <script src="/js/loadpayments.js" defer></script> <!-- Payments -->
 </body>
 
 </html>

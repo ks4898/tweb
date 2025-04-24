@@ -1,8 +1,9 @@
 -- database schema for the Aardvark Games Tournament Platform
+
+DROP DATABASE IF EXISTS TournamentDB; 
 CREATE DATABASE TournamentDB;
 USE TournamentDB;
 
--- Users table to store all user accounts
 
 CREATE TABLE Users (
     UserID INT PRIMARY KEY AUTO_INCREMENT,
@@ -13,7 +14,6 @@ CREATE TABLE Users (
     CreateDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- University table to store college information
 
 CREATE TABLE University (
     UniversityID INT PRIMARY KEY AUTO_INCREMENT,
@@ -28,7 +28,6 @@ CREATE TABLE University (
     DateAdded TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Teams table to store team information
 
 CREATE TABLE Teams (
     TeamID INT PRIMARY KEY AUTO_INCREMENT,
@@ -40,7 +39,6 @@ CREATE TABLE Teams (
     FOREIGN KEY (UniversityID) REFERENCES University(UniversityID) ON DELETE CASCADE
 );
 
--- Players table to store player information
 
 CREATE TABLE Players (
     PlayerID INT PRIMARY KEY AUTO_INCREMENT,
@@ -54,7 +52,6 @@ CREATE TABLE Players (
     FOREIGN KEY (TeamID) REFERENCES Teams(TeamID) ON DELETE SET NULL
 );
 
--- College moderators table to link users with colleges they moderate
 
 CREATE TABLE CollegeReps (
     ModeratorID INT PRIMARY KEY AUTO_INCREMENT,
@@ -111,21 +108,21 @@ CREATE TABLE Tournaments (
 
 
 CREATE TABLE Registrations (
-        RegistrationID INT PRIMARY KEY AUTO_INCREMENT,
-        UserID INT,
-        TournamentID INT,
-        TeamID INT,
-        NewTeamName VARCHAR(255),
-        Message TEXT,
-        Status VARCHAR(50) DEFAULT 'Pending',
-        RegistrationDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (UserID) REFERENCES Users(UserID) ON DELETE CASCADE,
-        FOREIGN KEY (TournamentID) REFERENCES Tournaments(TournamentID) ON DELETE CASCADE,
-        FOREIGN KEY (TeamID) REFERENCES Teams(TeamID) ON DELETE SET NULL
-    );
+	RegistrationID INT PRIMARY KEY AUTO_INCREMENT,
+	UserID INT,
+	TournamentID INT,
+	TeamID INT,
+	NewTeamName VARCHAR(255),
+	Message TEXT,
+	Status VARCHAR(50) DEFAULT 'Pending',
+	RegistrationDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (RegistrationID) REFERENCES Payments(PaymentID) ON DELETE CASCADE,
+	FOREIGN KEY (UserID) REFERENCES Users(UserID) ON DELETE CASCADE,
+	FOREIGN KEY (TournamentID) REFERENCES Tournaments(TournamentID) ON DELETE CASCADE,
+	FOREIGN KEY (TeamID) REFERENCES Teams(TeamID) ON DELETE SET NULL
+);
 
--- Matches table to store match information
-DROP TABLE IF EXISTS Matches;
+
 CREATE TABLE Matches (
     MatchID INT PRIMARY KEY AUTO_INCREMENT,
     TournamentID INT,
@@ -143,25 +140,21 @@ CREATE TABLE Matches (
     FOREIGN KEY (WinnerID) REFERENCES Teams(TeamID) ON DELETE SET NULL
 );
 
--- Payments table to store payment information
 
 CREATE TABLE Payments (
-  PaymentID INT PRIMARY KEY AUTO_INCREMENT,
-  RegistrationID INT NOT NULL,
+  PaymentID INT PRIMARY KEY,
   UserID INT,
   TeamID INT,
   TournamentID INT,
   Amount DECIMAL(10, 2),
-  Status VARCHAR(50),
+  Status VARCHAR(50) DEFAULT 'Pending',
   SuccessPageViewed BOOLEAN DEFAULT FALSE,
   PaymentDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (UserID) REFERENCES Users(UserID),
   FOREIGN KEY (TeamID) REFERENCES Teams(TeamID),
-  FOREIGN KEY (TournamentID) REFERENCES Tournaments(TournamentID),
-  FOREIGN KEY (RegistrationID) REFERENCES Registrations(RegistrationID)
+  FOREIGN KEY (TournamentID) REFERENCES Tournaments(TournamentID)
 );
 
--- News/blog posts table
 
 CREATE TABLE Posts (
     PostID INT AUTO_INCREMENT PRIMARY KEY,

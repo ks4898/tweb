@@ -150,6 +150,38 @@ h1 {
   border-color: #003f4f;
 }
 
+#schedules-management {
+  padding-top: 1rem;
+  padding-bottom: 4rem;
+  border-bottom-style: ridge;
+  border-bottom-width: 15px;
+  border-color: #003f4f;
+}
+
+#tournament-management {
+  padding-top: 1rem;
+  padding-bottom: 4rem;
+  border-bottom-style: ridge;
+  border-bottom-width: 15px;
+  border-color: #003f4f;
+}
+
+#registrations-management {
+  padding-top: 1rem;
+  padding-bottom: 4rem;
+  border-bottom-style: ridge;
+  border-bottom-width: 15px;
+  border-color: #003f4f;
+}
+
+#payments {
+  padding-top: 1rem;
+  padding-bottom: 4rem;
+  border-bottom-style: ridge;
+  border-bottom-width: 15px;
+  border-color: #003f4f;
+}
+
 .modal-content {
   background-color: #1f2d34;
   color: #fff;

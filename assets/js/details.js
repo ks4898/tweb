@@ -290,16 +290,16 @@ function renderCollegeDetails(collegeData, teams) {
             const playersContainer = document.createElement("div");
             playersContainer.className = "players-container";
             
-            // Check if team has players
+            // check if team has players
             if (team.players.length === 0) {
-                // Display message when no team members exist
+                // display message when no team members exist
                 const noPlayersMsg = document.createElement("p");
                 noPlayersMsg.textContent = "This team currently has no members.";
                 noPlayersMsg.style.color = "#F1FDFF";
                 noPlayersMsg.style.textAlign = "center";
-                noPlayersMsg.style.fontSize = "1em";
+                noPlayersMsg.style.fontSize = "1.2em";
                 noPlayersMsg.style.width = "100%";
-                noPlayersMsg.style.margin = "20px 0";
+                noPlayersMsg.style.margin = "25px 0";
                 
                 playersContainer.appendChild(noPlayersMsg);
             } else {

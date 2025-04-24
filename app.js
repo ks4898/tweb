@@ -79,7 +79,9 @@ function preventDirectAccess(req, res, next) {
         /^\/tournament($|\?|\/)/,
         /^\/api\/tournaments($|\?|\/)/,
         /^\/api\/matches($|\?|\/)/,
-        /^\/tournaments($|\?|\/)/
+        /^\/tournaments($|\?|\/)/,
+        /^\/api\/registrations($|\?|\/)/,
+        /^\/api\/payments($|\?|\/)/
     ];
 
     // check if this path matches any protected pattern
@@ -124,6 +126,116 @@ app.use(session({
         sameSite: 'lax'     // helps avoid issues with cross-origin cookies
     }
 }));
+
+// One-time setup flag (stored in memory)
+let setupComplete = false;
+
+// Check if admin exists already
+async function checkAdminExists() {
+    try {
+        const [admins] = await db.promise().execute(
+            "SELECT COUNT(*) as count FROM Users WHERE Role = 'SuperAdmin'"
+        );
+        return admins[0].count > 0;
+    } catch (error) {
+        console.error("Error checking for existing admin:", error);
+        return false;
+    }
+}
+
+// initial setup route - only accessible once
+app.get('/setup', async (req, res) => {
+    // check if setup was already completed
+    if (setupComplete) {
+        return res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
+    }
+
+    // Check if admin already exists in database
+    const adminExists = await checkAdminExists();
+    if (adminExists) {
+        setupComplete = true;
+        return res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
+    }
+
+    // if no admin exists, serve the setup page
+    res.sendFile(path.join(__dirname, 'public', 'setup.html'));
+});
+
+// process setup form
+app.post('/setup', async (req, res) => {
+    // check if setup was already completed
+    if (setupComplete) {
+        return res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
+    }
+
+    // check if admin already exists in database
+    const adminExists = await checkAdminExists();
+    if (adminExists) {
+        setupComplete = true;
+        return res.status(403).json({ message: 'Setup already completed. Admin account already exists.' });
+    }
+
+    const { firstName, lastName, email, password } = req.body;
+
+    // validate inputs
+    if (!firstName || !lastName || !email || !password) {
+        return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    // validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        return res.status(400).json({ message: 'Invalid email format' });
+    }
+
+    // validate password strength
+    const passwordRegex = /^(?=.*[a-zA-Z]).{8,}$/;
+    if (!passwordRegex.test(password)) {
+        return res.status(400).json({ message: 'Password must be at least 8 characters and contain a letter' });
+    }
+
+    try {
+        // hash the password
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const fullName = `${firstName} ${lastName}`;
+
+        // begin transaction
+        await db.promise().beginTransaction();
+
+        // create SuperAdmin user
+        const [result] = await db.promise().execute(
+            "INSERT INTO Users (Name, Email, Password, Role) VALUES (?, ?, ?, ?)",
+            [fullName, email, hashedPassword, 'SuperAdmin']
+        );
+
+        const userId = result.insertId;
+
+        // add to SuperAdmins table
+        await db.promise().execute(
+            "INSERT INTO SuperAdmins (UserID) VALUES (?)",
+            [userId]
+        );
+
+        // Commit transaction
+        await db.promise().commit();
+
+        // mark setup as complete
+        setupComplete = true;
+
+        // return success
+        res.status(201).json({
+            message: "SuperAdmin account created successfully. You can now log in.",
+            setupComplete: true
+        });
+
+    } catch (error) {
+        // rollback transaction on error
+        await db.promise().rollback();
+        console.error("Error creating SuperAdmin:", error);
+        res.status(500).json({ message: "Failed to create SuperAdmin account" });
+    }
+});
+
 
 // ======================== QUICK UPLOAD, SERVE PAGES & SESSION CHECKING ========================
 
@@ -183,13 +295,13 @@ app.get('/teams', async (req, res) => {
                     break;
 
                 case 'college':
-                    // Only show teams with matching university (exclude unaffiliated)
+                    // only show teams with matching university (exclude unaffiliated)
                     whereClause = 'WHERE u.Name LIKE ?';
                     params.push(`%${searchQuery}%`);
                     break;
 
                 case 'all':
-                    // Show teams where name OR university matches (unaffiliated only via name)
+                    // show teams where name OR university matches (unaffiliated only via name)
                     whereClause = 'WHERE (t.Name LIKE ? OR u.Name LIKE ?)';
                     params.push(`%${searchQuery}%`, `%${searchQuery}%`);
                     break;
@@ -213,19 +325,14 @@ app.get('/teams', async (req, res) => {
             <div class="col-md-4 mb-4">
                 <div class="card h-100 shadow d-flex flex-row">
                     <!-- Team Image -->
-                    ${team.TeamImage ? `
-                        <div class="card-img-container p-3">
-                            <img src="${team.TeamImage || "/media/img/placeholder-250x250.png"}" class="card-img-left" alt="${team.Name}">
-                        </div>
-                    ` : `
-                        <div class="card-img-container p-3">
-                            <img src="/media/img/placeholder-250x250.png" class="card-img-left" alt="${team.Name}">
-                        </div>`}
-
+                    <div class="card-img-container p-3">
+                        <img src="${team.TeamImage || "/media/img/placeholder-250x250.png"}" class="card-img-left" alt="${team.Name}">
+                    </div>
+        
                     <!-- Team Info -->
                     <div class="card-body d-flex flex-column justify-content-center">
                         <h5 class="card-title">${team.Name}</h5>
-                        <p class="text-muted mb-3">From ${team.UniversityName || ' New World'}</p>
+                        <p class="text-muted mb-3">From ${team.UniversityName || 'New World'}</p>
                         <a href="/teams/${encodeURIComponent(team.Name)}" class="btn btn-primary mt-auto">View Team</a>
                     </div>
                 </div>
@@ -396,7 +503,6 @@ app.get('/profile', verifyRole(["User", "Player", "Moderator", "CollegeRep", "Ad
     res.sendFile(path.join(__dirname, "public", "profile.html"));
 });
 
-
 // serve payment page endpoint
 app.get("/payment", verifyRole(["Player"]), (req, res) => {
     const registrationId = req.query.registrationId;
@@ -445,8 +551,8 @@ app.get('/payment-success', verifyRole(["Player"]), (req, res) => {
         return res.redirect('/');
     }
 
-    // Verify this payment is legitimate and belongs to this user
-    // Also check if the success page has already been viewed
+    // verify this payment is legitimate and belongs to this user
+    // also check if the success page has already been viewed
     db.execute(`
       SELECT p.Status, p.PaymentID, p.SuccessPageViewed, r.Status AS RegistrationStatus, 
              t.Name AS TournamentName, tm.Name AS TeamName
@@ -470,8 +576,7 @@ app.get('/payment-success', verifyRole(["Player"]), (req, res) => {
 
         // check if the success page has already been viewed
         if (results[0].SuccessPageViewed) {
-            console.log("Payment success page already viewed for payment ID:", registrationId);
-            return res.redirect('/schedules'); // Redirect to schedules or another appropriate page
+            return res.redirect('/'); // redirect to home
         }
 
         // mark this payment as viewed in the success page to prevent multiple views
@@ -554,11 +659,14 @@ app.get('/payment-success', verifyRole(["Player"]), (req, res) => {
     });
 });
 
-
-
 // serve news page endpoint
 app.get("/news", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "news.html"));
+});
+
+// serve news page endpoint
+app.get("/stats", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "stats.html"));
 });
 
 // serve tournament register page endpoint
@@ -620,8 +728,8 @@ app.post("/login", (req, res) => {
             return res.status(401).json({ message: "Invalid email or password. Please retry." });
         }
 
+        // get the user from results
         const user = results[0];
-        console.log(results[0]);
 
         // compare password with hashed password
         const isMatch = await bcrypt.compare(password, user.Password);
@@ -743,7 +851,7 @@ app.get("/fetchColleges", (req, res) => {
 });
 
 // fetch college by id or name endpoint
-app.get("/university", verifyRole(["Admin", "SuperAdmin", "Moderator", "CollegeRep"]), (req, res) => {
+app.get("/university", (req, res) => {
     const { name, id } = req.query;
 
     if (!name && !id) {
@@ -855,8 +963,6 @@ app.get("/teams-for-college", (req, res) => {
 app.post("/add-team", verifyRole(["SuperAdmin", "Admin", "CollegeRep"]), (req, res) => {
     const { name, universityId } = req.body;
     const desc = "";
-    // add validation logging
-    console.log("Team creation attempt:", { name, universityId });
 
     // check if required fields are provided
     if (!name || !universityId) {
@@ -887,12 +993,6 @@ app.post("/add-team", verifyRole(["SuperAdmin", "Admin", "CollegeRep"]), (req, r
 
                 return res.status(500).json({ message: "Database error. Please try again later." });
             }
-
-            console.log("Team created successfully:", {
-                teamId: result.insertId,
-                teamName: name,
-                universityId: universityId
-            });
 
             res.status(201).json({
                 message: "Team added successfully!",
@@ -1402,7 +1502,7 @@ app.get("/user/:userId", verifyRole(["SuperAdmin", "Admin"]), async (req, res) =
     }
 });
 
-// add user endpoint  ||  MISSING CHECK FOR EXISTING EMAIL !
+// add user endpoint
 app.post("/add-user", verifyRole(["SuperAdmin", "Admin"]), async (req, res) => {
     const { firstName, lastName, email, password, role, imageURL, validStudent, teamId } = req.body;
     const fullName = `${firstName} ${lastName}`;
@@ -1430,6 +1530,21 @@ app.post("/add-user", verifyRole(["SuperAdmin", "Admin"]), async (req, res) => {
     const passwordRegex = /^(?=.*[a-zA-Z]).{6,}$/;
     if (!passwordRegex.test(password)) {
         return res.status(400).json({ message: "Password must have 6 characters and contain a letter" });
+    }
+
+    // Check if email already exists
+    try {
+        const [existingUsers] = await db.promise().execute(
+            "SELECT UserID FROM Users WHERE Email = ?",
+            [email]
+        );
+
+        if (existingUsers[0].length > 0) {
+            return res.status(400).json({ message: "Email already in use" });
+        }
+    } catch (error) {
+        console.error("Email check error:", error);
+        return res.status(500).json({ message: "Error checking email availability" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10); // hash password
@@ -1517,15 +1632,6 @@ app.put("/edit-user/:userId", verifyRole(["SuperAdmin", "Admin"]), async (req, r
                 return res.status(403).json({ message: "Cannot change your own role" });
             }
         }
-
-        /*//  ||  NOT WORKING NEEDS FIXING !
-        if(teamId < 0 && !teamId === null) {
-            return res.status(400).json({ message: "Invalid TeamID it cannot be less than zero" });
-        }
-
-        if(validStudent !== (0 || 1)) {
-            return res.status(400).json({ message: "Invalid ValidStudent must be 0 if not and 1 if yes" });
-        }*/
 
         await db.promise().beginTransaction();
 
@@ -1658,63 +1764,34 @@ app.get("/player/:userId", async (req, res) => {
     }
 });
 
+// create a payment intent endpoint
 app.post('/create-payment-intent', async (req, res) => {
-    if (!req.session.userId) {
-        return res.status(401).json({ error: 'Not authenticated' });
-    }
-
-    const { registrationId } = req.body;
-
-    if (!registrationId) {
-        return res.status(400).json({ error: 'Registration ID is required' });
-    }
-
     try {
-        // First get the registration details
-        const [registrationDetails] = await db.promise().execute(
-            `SELECT TournamentID, TeamID FROM Registrations 
-             WHERE RegistrationID = ? AND UserID = ? AND Status = 'Verified'`,
-            [registrationId, req.session.userId]
-        );
+        const { registrationId } = req.body;
 
-        if (registrationDetails.length === 0) {
-            return res.status(404).json({ error: 'Registration not found or not verified' });
-        }
-
-        // Then get or create a payment record
+        // get payment via registration ID
         const [paymentDetails] = await db.promise().execute(
             `SELECT PaymentID, Amount FROM Payments 
-             WHERE UserID = ? AND TeamID = ? AND TournamentID = ? AND Status = 'Pending'`,
-            [req.session.userId, registrationDetails[0].TeamID, registrationDetails[0].TournamentID]
+             WHERE PaymentID = ? AND Status = 'Pending'`,
+            [registrationId]
         );
 
-        let amount;
-        let paymentId;
+        let amount, paymentId;
 
-        if (paymentDetails.length === 0) {
-            // No payment record exists yet, create one
-            const tournamentFee = 10.00; // Default fee, could be fetched from tournament settings
+        // handle missing payment record
+        if (paymentDetails[0].length === 0) {
 
-            const [insertResult] = await db.promise().execute(
-                `INSERT INTO Payments (UserID, TeamID, TournamentID, Amount, Status) 
-                 VALUES (?, ?, ?, ?, 'Pending')`,
-                [req.session.userId, registrationDetails[0].TeamID, registrationDetails[0].TournamentID, tournamentFee]
-            );
-
-            amount = tournamentFee;
-            paymentId = insertResult.insertId;
+            return res.status(404).json({ error: 'Payment record not found' });
         } else {
-            // Payment record exists
             amount = paymentDetails[0].Amount;
             paymentId = paymentDetails[0].PaymentID;
         }
 
-        // Create a PaymentIntent with the order amount and currency
+        // create a Stripe payment intent
         const paymentIntent = await stripe.paymentIntents.create({
-            amount: amount * 100, // Convert to cents for Stripe
+            amount: amount * 100,
             currency: 'usd',
             metadata: {
-                userId: req.session.userId,
                 registrationId: registrationId,
                 paymentId: paymentId
             }
@@ -1724,11 +1801,13 @@ app.post('/create-payment-intent', async (req, res) => {
             clientSecret: paymentIntent.client_secret,
             paymentId: paymentId
         });
+
     } catch (error) {
         console.error('Error creating payment intent:', error);
         res.status(500).json({ error: 'Failed to create payment intent' });
     }
 });
+
 
 // Route to serve Stripe publishable key
 app.get('/stripe-key', (req, res) => {
@@ -1739,6 +1818,7 @@ app.get('/stripe-key', (req, res) => {
     res.json({ publishableKey: process.env.STRIPE_PUBLISHABLE_KEY });
 });
 
+// confirm payment endpoint
 app.post('/confirm-payment', async (req, res) => {
     try {
         const { paymentIntentId } = req.body;
@@ -1870,7 +1950,7 @@ app.get('/api/tournaments/brackets', async (req, res) => {
     }
 });
 
-
+// tournament sign up endpoint
 app.post("/tournament-signup", (req, res) => {
     const userId = req.session.userId;
     const { tournamentId, teamId, newTeamName, collegeId, message } = req.body;
@@ -1887,27 +1967,14 @@ app.post("/tournament-signup", (req, res) => {
         return res.status(400).json({ message: "Either team selection or new team name is required" });
     }
 
-    // Begin transaction
+    // begin transaction
     db.beginTransaction(async (err) => {
         if (err) {
             return res.status(500).json({ message: "Database error. Please try again later." });
         }
 
         try {
-            // Check if user already has a registration for this tournament
-            const [existingRegistration] = await db.promise().execute(
-                "SELECT RegistrationID FROM Registrations WHERE UserID = ? AND TournamentID = ?",
-                [userId, tournamentId]
-            );
-
-            if (existingRegistration.length > 0) {
-                await db.promise().rollback();
-                return res.status(400).json({
-                    message: "You have already registered for this tournament. Please check your registration status."
-                });
-            }
-
-            // Get user info to check role
+            // get user info to check role
             const [userResults] = await db.promise().execute(
                 "SELECT Role FROM Users WHERE UserID = ?",
                 [userId]
@@ -1920,7 +1987,7 @@ app.post("/tournament-signup", (req, res) => {
 
             const userRole = userResults[0].Role;
 
-            // If user is not a Player, convert them to Player
+            // if user is not a Player, convert them to Player
             if (userRole === "User") {
                 await db.promise().execute(
                     "UPDATE Users SET Role = 'Player' WHERE UserID = ?",
@@ -1933,7 +2000,7 @@ app.post("/tournament-signup", (req, res) => {
                 });
             }
 
-            // Get player info or create a new player record
+            // get player info or create a new player record
             const [playerResults] = await db.promise().execute(
                 "SELECT PlayerID, TeamID, ValidStudent FROM Players WHERE UserID = ?",
                 [userId]
@@ -1942,7 +2009,7 @@ app.post("/tournament-signup", (req, res) => {
             let playerId, isValidStudent;
 
             if (playerResults.length === 0) {
-                // Create player record if not exists
+                // create player record if not exists
                 const [insertResult] = await db.promise().execute(
                     "INSERT INTO Players (UserID, Role, ValidStudent) VALUES (?, 'Member', FALSE)",
                     [userId]
@@ -1953,7 +2020,7 @@ app.post("/tournament-signup", (req, res) => {
                 playerId = playerResults[0].PlayerID;
                 isValidStudent = playerResults[0].ValidStudent;
 
-                // Check if player is already in a team for this tournament
+                // check if player is already in a team for this tournament
                 if (playerResults[0].TeamID) {
                     const [existingReg] = await db.promise().execute(
                         `SELECT p.PaymentID FROM Payments p 
@@ -1970,11 +2037,11 @@ app.post("/tournament-signup", (req, res) => {
                 }
             }
 
-            // Handle team creation or selection
+            // handle team creation or selection
             let finalTeamId;
 
             if (newTeamName) {
-                // Create new team
+                // create new team
                 const [teamResult] = await db.promise().execute(
                     "INSERT INTO Teams (Name, UniversityID, Description) VALUES (?, ?, ?)",
                     [newTeamName, collegeId, `Team created for tournament registration on ${new Date().toISOString().split('T')[0]}`]
@@ -1982,7 +2049,7 @@ app.post("/tournament-signup", (req, res) => {
 
                 finalTeamId = teamResult.insertId;
 
-                // Update player as team leader
+                // update player as team leader
                 await db.promise().execute(
                     "UPDATE Players SET TeamID = ?, Role = 'Leader' WHERE PlayerID = ?",
                     [finalTeamId, playerId]
@@ -1990,7 +2057,7 @@ app.post("/tournament-signup", (req, res) => {
             } else {
                 finalTeamId = teamId;
 
-                // Update player's team if different
+                // update player's team if different
                 if (!playerResults[0].TeamID || playerResults[0].TeamID != teamId) {
                     await db.promise().execute(
                         "UPDATE Players SET TeamID = ?, Role = 'Member' WHERE PlayerID = ?",
@@ -1999,19 +2066,40 @@ app.post("/tournament-signup", (req, res) => {
                 }
             }
 
-            // Add to registrations table with appropriate status
-            const regStatus = isValidStudent ? 'Verified' : 'Pending';
-
-            const [regResult] = await db.promise().execute(
-                `INSERT INTO Registrations (UserID, TournamentID, TeamID, NewTeamName, Message, Status) 
-                 VALUES (?, ?, ?, ?, ?, ?)`,
-                [userId, tournamentId, finalTeamId, newTeamName, message, regStatus]
+            // check for existing registration
+            const [existingRegistration] = await db.promise().execute(
+                "SELECT RegistrationID FROM Registrations WHERE UserID = ? AND TournamentID = ?",
+                [userId, tournamentId]
             );
 
-            // If student is not validated, return now
+            let registrationId;
+            const regStatus = isValidStudent ? 'Verified' : 'Pending';
+
+            if (existingRegistration.length > 0) {
+                // update existing registration
+                await db.promise().execute(
+                    `UPDATE Registrations SET
+                        TeamID = ?,
+                        NewTeamName = ?,
+                        Message = ?,
+                        Status = ?
+                     WHERE RegistrationID = ?`,
+                    [finalTeamId, newTeamName || null, message || '', regStatus, existingRegistration[0].RegistrationID]
+                );
+                registrationId = existingRegistration[0].RegistrationID;
+            } else {
+                // create new registration
+                const [regResult] = await db.promise().execute(
+                    `INSERT INTO Registrations (UserID, TournamentID, TeamID, NewTeamName, Message, Status) 
+                     VALUES (?, ?, ?, ?, ?, ?)`,
+                    [userId, tournamentId, finalTeamId, newTeamName || null, message || '', regStatus]
+                );
+                registrationId = regResult.insertId;
+            }
+
+            // if student is not validated, return now
             if (!isValidStudent) {
                 await db.promise().commit();
-
                 return res.json({
                     success: true,
                     pendingVerification: true,
@@ -2019,23 +2107,41 @@ app.post("/tournament-signup", (req, res) => {
                 });
             }
 
-            // For validated students, create payment record
-            const tournamentFee = 10.00; // Default fee, could be fetched from tournament settings
+            // for validated students, create/update payment record
+            const tournamentFee = 10.00;
 
-            const [paymentResult] = await db.promise().execute(
-                `INSERT INTO Payments (UserID, TeamID, TournamentID, Amount, Status) 
-                 VALUES (?, ?, ?, ?, 'Pending')`,
-                [userId, finalTeamId, tournamentId, tournamentFee]
+            // UPSERT payment
+            await db.promise().execute(
+                `INSERT INTO Payments (
+                    PaymentID,
+                    UserID, 
+                    TeamID, 
+                    TournamentID, 
+                    Amount, 
+                    Status
+                ) VALUES (?, ?, ?, ?, ?, 'Pending')
+                ON DUPLICATE KEY UPDATE
+                    TeamID = VALUES(TeamID),
+                    TournamentID = VALUES(TournamentID),
+                    Amount = VALUES(Amount),
+                    Status = VALUES(Status)`,
+                [
+                    registrationId,
+                    userId,
+                    finalTeamId,
+                    tournamentId,
+                    tournamentFee
+                ]
             );
 
-            // Commit transaction
+            // commit transaction
             await db.promise().commit();
 
-            // Return success with payment ID for redirect
+            // return success with registration ID
             res.json({
                 success: true,
                 message: "Registration initiated successfully",
-                registrationId: regResult.insertId
+                registrationId: registrationId
             });
 
         } catch (error) {
@@ -2075,7 +2181,6 @@ app.get("/teams-for-college-tournament", (req, res) => {
 app.get('/news-articles', async (req, res) => {
     try {
         const [posts] = await db.promise().query('SELECT * FROM Posts ORDER BY CreatedAt DESC');
-        console.log(posts);
         res.json(posts);
     } catch (error) {
         console.error('Error fetching news:', error);
@@ -2873,13 +2978,187 @@ app.delete('/api/registrations/:id', verifyRole(["SuperAdmin", "Admin", "Moderat
     }
 });
 
+// get payments with optional search by user name endpoint
+app.get('/api/payments', async (req, res) => {
+    try {
+        const searchTerm = req.query.q || '';
+        const query = `
+            SELECT p.*, u.Name AS UserName 
+            FROM Payments p
+            JOIN Users u ON p.UserID = u.UserID
+            WHERE u.Name LIKE ?
+            ORDER BY p.PaymentDate DESC
+        `;
+        const [results] = await db.promise().execute(query, [`%${searchTerm}%`]);
+        res.json(results);
+    } catch (error) {
+        console.error('Error fetching payments:', error);
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
+// get a single payment endpoint
+app.get('/api/payments/:id', async (req, res) => {
+    try {
+        const [results] = await db.promise().execute(
+            'SELECT * FROM Payments WHERE PaymentID = ?',
+            [req.params.id]
+        );
+        if (results.length === 0) return res.status(404).json({ error: 'Payment not found' });
+        res.json(results[0]);
+    } catch (error) {
+        console.error('Error fetching payment:', error);
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
+app.get('/api/analytics', verifyRole(["SuperAdmin","Admin","Moderator"]), async (req, res) => {
+    try {
+      // get database stats
+      const [universities] = await db.promise().execute('SELECT COUNT(*) as count FROM University');
+      const [teams] = await db.promise().execute('SELECT COUNT(*) as count FROM Teams');
+      const [tournaments] = await db.promise().execute('SELECT COUNT(*) as count FROM Tournaments');
+      const [registrations] = await db.promise().execute('SELECT COUNT(*) as count FROM Registrations');
+      
+      // in the future, this will be replaced with real Google Analytics data
+      res.json({
+        users: 123456,
+        sessions: 234567,
+        bounceRate: '47.8%',
+        avgSessionDuration: '3m 25s',
+        topPage: {
+          name: '/homepage',
+          views: 12345
+        },
+        dbStats: {
+          universities: universities[0].count,
+          teams: teams[0].count,
+          tournaments: tournaments[0].count,
+          registrations: registrations[0].count || 0
+        }
+      });
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+      res.status(500).json({ error: 'Failed to fetch analytics data' });
+    }
+  });
+  
 
 app.use((req, res, next) => {
     res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
 });
 
+// sample data, activated only once
+async function seedSampleData() {
+    try {
+        // check if data already exists
+        const [universities] = await db.promise().execute(
+            "SELECT COUNT(*) as count FROM University"
+        );
+
+        // if data exists, skip seeding
+        if (universities[0].count > 0) {
+            console.log("Sample data already exists, skipping seeding");
+            return;
+        }
+
+        console.log("Seeding database with sample data...");
+
+        // Begin transaction
+        await db.promise().beginTransaction();
+
+        // insert universities
+        await db.promise().execute(`
+        INSERT INTO University (Name, Location, Founded, Emblem, ImageURL, Description, HasPage) VALUES 
+        ("Kyoto University", "Kyoto, Japan", "June 18, 1897", "/media/img/kyoto.png", "/media/img/kyoto-university.jpg", "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.", TRUE),
+        ("U Pontificia Universidad Catolica de Chile", "Santiago, Chile", "June 21, 1888", "/media/img/chile.png", "/media/img/chile-university.jpg", "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.", TRUE),
+        ("Indian Institute of Technology", "Delhi, India", "August 17, 1961", "/media/img/india.png", "/media/img/india-university.jpg", "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.", TRUE),
+        ("Massachusetts Institute of Technology", "Cambridge, USA", "April 10, 1861", "/media/img/mit.png", "/media/img/mit-university.jpg", "MIT is a private research university known for its scientific and technological training and research.", TRUE),
+        ("University of Oxford", "Oxford, UK", "1096", "/media/img/oxford.png", "/media/img/oxford-university.jpg", "Oxford is the oldest university in the English-speaking world and the world's second-oldest university in continuous operation.", TRUE),
+        ("Stanford University", "Stanford, CA, USA", "October 1, 1891", "/media/img/stanford.png", "/media/img/stanford-university.jpg", "Stanford University is a private research university in Stanford, California known for its academic achievements and wealth.", TRUE),
+        ("University of Tokyo", "Tokyo, Japan", "April 12, 1877", "/media/img/tokyo.png", "/media/img/tokyo-university.jpg", "The University of Tokyo is a public research university located in Tokyo, Japan. It is the first imperial university.", TRUE)
+      `);
+
+        // insert teams
+        await db.promise().execute(`
+        INSERT INTO Teams (Name, UniversityID, Description, ImageURL) VALUES
+        ("Team Kyoto", 1, "Official team representing Kyoto University", "/media/img/team-kyoto.jpg"),
+        ("Team Chile", 2, "Official team representing Universidad Catolica de Chile", "/media/img/team-chile.jpg"),
+        ("Team India", 3, "Official team representing Indian Institute of Technology", "/media/img/team-india.jpg"),
+        ("MIT Beavers", 4, "Official esports team of Massachusetts Institute of Technology", "/media/img/mit-team.jpg"),
+        ("Oxford Lions", 5, "Championship team from University of Oxford", "/media/img/oxford-team.jpg"),
+        ("Kyoto Dragons", 1, "Secondary team from Kyoto University", "/media/img/kyoto-dragons.jpg"),
+        ("Chile Condors", 2, "Elite squad from Universidad Catolica de Chile", "/media/img/chile-condors.jpg"),
+        ("Delhi Tigers", 3, "Top-ranked team from IIT Delhi", "/media/img/delhi-tigers.jpg"),
+        ("Stanford Cardinals", 6, "Stanford University's premier team", "/media/img/stanford-team.jpg"),
+        ("Tokyo Titans", 7, "University of Tokyo's competitive squad", "/media/img/tokyo-team.jpg")
+      `);
+
+        // insert tournaments
+        await db.promise().execute(`
+        INSERT INTO Tournaments (Name, Description, StartDate, EndDate, NextRoundDate, Location, Status, UniversityID, EliminationsComplete) VALUES
+        ('Kyoto Student Festival 2025', 'Annual student-led festival featuring sports competitions, cultural events, and international exchanges.', '2025-10-13', '2025-10-20', '2025-10-16', 'Kyoto, Japan', 'Upcoming', 1, FALSE),
+        ('PUCV International Sports Cup', 'Premier Latin American university tournament combining football, basketball, and cultural activities.', '2025-03-15', '2025-03-22', '2025-03-18', 'Santiago, Chile', 'Completed', 2, TRUE),
+        ('58th Inter IIT Sports Meet', 'National championship between 23 IITs featuring 14 sports including cricket, football, and aquatics.', '2025-12-10', '2025-12-19', NULL, 'Delhi, India', 'Upcoming', 3, FALSE),
+        ('Global University Championship', 'Prestigious international tournament featuring top university teams from around the world', '2025-06-15', '2025-06-30', '2025-06-20', 'Cambridge, USA', 'Upcoming', 4, FALSE),
+        ('Oxford Invitational', 'Annual tournament hosted by Oxford University featuring elite academic institutions', '2025-02-10', '2025-02-15', NULL, 'Oxford, UK', 'Completed', 5, TRUE),
+        ('Asia-Pacific University Games', 'Regional competition for universities across the Asia-Pacific region', '2025-09-05', '2025-09-15', '2025-09-10', 'Tokyo, Japan', 'Upcoming', 7, FALSE),
+        ('Stanford Summer Series', 'Summer tournament featuring teams from top universities worldwide', '2025-07-10', '2025-07-20', NULL, 'Stanford, CA', 'Upcoming', 6, FALSE),
+        ('Winter Collegiate Challenge', 'Winter tournament for university teams focusing on indoor sports', '2025-01-15', '2025-01-25', NULL, 'Cambridge, USA', 'Completed', 4, TRUE)
+      `);
+
+        // insert matches
+        await db.promise().execute(`
+        INSERT INTO Matches (TournamentID, Team1ID, Team2ID, MatchDate, RoundNumber, ScoreTeam1, ScoreTeam2, WinnerID, Status) VALUES
+        (1, 1, 2, '2025-10-14 15:00:00', 1, 0, 0, NULL, 'Planned'),
+        (1, 3, 1, '2025-10-16 18:00:00', 2, 0, 0, NULL, 'Planned'),
+        (2, 2, 3, '2025-03-16 14:00:00', 1, 3, 1, 2, 'Completed'),
+        (2, 7, 8, '2025-03-17 16:00:00', 1, 2, 4, 8, 'Completed'),
+        (3, 3, 1, '2025-12-12 12:00:00', 1, 0, 0, NULL, 'Planned'),
+        (4, 4, 5, '2025-06-16 13:00:00', 1, 0, 0, NULL, 'Planned'),
+        (5, 5, 1, '2025-02-12 11:00:00', 1, 3, 1, 5, 'Completed'),
+        (6, 6, 7, '2025-09-07 15:30:00', 1, 0, 0, NULL, 'Planned'),
+        (7, 9, 10, '2025-07-12 13:00:00', 1, 0, 0, NULL, 'Planned'),
+        (8, 4, 9, '2025-01-17 14:00:00', 1, 2, 3, 9, 'Completed')
+      `);
+
+        // insert schedules
+        await db.promise().execute(`
+        INSERT INTO Schedules (MatchID, ScheduledDate) VALUES
+        (1, '2025-10-14 15:00:00'),
+        (2, '2025-10-16 18:00:00'),
+        (3, '2025-03-16 14:00:00'),
+        (4, '2025-03-17 16:00:00'),
+        (5, '2025-12-12 12:00:00'),
+        (6, '2025-06-16 13:00:00'),
+        (7, '2025-02-12 11:00:00'),
+        (8, '2025-09-07 15:30:00'),
+        (9, '2025-07-12 13:00:00'),
+        (10, '2025-01-17 14:00:00')
+      `);
+
+        // insert posts
+        await db.promise().execute(`
+        INSERT INTO Posts (Title, ImageURL, Content, Author, CreatedAt) VALUES
+        ('Welcome to the Tournament Platform', '/media/img/tournament-welcome.jpg', 'We are excited to announce the upcoming tournaments! Join us for a season of competition, sportsmanship, and academic excellence.', 'Admin', '2025-01-01 10:00:00'),
+        ('Team Chile Wins PUCV Cup', '/media/img/chile-win.jpg', 'Team Chile has won the PUCV International Sports Cup with outstanding performance. Congratulations to all participants for their dedication and sportsmanship.', 'Moderator', '2025-03-22 18:00:00'),
+        ('New Teams Joining for Summer Series', '/media/img/new-teams.jpg', 'Several new teams have registered for the Stanford Summer Series. We look forward to seeing fresh talent and exciting matches.', 'Admin', '2025-04-15 14:30:00'),
+        ('Global University Championship Registration Now Open', '/media/img/registration-open.jpg', 'Registration for the Global University Championship is now open. Early bird discounts available until May 1st.', 'Tournament Director', '2025-04-20 09:00:00'),
+        ('Oxford Invitational Results', '/media/img/oxford-results.jpg', 'The Oxford Invitational has concluded with Oxford Lions taking the championship. See the full results and highlights on our website.', 'Event Coordinator', '2025-02-16 11:15:00')
+      `);
+
+        await db.promise().commit();
+        console.log("Sample data seeded successfully");
+
+    } catch (error) {
+        // rollback on error
+        await db.promise().rollback();
+        console.error("Error seeding sample data:", error);
+    }
+}
 
 // start server
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
+    seedSampleData().catch(err => console.error("Failed to seed data:", err));
 });

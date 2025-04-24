@@ -101,3 +101,17 @@
     height: auto;
     border-radius: 5px;
 }
+
+#noarts {
+    text-align: center;
+    margin-top: 45vh;
+    font-size: 1.5em;
+}
+
+@media (max-width: 768px) {
+    #noarts {
+        margin-top: 4rem;
+        margin-bottom: 2rem;
+        font-size: 1.2em;
+    }
+}

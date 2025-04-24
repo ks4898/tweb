@@ -20,6 +20,14 @@ document.addEventListener("DOMContentLoaded", function() {
 
             // Clear existing placeholder content
             container.innerHTML = '<h1>Schedules</h1>';
+
+            if(matches.length === 0) {
+                let noMatches = document.createElement("p");
+                noMatches.setAttribute("id","no-matches");
+                noMatches.textContent = "No matches to show.";
+                container.appendChild(noMatches);
+                return;
+            }
             
             // Convert to array and maintain order
             const tournamentEntries = Object.values(tournaments);
