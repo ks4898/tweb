@@ -114,7 +114,7 @@ CREATE TABLE Registrations (
 	TeamID INT,
 	NewTeamName VARCHAR(255),
 	Message TEXT,
-	Status VARCHAR(50) DEFAULT 'Pending',
+	Status VARCHAR(50) DEFAULT 'Pending', -- Pending, Verified
 	RegistrationDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 	FOREIGN KEY (UserID) REFERENCES Users(UserID) ON DELETE CASCADE,
 	FOREIGN KEY (TournamentID) REFERENCES Tournaments(TournamentID) ON DELETE CASCADE,
@@ -132,7 +132,7 @@ CREATE TABLE Matches (
     ScoreTeam1 INT DEFAULT 0,
     ScoreTeam2 INT DEFAULT 0,
     WinnerID INT,
-    Status VARCHAR(50) DEFAULT 'Planned', -- Planned, Completed
+    Status VARCHAR(50) DEFAULT 'Planned', -- Planned, Ongoing, Completed
     FOREIGN KEY (TournamentID) REFERENCES Tournaments(TournamentID) ON DELETE CASCADE,
     FOREIGN KEY (Team1ID) REFERENCES Teams(TeamID) ON DELETE CASCADE,
     FOREIGN KEY (Team2ID) REFERENCES Teams(TeamID) ON DELETE CASCADE,
@@ -147,7 +147,7 @@ CREATE TABLE Payments (
   TeamID INT,
   TournamentID INT,
   Amount DECIMAL(10, 2),
-  Status VARCHAR(50) DEFAULT 'Pending',
+  Status VARCHAR(50) DEFAULT 'Pending', -- Pending, Completed
   SuccessPageViewed BOOLEAN DEFAULT FALSE,
   PaymentDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (RegistrationID) REFERENCES Registrations(RegistrationID) ON DELETE CASCADE,
