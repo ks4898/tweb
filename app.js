@@ -263,11 +263,6 @@ app.get("/reports", verifyRole(["SuperAdmin", "Admin", "CollegeRep", "Moderator"
     res.sendFile(path.join(__dirname, "public", "reports.html"));
 });
 
-// serve reports page endpoint
-app.get("/analytics", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "analytics.html"));
-});
-
 // serve account page endpoint 
 app.get("/account", verifyRole(["SuperAdmin", "Admin", "Moderator", "CollegeRep"]), (req, res) => {
     res.sendFile(path.join(__dirname, "public", "account.html"));
@@ -664,8 +659,8 @@ app.get("/news", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "news.html"));
 });
 
-// serve news page endpoint
-app.get("/stats", (req, res) => {
+// serve analytics page endpoint
+app.get("/stats", verifyRole(["SuperAdmin", "Admin", "Moderator"]), (req, res) => {
     res.sendFile(path.join(__dirname, "public", "stats.html"));
 });
 
