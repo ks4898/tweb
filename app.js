@@ -4,12 +4,6 @@ const mysql = require("mysql2"); // database
 const bcrypt = require("bcryptjs"); // safe password encryption
 const session = require("express-session");
 require("dotenv").config(); // safe config
-
-// google analytics
-app.get('/api/ga-id', (req, res) => {
-    res.json({ gaId: process.env.GA_MEASUREMENT_ID || null });
-});
-
 const { verifyRole } = require("./assets/js/auth.js"); // user authorization
 const errorHandler = require('./assets/js/errorhandler'); // error handling
 const Stripe = require('stripe'); // stripe payment
@@ -117,6 +111,11 @@ function preventDirectAccess(req, res, next) {
 
 // apply middleware globally
 app.use(preventDirectAccess);
+
+// google analytics
+app.get('/api/ga-id', (req, res) => {
+    res.json({ gaId: process.env.GA_MEASUREMENT_ID || null });
+});
 
 app.use(express.static("assets")); // serve static files from assets folder
 app.use(express.static(path.join(__dirname, "public"))); // serve static files from public folder (pages)

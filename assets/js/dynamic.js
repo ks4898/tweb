@@ -4,9 +4,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // load dynamic tournament data
     loadTournaments();
-    
-    // load dynamic team data
-    loadFeaturedTeams();
 });
 
 async function loadCollegeCarousel() {
