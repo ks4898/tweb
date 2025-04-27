@@ -519,8 +519,8 @@ app.get("/payment", verifyRole(["Player"]), (req, res) => {
     db.execute(`
         SELECT r.Status, p.PaymentID 
         FROM Registrations r
-        LEFT JOIN Payments p ON p.UserID = r.UserID AND p.TournamentID = r.TournamentID
-        WHERE r.UserID = ? AND p.PaymentID = ? AND r.Status = 'Verified'
+        LEFT JOIN Payments p ON p.RegistrationID = r.RegistrationID
+        WHERE r.UserID = ? AND r.RegistrationID = ? AND r.Status = 'Verified'
     `, [req.session.userId, registrationId], (err, results) => {
         if (err) {
             console.error("Database error:", err);
@@ -2043,7 +2043,7 @@ app.post("/tournament-signup", (req, res) => {
                 finalTeamId = teamId;
 
                 // update player's team if different
-                if (!playerResults[0].TeamID || playerResults[0].TeamID != teamId) {
+                if (playerResults.length > 0 && (!playerResults[0].TeamID || playerResults[0].TeamID != teamId)) {
                     await db.promise().execute(
                         "UPDATE Players SET TeamID = ?, Role = 'Member' WHERE PlayerID = ?",
                         [teamId, playerId]
@@ -2098,7 +2098,7 @@ app.post("/tournament-signup", (req, res) => {
             // UPSERT payment
             await db.promise().execute(
                 `INSERT INTO Payments (
-                    PaymentID,
+                    RegistrationID,
                     UserID, 
                     TeamID, 
                     TournamentID, 
@@ -2997,37 +2997,37 @@ app.get('/api/payments/:id', async (req, res) => {
     }
 });
 
-app.get('/api/analytics', verifyRole(["SuperAdmin","Admin","Moderator"]), async (req, res) => {
+app.get('/api/analytics', verifyRole(["SuperAdmin", "Admin", "Moderator"]), async (req, res) => {
     try {
-      // get database stats
-      const [universities] = await db.promise().execute('SELECT COUNT(*) as count FROM University');
-      const [teams] = await db.promise().execute('SELECT COUNT(*) as count FROM Teams');
-      const [tournaments] = await db.promise().execute('SELECT COUNT(*) as count FROM Tournaments');
-      const [registrations] = await db.promise().execute('SELECT COUNT(*) as count FROM Registrations');
-      
-      // in the future, this will be replaced with real Google Analytics data
-      res.json({
-        users: 123456,
-        sessions: 234567,
-        bounceRate: '47.8%',
-        avgSessionDuration: '3m 25s',
-        topPage: {
-          name: '/homepage',
-          views: 12345
-        },
-        dbStats: {
-          universities: universities[0].count,
-          teams: teams[0].count,
-          tournaments: tournaments[0].count,
-          registrations: registrations[0].count || 0
-        }
-      });
+        // get database stats
+        const [universities] = await db.promise().execute('SELECT COUNT(*) as count FROM University');
+        const [teams] = await db.promise().execute('SELECT COUNT(*) as count FROM Teams');
+        const [tournaments] = await db.promise().execute('SELECT COUNT(*) as count FROM Tournaments');
+        const [registrations] = await db.promise().execute('SELECT COUNT(*) as count FROM Registrations');
+
+        // in the future, this will be replaced with real Google Analytics data
+        res.json({
+            users: 123456,
+            sessions: 234567,
+            bounceRate: '47.8%',
+            avgSessionDuration: '3m 25s',
+            topPage: {
+                name: '/homepage',
+                views: 12345
+            },
+            dbStats: {
+                universities: universities[0].count,
+                teams: teams[0].count,
+                tournaments: tournaments[0].count,
+                registrations: registrations[0].count || 0
+            }
+        });
     } catch (error) {
-      console.error('Error fetching analytics:', error);
-      res.status(500).json({ error: 'Failed to fetch analytics data' });
+        console.error('Error fetching analytics:', error);
+        res.status(500).json({ error: 'Failed to fetch analytics data' });
     }
-  });
-  
+});
+
 
 app.use((req, res, next) => {
     res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));

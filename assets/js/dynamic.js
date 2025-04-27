@@ -57,7 +57,7 @@ async function loadCollegeCarousel() {
             caption.innerHTML = `
                 <h5>${college.Name}</h5>
                 <p>${college.Location || 'Join our tournament!'}</p>
-                <a href="/colleges?id=${college.UniversityID}" class="btn btn-link">Learn More</a>
+                <a href="/details?name=${college.Name}" class="btn btn-link">Learn More</a>
             `;
             
             item.appendChild(caption);
