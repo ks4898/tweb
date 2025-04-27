@@ -6,10 +6,10 @@ const session = require("express-session");
 require("dotenv").config(); // safe config
 const { verifyRole } = require("./assets/js/auth.js"); // user authorization
 const errorHandler = require('./assets/js/errorhandler'); // error handling
-const Stripe = require('stripe');
+const Stripe = require('stripe'); // stripe payment
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
-const fs = require('fs');
-const multer = require('multer');
+const fs = require('fs'); // page templating
+const multer = require('multer'); // file upload
 const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, 'public/uploads/'),
     filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
@@ -44,7 +44,7 @@ app.use((req, res, next) => {
 });
 
 function preventDirectAccess(req, res, next) {
-    // define allowed paths that should not be blocked
+    // allowed paths that should not be blocked
     const allowedPaths = [
         '/teams'  // allow the teams page
     ];
@@ -216,7 +216,7 @@ app.post('/setup', async (req, res) => {
             [userId]
         );
 
-        // Commit transaction
+        // commit transaction
         await db.promise().commit();
 
         // mark setup as complete
@@ -426,7 +426,7 @@ app.get('/brackets', async (req, res) => {
     }
 });
 
-/// helper function to generate semifinal match card HTML
+// helper function to generate semifinal match card HTML
 function generateSemifinalCardHTML(match, position) {
     if (!match) return `
         <div class="semifinal-card ${position}-semifinal">
@@ -917,7 +917,6 @@ app.delete("/delete-college/:collegeId", verifyRole(["SuperAdmin", "Admin", "Col
     });
 });
 
-
 // fetch all teams endpoint
 app.get("/api/teams", (req, res) => {
     db.execute(`
@@ -1104,8 +1103,7 @@ app.get("/team-members", (req, res) => {
     });
 });
 
-// TEAMS
-
+// serve team-specific page endpoint
 app.get('/teams/:teamName', async (req, res) => {
     try {
         const teamName = decodeURIComponent(req.params.teamName);
@@ -1272,150 +1270,10 @@ app.post('/teams/:teamId/update', async function (req, res) {
 });
 
 
-// ======================== TOURNAMENT MANAGEMENT ========================
-
-
-// cancel tournament sign up endpoint (only for the creator of the team)
-app.delete("/cancel-tournament-signup/:tournamentId", (req, res) => {
-    const tournamentId = req.params.tournamentId;
-    const userId = req.session.userId;
-
-    if (!userId) {
-        return res.status(401).json({ message: "Please log in first." });
-    }
-
-    // check if the user is the one who registered for the tournament
-    db.execute(
-        `SELECT * FROM Registrations 
-         WHERE TournamentID = ? 
-         AND (UserID = ? OR (TeamID IS NOT NULL AND UserID = (SELECT UserID FROM Registrations WHERE TournamentID = ? AND TeamID IN (SELECT TeamID FROM Users WHERE UserID = ?) LIMIT 1)))`,
-        [tournamentId, userId, tournamentId, userId],
-        (err, results) => {
-            if (err) {
-                console.error(err);
-                return res.status(500).json({ message: "Database error. Please try again later." });
-            }
-
-            if (results.length === 0) {
-                return res.status(403).json({ message: "Sorry, you do not have permission to cancel this registration." });
-            }
-
-            // remove the registration
-            db.execute(
-                "DELETE FROM Registrations WHERE TournamentID = ? AND (UserID = ? OR (TeamID IS NOT NULL AND UserID = (SELECT UserID FROM Registrations WHERE TournamentID = ? AND TeamID IN (SELECT TeamID FROM Users WHERE UserID = ?) LIMIT 1)))",
-                [tournamentId, userId, tournamentId, userId],
-                (err, result) => {
-                    if (err) {
-                        console.error(err);
-                        return res.status(500).json({ message: "Database error. Please try again later." });
-                    }
-                    res.json({ message: "Successfully cancelled tournament signup. Sorry to have you leave :(" });
-                }
-            );
-        }
-    );
-});
-
-// leave a team endpoint  ||  DEPRECATED !!
-app.delete("/leave-team", verifyRole(["Player"]), (req, res) => {
-    const userId = req.session.userId;
-
-    db.execute("UPDATE Users SET TeamID = NULL, Role = 'User' WHERE UserID = ?", [userId], (err, result) => {
-        if (err) return res.status(500).json({ message: "Database error." });
-
-        res.json({ message: "You left the team successfully!" });
-    });
-});
-
-// ======================== TOURNAMENT EXECUTION MANAGEMENT ========================
-
-// fetch schedules route endpoint  || DEPRECATED !!
-app.get("/schedules", (req, res) => {
-    const limit = req.query.limit || 6; // default limit
-    const offset = req.query.offset || 1; // default offset
-
-    db.execute(`
-        SELECT s.ScheduleID, m.MatchID, m.Team1ID, m.Team2ID, t1.Name AS Team1Name, t2.Name AS Team2Name, s.ScheduledDate
-        FROM Schedule s
-        JOIN Matches m ON s.MatchID = m.MatchID
-        JOIN Teams t1 ON m.Team1ID = t1.TeamID
-        JOIN Teams t2 ON m.Team2ID = t2.TeamID
-        ORDER BY s.ScheduledDate ASC
-        LIMIT ? OFFSET ?`, [limit, offset], (err, results) => {
-        if (err) {
-            console.error("Database query error:", err);
-            return res.status(500).json({ error: "Internal server error" });
-        }
-        res.json(results);
-    });
-});
-
-// add schedule endpoint  || NEEDS UPDATE !
-app.post("/add-schedule", verifyRole(["SuperAdmin", "Admin"]), async (req, res) => {
-    const { tournamentId, matchDate } = req.body;
-
-    db.execute(
-        "INSERT INTO Schedule (TournamentID, ScheduledDate) VALUES (?, ?)",
-        [tournamentId, matchDate],
-        (err, result) => {
-            if (err) return res.status(500).json({ message: "Database error." });
-            res.status(201).json({ message: "Schedule added successfully!" });
-        }
-    );
-});
-
-// post results endpoint  || NEEDS UPDATE !
-app.post("/post-results", verifyRole(["SuperAdmin", "Admin"]), async (req, res) => {
-    const { matchId, scoreTeam1, scoreTeam2 } = req.body;
-
-    const winnerId =
-        scoreTeam1 > scoreTeam2
-            ? `(SELECT Team1ID FROM Matches WHERE MatchID = ?)`
-            : `(SELECT Team2ID FROM Matches WHERE MatchID = ?)`;
-
-    db.execute(
-        `UPDATE Matches SET ScoreTeam1 = ?, ScoreTeam2 = ?, WinnerID = ${winnerId} WHERE MatchID = ?`,
-        [scoreTeam1, scoreTeam2, matchId],
-        (err, result) => {
-            if (err) return res.status(500).json({ message: "Database error." });
-            res.json({ message: "Results posted successfully!" });
-        }
-    );
-});
-
-
-// ======================== REPORT GENERATION ========================  ||  REMOVED
-
-app.get("/generate-report", verifyRole(["SuperAdmin", "Admin"]), async (req, res) => {
-    db.execute(
-        `SELECT t.Name AS TeamName, u.Name AS UniversityName
-       FROM Teams t
-       JOIN University u ON t.UniversityID = u.UniversityID`,
-        [],
-        async (err, results) => {
-            if (err) return res.status(500).json({ message: "Database error." });
-
-            // generate CSV report
-            let csvContent =
-                "Team Name,University Name\n" +
-                results.map(row => `${row.TeamName},${row.UniversityName}`).join("\n");
-
-            // send as downloadable file
-            res.setHeader("Content-Type", "text/csv");
-            res.setHeader(
-                "Content-Disposition",
-                'attachment; filename="team-university-report.csv"'
-            );
-            res.send(csvContent);
-        }
-    );
-});
-
-
 // ======================== ADMIN MANAGEMENT ========================
 
 // fetch available roles based on current user admin privileges endpoint
-app.get("/roles", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
+app.get("/roles", verifyRole(["SuperAdmin", "Admin", "Moderator", "CollegeRep"]), (req, res) => {
     let roles = [];
     if (req.session.role === "Admin") {
         roles = VALID_ROLES.filter(role => !["Admin", "SuperAdmin"].includes(role));
@@ -1464,7 +1322,7 @@ app.get("/user-info-tournament", (req, res) => {
 
 
 // get all or search users endpoint
-app.get("/users", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
+app.get("/users", verifyRole(["SuperAdmin", "Admin", "Moderator", "CollegeRep"]), (req, res) => {
     const searchTerm = req.query.search;
     let query = "SELECT UserID, Name, Email, Role FROM Users";
     let params = [];
@@ -1482,7 +1340,7 @@ app.get("/users", verifyRole(["SuperAdmin", "Admin"]), (req, res) => {
 });
 
 // display all necessary information when editing user, including Player specific info endpoint
-app.get("/user/:userId", verifyRole(["SuperAdmin", "Admin"]), async (req, res) => {
+app.get("/user/:userId", verifyRole(["SuperAdmin", "Admin", "Moderator", "CollegeRep"]), async (req, res) => {
     const userId = req.params.userId;
     try {
         const [user] = await db.promise().query(
@@ -1497,7 +1355,7 @@ app.get("/user/:userId", verifyRole(["SuperAdmin", "Admin"]), async (req, res) =
         }
         res.json(user[0]);
     } catch (error) {
-        console.error("Error fetching user:", error); /user/
+        console.error("Error fetching user:", error);
         res.status(500).json({ message: "Internal server error" });
     }
 });
@@ -1556,7 +1414,7 @@ app.post("/add-user", verifyRole(["SuperAdmin", "Admin"]), async (req, res) => {
                     );
                     break;
                 case 'CollegeRep':
-                    await db.promise().execute("INSERT INTO CollegeRep (UserID) VALUES (?)", [userId]);
+                    await db.promise().execute("INSERT INTO CollegeReps (UserID) VALUES (?)", [userId]);
                     break;
                 case 'Moderator':
                     await db.promise().execute("INSERT INTO Moderators (UserID) VALUES (?)", [userId]);
@@ -2364,6 +2222,7 @@ app.put('/match/:id', verifyRole(['Admin', 'SuperAdmin']), async (req, res) => {
     }
 });
 
+// get all matches endpoint
 app.get('/matches', async (req, res) => {
     try {
         const { tournamentId, rounds } = req.query;
@@ -2388,7 +2247,7 @@ app.get('/matches', async (req, res) => {
     }
 });
 
-// Create new match endpoint
+// create a new match endpoint
 app.post('/matches', verifyRole(['Admin', 'SuperAdmin']), async (req, res) => {
     try {
         const { TournamentID, RoundNumber, Team1ID, Team2ID, MatchDate, ScoreTeam1, ScoreTeam2, WinnerID, Status } = req.body;
@@ -2440,7 +2299,7 @@ app.delete('/tournament/:id/brackets', verifyRole(['Admin', 'SuperAdmin']), asyn
     }
 });
 
-// Exact team search endpoint
+// exact team search endpoint
 app.get('/team/exact', async (req, res) => {
     try {
         const [team] = await db.promise().execute(
@@ -2453,7 +2312,7 @@ app.get('/team/exact', async (req, res) => {
     }
 });
 
-// Create team
+// create a team endpoint
 app.post('/teams', verifyRole(['Admin', 'SuperAdmin']), async (req, res) => {
     try {
         const { Name } = req.body;
@@ -2467,7 +2326,7 @@ app.post('/teams', verifyRole(['Admin', 'SuperAdmin']), async (req, res) => {
     }
 });
 
-// Get matches by round
+// get matches by round endpoint
 app.get('/matches', async (req, res) => {
     try {
         const { tournamentId, rounds } = req.query;
@@ -2483,7 +2342,7 @@ app.get('/matches', async (req, res) => {
     }
 });
 
-// get profile data
+// get profile data endpoint
 app.get('/profile/data', async (req, res) => {
     try {
         const [user] = await db.promise().query(`
@@ -2511,18 +2370,18 @@ app.post('/profile', upload.single('profileImage'), async (req, res) => {
         const userId = req.session.userId;
         const role = req.session.role;
 
-        // Check required fields
+        // check required fields
         if (!email || !currentPassword) {
             return res.status(400).json({ error: 'Email and current password are required' });
         }
 
-        // Validate email format
+        // validate email format
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
             return res.status(400).json({ error: 'Invalid email format' });
         }
 
-        // Validate new password if provided
+        // validate new password if provided
         if (newPassword) {
             const passwordRegex = /^(?=.*[a-zA-Z]).{6,}$/;
             if (!passwordRegex.test(newPassword)) {
@@ -2532,7 +2391,7 @@ app.post('/profile', upload.single('profileImage'), async (req, res) => {
             }
         }
 
-        // Verify current password
+        // verify current password
         const [user] = await db.promise().query(
             'SELECT * FROM Users WHERE UserID = ?',
             [userId]
@@ -2542,11 +2401,11 @@ app.post('/profile', upload.single('profileImage'), async (req, res) => {
             return res.status(400).json({ error: 'Invalid current password' });
         }
 
-        // Prepare updates
+        // prepare updates
         const updates = {};
         const playerUpdates = {};
 
-        // Email update check
+        // email update check
         if (email !== user[0].Email) {
             const [existing] = await db.promise().query(
                 'SELECT UserID FROM Users WHERE Email = ? AND UserID != ?',
@@ -2558,7 +2417,7 @@ app.post('/profile', upload.single('profileImage'), async (req, res) => {
             updates.Email = email;
         }
 
-        // Password update check
+        // password update check
         if (newPassword) {
             if (bcrypt.compareSync(newPassword, user[0].Password)) {
                 return res.status(400).json({ error: 'New password must be different' });
@@ -2566,18 +2425,18 @@ app.post('/profile', upload.single('profileImage'), async (req, res) => {
             updates.Password = bcrypt.hashSync(newPassword, 10);
         }
 
-        // Handle image upload for Players
+        // handle image upload for Players
         if (role === 'Player' && req.file) {
             const imagePath = '/uploads/' + req.file.filename;
 
-            // Get previous image path
+            // get previous image path
             const [previousData] = await db.promise().query(`
                 SELECT p.ImageURL 
                 FROM Players p
                 WHERE p.UserID = ?
             `, [userId]);
 
-            // Delete old image file
+            // delete old image file
             if (previousData[0]?.ImageURL) {
                 const oldImagePath = path.join(__dirname, 'public', previousData[0].ImageURL);
                 if (fs.existsSync(oldImagePath)) {
@@ -2587,7 +2446,7 @@ app.post('/profile', upload.single('profileImage'), async (req, res) => {
             playerUpdates.ImageURL = imagePath;
         }
 
-        // Update Users table
+        // update Users table
         if (Object.keys(updates).length > 0) {
             await db.promise().query(
                 'UPDATE Users SET ? WHERE UserID = ?',
@@ -2595,7 +2454,7 @@ app.post('/profile', upload.single('profileImage'), async (req, res) => {
             );
         }
 
-        // Update Players table if needed
+        // update Players table if needed
         if (role === 'Player' && Object.keys(playerUpdates).length > 0) {
             await db.promise().query(
                 'UPDATE Players SET ? WHERE UserID = ?',
@@ -2739,7 +2598,7 @@ app.delete('/api/matches/:id', verifyRole(["SuperAdmin", "Admin"]), async (req, 
     }
 });
 
-// get all tournament endpoint
+// get all tournaments endpoint
 app.get('/api/tournaments', async (req, res) => {
     try {
         const searchTerm = req.query.q || '';
@@ -2756,7 +2615,7 @@ app.get('/api/tournaments', async (req, res) => {
     }
 });
 
-// get a tournament endpoint
+// get a single tournament endpoint
 app.get('/api/tournaments/:id', async (req, res) => {
     try {
         const [tournament] = await db.promise().execute(
@@ -2997,6 +2856,7 @@ app.get('/api/payments/:id', async (req, res) => {
     }
 });
 
+// fetch analytics data endpoint
 app.get('/api/analytics', verifyRole(["SuperAdmin", "Admin", "Moderator"]), async (req, res) => {
     try {
         // get database stats
@@ -3028,7 +2888,7 @@ app.get('/api/analytics', verifyRole(["SuperAdmin", "Admin", "Moderator"]), asyn
     }
 });
 
-
+// 404 page endpoint
 app.use((req, res, next) => {
     res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
 });
