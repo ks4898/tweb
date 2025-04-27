@@ -17,7 +17,28 @@
   <link rel="stylesheet" href="/css/tsu.css">
 
   <!-- Google Analytics -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        fetch('/api/ga-id')
+            .then(response => response.json())
+            .then(data => {
+                if (data.gaId) {
+                    // inject GA script  
+                    const script = document.createElement('script');
+                    script.async = true;
+                    script.src = `https://www.googletagmanager.com/gtag/js?id=${data.gaId}`;
+                    document.head.appendChild(script);
+
+                    window.dataLayer = window.dataLayer || [];
+                    function gtag() { dataLayer.push(arguments); }
+                    gtag('js', new Date());
+                    gtag('config', data.gaId);
+                } else {
+                    console.log('Google Analytics not configured');
+                }
+            });
+    });  
+</script>
   <script>
     function goHome() {
       window.location.href = "/";

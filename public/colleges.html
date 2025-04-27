@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+    <title>Colleges - A New World</title>
     <script src="https://js.stripe.com/v3/"></script>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;700&display=swap" rel="stylesheet">
@@ -20,10 +20,28 @@
     <link rel="stylesheet" href="/css/colleges.css">
 
     <!-- Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            fetch('/api/ga-id')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.gaId) {
+                        // inject GA script  
+                        const script = document.createElement('script');
+                        script.async = true;
+                        script.src = `https://www.googletagmanager.com/gtag/js?id=${data.gaId}`;
+                        document.head.appendChild(script);
 
-    <title>Colleges - A New World</title>
-
+                        window.dataLayer = window.dataLayer || [];
+                        function gtag() { dataLayer.push(arguments); }
+                        gtag('js', new Date());
+                        gtag('config', data.gaId);
+                    } else {
+                        console.log('Google Analytics not configured');
+                    }
+                });
+        });  
+    </script>
 </head>
 
 <body>

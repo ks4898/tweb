@@ -13,7 +13,28 @@
     <link rel="stylesheet" href="/css/account.css">
 
     <!-- Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            fetch('/api/ga-id')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.gaId) {
+                        // inject GA script  
+                        const script = document.createElement('script');
+                        script.async = true;
+                        script.src = `https://www.googletagmanager.com/gtag/js?id=${data.gaId}`;
+                        document.head.appendChild(script);
+
+                        window.dataLayer = window.dataLayer || [];
+                        function gtag() { dataLayer.push(arguments); }
+                        gtag('js', new Date());
+                        gtag('config', data.gaId);
+                    } else {
+                        console.log('Google Analytics not configured');
+                    }
+                });
+        });  
+    </script>
 </head>
 
 <body>
@@ -1226,8 +1247,7 @@
     </div>
 
     <!-- View Payments Modal -->
-    <div class="modal fade" id="paymentsModal" tabindex="-1" aria-labelledby="paymentsModalLabel"
-        aria-hidden="true">
+    <div class="modal fade" id="paymentsModal" tabindex="-1" aria-labelledby="paymentsModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -1238,8 +1258,7 @@
                     <form id="paymentDataForm">
                         <div class="mb-3">
                             <label for="viewPaymentID" class="form-label">Payment ID</label>
-                            <input type="text" class="form-control" id="viewPaymentID" readonly
-                                aria-readonly="true">
+                            <input type="text" class="form-control" id="viewPaymentID" readonly aria-readonly="true">
                         </div>
                         <div class="mb-3">
                             <label for="viewPaymentUserID" class="form-label">User ID</label>
@@ -1263,13 +1282,12 @@
                         </div>
                         <div class="mb-3">
                             <label for="viewPaymentStatus" class="form-label">Status</label>
-                            <input type="text"class="form-control" id="viewPaymentStatus" readonly
+                            <input type="text" class="form-control" id="viewPaymentStatus" readonly
                                 aria-readonly="true">
                         </div>
                         <div class="mb-3">
                             <label for="viewPaymentDate" class="form-label">Payment Date (if paid)</label>
-                            <input type="text" class="form-control" id="viewPaymentDate" readonly
-                                aria-readonly="true">
+                            <input type="text" class="form-control" id="viewPaymentDate" readonly aria-readonly="true">
                         </div>
                     </form>
                 </div>
